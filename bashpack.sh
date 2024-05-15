@@ -24,9 +24,9 @@
 
 
 #URL="http://localhost"													# for local web server							
-#URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# for Github
-URL="https://github.com/bashpack-project/bashpack/archive/refs/heads"	# for Github
-VERSION="0.2.17"
+URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# for Github
+# URL="https://github.com/bashpack-project/bashpack/archive/refs/heads"	# for Github
+VERSION="0.2.15"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -281,6 +281,13 @@ delete_systemd() {
 
 
 
+delete_all() {
+	delete_systemd && delete_cli
+}
+
+
+
+
 # Download releases archives from the repository
 # Usages :
 # - download_cli <latest>
@@ -437,18 +444,21 @@ create_cli() {
 # 		Unless, we risk to not being able to update it on the endpoints where it has been installed.
 #
 # /!\	This function can only works if a generic name like "bashpack-main.tar.gz" exists and can be used as an URL.
-#		By default, Github main branch archive is accessible from https://github.com/<user>/<repository>/archive/refs/heads/main.tar.gz
+#		By default, 
+#			- Github main branch archive is accessible from https://github.com/<user>/<repository>/archive/refs/heads/main.tar.gz
+#			- Github latest tarball release is accessible from https://api.github.com/repos/bashpack-project/bashpack/tarball
 update_cli() {
 	# Download a first time the latest version from the "main" branch to be able to launch the installation script from it to get latest modifications.
 	# Ths install function will download the well-named archive with the version name
 	# (so yes, it means that we download the CLI twice, and it's why we don't display the output here)
-	download_cli "main"
-	# download_cli "main" 2>&1 > /dev/null
-	# download_cli "$URL" 2>&1 > /dev/null
-	# download_cli "$URL"
+	
+	#download_cli "main"									# Github main branch
+	#download_cli "main" 2>&1 > /dev/null					# Github main branch
+	download_cli "$URL" 2>&1 > /dev/null && delete_all		# Github latest tarball
+	#download_cli "$URL"									# Github latest tarball
 	
 	# # Delete current installed version to clean all old files
-	# delete_systemd && delete_cli
+	# delete_all
 
 	# Execute the install_cli function of the script downloaded in /tmp
 	exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
@@ -468,8 +478,8 @@ update_cli() {
 install_cli() {
 	detect_cli
 
-	# download_cli "$URL/$VERSION"
-	download_cli $VERSION
+	download_cli "$URL/$VERSION"		# Github latest tarball
+	#download_cli $VERSION				# Github main branch
 
 	create_cli
 }
@@ -481,7 +491,7 @@ install_cli() {
 case "$1" in
 	-i|--self-install)	install_cli ;;
 	-u|--self-update)	update_cli ;;		# Critical option, see the comments at function declaration for more info
-	--self-delete)		delete_systemd && delete_cli ;;
+	--self-delete)		delete_all ;;
 	--get-logs)			$COMMAND_SYSTEMD_LOGS ;;
 	man)				$COMMAND_MAN ;;
 	update)
