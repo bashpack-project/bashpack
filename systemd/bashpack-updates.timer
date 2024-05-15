@@ -1,0 +1,11 @@
+[Unit]
+Description=Bashpack updates (itself & update command)
+
+[Timer]
+OnStartupSec=5min
+OnCalendar=daily
+RandomizedDelaySec=60min
+Persistent=true
+
+[Install]
+WantedBy=multi-user.target
