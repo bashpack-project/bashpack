@@ -302,7 +302,7 @@ download_cli() {
 	echo -n "Downloading sources from $archive_url "
 	if [[ $(exists_command "curl") = "exists" ]]; then
 		echo -n "with curl...   "
-		loading "curl -s $archive_url -o $archive_tmp"
+		loading "curl -sL $archive_url -o $archive_tmp"
 		
 	# Try to download with wget if exists
 	elif [[ $(exists_command "wget") = "exists" ]]; then
@@ -312,7 +312,6 @@ download_cli() {
 	else
 		error_file_not_downloaded $archive_name $archive_url
 	fi
-	
 
 	# "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
 	tar -xf $archive_tmp -C $archive_dir_tmp --strip-components 1 
