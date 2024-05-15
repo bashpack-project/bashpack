@@ -26,7 +26,7 @@
 
 
 # Do not set a ending "/" at the URL unless it will not work
-URL="https://github.com/bashpack-project/bashpack/blob/main/"
+URL="https://github.com/bashpack-project/bashpack/archive/refs/tags"
 VERSION="0.2.14"
 
 NAME="Bashpack"
@@ -287,7 +287,8 @@ delete_systemd() {
 # - download_cli <latest>
 # - download_cli <n.n.n>
 download_cli() {
-	local archive_name="$NAME_LOWERCASE-${1}.tar.gz"
+	#local archive_name="$NAME_LOWERCASE-${1}.tar.gz"	# for basic web server
+	local archive_name="${1}.tar.gz"					# for Github
 	local archive_url="$URL/$archive_name"
 
 
