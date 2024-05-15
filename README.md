@@ -51,8 +51,17 @@ sudo bp --self-delete
 <br>
 
 ## Unified Linux updates
+Launch an automatic update of everything on your system:
 ```javascript
 sudo bp update -y
+```
+Check next update:
+```javascript
+sudo bp update --when
+```
+Get logs from last update:
+```javascript
+sudo bp update --get-logs
 ```
 
 <br>
