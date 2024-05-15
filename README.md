@@ -40,12 +40,12 @@ curl -sL https://raw.githubusercontent.com/bashpack-project/bashpack/main/bashpa
 
 **Update**
 ```javascript
-sudo ./bashpack.sh -u
+sudo bp -u
 ```
 
 **Uninstall**
 ```javascript
-sudo ./bashpack.sh --self-delete
+sudo bp --self-delete
 ```
 
 <br>
