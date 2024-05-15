@@ -50,3 +50,9 @@ sudo bp --self-delete
 
 <br>
 
+## Unified Linux updates
+```javascript
+sudo bp update -y
+```
+
+<br>
