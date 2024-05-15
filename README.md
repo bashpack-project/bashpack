@@ -23,10 +23,10 @@ bp --help
 ## Management steps
 
 Copy/paste the following command blocks on your Linux terminal to manage yur Bashpack installation.
-_You must be sudo._
-_Once installed, Bashpack will automatically update itself (it checks for updates once a day)._
+* _You must be sudo._
+* _Once installed, Bashpack will automatically update itself (it checks for updates once a day)._
 
-**Installation**
+**Install**
 ```javascript
 curl -sL https://raw.githubusercontent.com/bashpack-project/bashpack/main/bashpack.sh -o bashpack.sh \
  && chmod +x bashpack.sh \
@@ -38,7 +38,7 @@ curl -sL https://raw.githubusercontent.com/bashpack-project/bashpack/main/bashpa
 sudo ./bashpack.sh -u
 ```
 
-**Uninstallation**
+**Uninstall**
 ```javascript
 sudo ./bashpack.sh --self-delete
 ```
