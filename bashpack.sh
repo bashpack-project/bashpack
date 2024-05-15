@@ -26,7 +26,7 @@
 #URL="http://localhost"													# for local web server							
 URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# for Github
 # URL="https://github.com/bashpack-project/bashpack/archive/refs/heads"	# for Github
-VERSION="0.2.16"
+VERSION="0.2.15"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -454,10 +454,11 @@ update_cli() {
 	
 	#download_cli "main"									# Github main branch
 	#download_cli "main" 2>&1 > /dev/null					# Github main branch
-	download_cli "$URL" 2>&1 > /dev/null && delete_all		# Github latest tarball
+	download_cli "$URL" 2>&1 > /dev/null					# Github latest tarball
 	#download_cli "$URL"									# Github latest tarball
 	
 	# # Delete current installed version to clean all old files
+	# /!\ Deactivated for now because if we delete the last release from Github, the CLI is just beeing removed from the system...
 	# delete_all
 
 	# Execute the install_cli function of the script downloaded in /tmp
