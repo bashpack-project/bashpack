@@ -494,7 +494,6 @@ case "$1" in
 	-i|--self-install)	install_cli ;;
 	-u|--self-update)	update_cli ;;		# Critical option, see the comments at function declaration for more info
 	--self-delete)		delete_all ;;
-	--get-logs)			$COMMAND_SYSTEMD_LOGS ;;
 	man)				$COMMAND_MAN ;;
 	update)
 		if [[ -z "$2" ]]; then
@@ -505,6 +504,7 @@ case "$1" in
 					-y|--assume-yes)	export install_confirmation="yes" && exec $COMMAND_UPDATE ;;
 					--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $COMMAND_UPDATE ;;
 					--when)				$COMMAND_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
+					--get-logs)			$COMMAND_SYSTEMD_LOGS ;;
 					*)					echo "Error: unknown [update] option '$2'."$'\n'"$USAGE" && exit ;;
 				esac
 			# done
