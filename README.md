@@ -1,8 +1,8 @@
 # Bashpack
 
-Bashpack is a user-friendly Linux toolbox.
+Bashpack is a **user-friendly Linux toolbox**.
 
-It has been designed for unexperimented Linux users for their day to day tasks and also for IT teams who needs to ensure security on their Linux laptop park.
+It has been designed for unexperimented Linux users for their **day to day tasks** and also for IT teams who needs to ensure security on their **Linux laptop** park.
 
 You can easily setup automations with the differents options.
 
