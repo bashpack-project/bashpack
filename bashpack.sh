@@ -26,7 +26,7 @@
 #URL="http://localhost"													# for local web server							
 URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# for Github
 # URL="https://github.com/bashpack-project/bashpack/archive/refs/heads"	# for Github
-VERSION="0.2.16"
+VERSION="0.2.15"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -294,9 +294,9 @@ delete_all() {
 # - download_cli <n.n.n>
 download_cli() {
 	
-	local archive_name="$NAME_LOWERCASE-${1}.tar.gz"	# for basic web server
-	local archive_url="$URL/$archive_name"				# for basic web server
-	# local archive_url=${1}								# for Github
+	# local archive_name="$NAME_LOWERCASE-${1}.tar.gz"	# for basic web server
+	# local archive_url="$URL/$archive_name"				# for basic web server
+	local archive_url=${1}								# for Github
 
 
 	# Prepare tmp directory
