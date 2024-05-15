@@ -27,7 +27,7 @@
 URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# for Github
 # URL="https://github.com/bashpack-project/bashpack/archive/refs/heads"	# for Github
 
-VERSION="0.2.15"
+VERSION="0.2.16"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
