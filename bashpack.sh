@@ -1,19 +1,19 @@
 #!/bin/bash
 
 # MIT License
-#
+
 # Copyright (c) 2024 Geoffrey Gontard
-#
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#
+
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-#
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -23,11 +23,9 @@
 # SOFTWARE.
 
 
-
-
-# Do not set a ending "/" at the URL unless it will not work
-URL="https://github.com/bashpack-project/bashpack/archive/refs/tags"
-VERSION="0.2.14"
+#URL="http://localhost"													# for local web server							
+URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# for Github
+VERSION="0.2.15"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -287,9 +285,10 @@ delete_systemd() {
 # - download_cli <latest>
 # - download_cli <n.n.n>
 download_cli() {
+	
 	#local archive_name="$NAME_LOWERCASE-${1}.tar.gz"	# for basic web server
-	local archive_name="${1}.tar.gz"					# for Github
-	local archive_url="$URL/$archive_name"
+	#local archive_url="$URL/$archive_name"				# for basic web server
+	local archive_url=${1}								# for Github
 
 
 	# Prepare tmp directory
@@ -442,7 +441,7 @@ update_cli() {
 	# Download a first time the latest version from the "main" branch to be able to launch the installation script from it to get latest modifications.
 	# Ths install function will download the well-named archive with the version name
 	# (so yes, it means that we download the CLI twice, and it's why we don't display the output here)
-	download_cli "main" 2>&1 > /dev/null
+	download_cli "$URL" 2>&1 > /dev/null
 
 	# Delete current installed version to clean all old files
 	delete_cli
@@ -465,7 +464,7 @@ update_cli() {
 install_cli() {
 	detect_cli
 
-	download_cli $VERSION
+	download_cli "$URL/$VERSION"
 
 	create_cli
 }
