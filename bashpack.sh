@@ -26,7 +26,7 @@
 
 
 # Do not set a ending "/" at the URL unless it will not work
-URL="https://github.com/bashpack-project/bashpack"
+URL="https://github.com/bashpack-project/bashpack/blob/main/"
 VERSION="0.2.14"
 
 NAME="Bashpack"
