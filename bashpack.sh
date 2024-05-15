@@ -25,7 +25,7 @@
 
 #URL="http://localhost"													# for local web server							
 URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# for Github
-VERSION="0.2.16"
+VERSION="0.2.15"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -441,10 +441,12 @@ update_cli() {
 	# Download a first time the latest version from the "main" branch to be able to launch the installation script from it to get latest modifications.
 	# Ths install function will download the well-named archive with the version name
 	# (so yes, it means that we download the CLI twice, and it's why we don't display the output here)
-	download_cli "$URL" 2>&1 > /dev/null
+	download_cli "$URL"
+	# download_cli "$URL" 2>&1 > /dev/null
 
 	# Delete current installed version to clean all old files
-	delete_cli
+	# delete_systemd
+	# delete_cli
 
 	# Execute the install_cli function of the script downloaded in /tmp
 	exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
