@@ -28,7 +28,7 @@
 URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# for Github tarball
 # URL="https://github.com/bashpack-project/bashpack/archive/refs/heads"	# for Github main branch
 
-VERSION="0.2.18"
+VERSION="0.2.19"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -283,8 +283,19 @@ delete_systemd() {
 
 
 
+# Helper function to assemble all functions that delete something
 delete_all() {
 	delete_systemd && delete_cli
+}
+
+
+
+
+# Helper function to extract a .tar.gz archive
+# Usage : archive_extract <archive> <directory>
+archive_extract() {
+	# "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
+	tar -xf ${1} -C ${2} --strip-components 1 
 }
 
 
@@ -312,19 +323,19 @@ download_cli() {
 	if [[ $(exists_command "curl") = "exists" ]]; then
 		echo -n "with curl...   "
 		loading "curl -sL $archive_url -o $archive_tmp"
+
+		archive_extract $archive_tmp $archive_dir_tmp
 		
 	# Try to download with wget if exists
 	elif [[ $(exists_command "wget") = "exists" ]]; then
 		echo -n "with wget...  "
 		loading "wget -q $archive_url -O $archive_tmp"
 		
+		archive_extract $archive_tmp $archive_dir_tmp
+
 	else
 		error_file_not_downloaded $archive_name $archive_url
 	fi
-
-	# "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
-	tar -xf $archive_tmp -C $archive_dir_tmp --strip-components 1 
-
 }
 
 
