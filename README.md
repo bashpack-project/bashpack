@@ -47,7 +47,7 @@ bp --help
 ```
 <br>
 
-**Builtin automations** are automatically configured with [Systemd](https://systemd.io/) on your system
+**Builtin automations** are automatically configured with [Systemd](https://systemd.io/) on your system.
 
 <br>
 
