@@ -28,7 +28,7 @@
 URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# for Github tarball
 # URL="https://github.com/bashpack-project/bashpack/archive/refs/heads"	# for Github main branch
 
-VERSION="0.2.20"
+VERSION="0.2.21"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -115,7 +115,7 @@ fi
 
 
 # Loading animation so we know the process has not crashed
-# Usage : loading "<command that takes time>"
+# Usage: loading "<command that takes time>"
 loading() {
 	${1} & local pid=$!
 	local loader="\|/-"
@@ -137,7 +137,7 @@ export -f loading
 
 
 # Function to search for commands on the system.
-# Usage : exists_command <command>
+# Usage: exists_command <command>
 exists_command() {
 	local command=${1}
 
@@ -153,7 +153,7 @@ export -f exists_command
 
 
 # Error function.
-# Usage : error_file_not_downloaded <file_url>
+# Usage: error_file_not_downloaded <file_url>
 error_file_not_downloaded() {
 	echo ""
 	echo "Error: ${1} not found."
@@ -201,8 +201,16 @@ COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
 
 
 # Delete the installed command from the system
+# Usages: 
+# - delete_cli
+# - delete_cli "exclude_main"
 delete_cli() {
 	
+	# $exclude_main permit to not delete main command "bp" and "bashpack".
+	#	(i) This is useful in case when the CLI tries to update itself, but the latest release is not accessible.
+	#	/!\ Unless it can happen that the CLI destroys itself, and then the user must reinstall it.
+	#	(i) Any new update will overwrite the "bp" and "bashpack" command, so it doesn't matter to not delete it during update.
+	#	(i) It's preferable to delete all others files since updates can remove files from olders releases 
 	local exclude_main=${1}
 
 	if [[ $exclude_main = "exclude_main" ]]; then
@@ -294,15 +302,21 @@ delete_systemd() {
 
 
 # Helper function to assemble all functions that delete something
+# Usages: 
+# - delete_all
+# - delete_all "exclude_main" (Please check the explaination of $exclude_main at the delete_cli() function declaration)
 delete_all() {
-	delete_systemd && delete_cli 
+	
+	local exclude_main=${1}
+
+	delete_systemd && delete_cli ${1}
 }
 
 
 
 
 # Helper function to extract a .tar.gz archive
-# Usage : archive_extract <archive> <directory>
+# Usage: archive_extract <archive> <destination directory>
 archive_extract() {
 	# "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
 	tar -xf ${1} -C ${2} --strip-components 1 
@@ -312,7 +326,7 @@ archive_extract() {
 
 
 # Download releases archives from the repository
-# Usages :
+# Usages:
 # - download_cli <latest>
 # - download_cli <n.n.n>
 download_cli() {
@@ -446,8 +460,10 @@ create_cli() {
 
 
 		# Clear temporary files & directories
-		rm -f $archive_tmp
-		rm -rf $archive_dir_tmp
+		# rm -f $archive_tmp
+		# rm -rf $archive_dir_tmp
+		rm -rf "$dir_tmp/$NAME_LOWERCASE*"		# Cleaning also temp files created during update process since create_cli is not called directly during update.
+
 
 	else
 		error_file_not_downloaded $archive_url
@@ -480,10 +496,9 @@ update_cli() {
 	#download_cli "$URL" 2>&1 > /dev/null					# Github latest tarball
 	download_cli "$URL"										# Github latest tarball
 	
-	# # Delete current installed version to clean all old files
-	# /!\ Deactivated for now because if we delete the last release from Github, the CLI is just beeing removed from the system...
-	# delete_all
-	delete_systemd && delete_cli exclude_main
+	# Delete current installed version to clean all old files
+	delete_all exclude_main
+	#delete_systemd && delete_cli exclude_main
 
 	echo ""
 
@@ -516,7 +531,7 @@ install_cli() {
 
 # The options (except --help) must be called with root
 case "$1" in
-	-i|--self-install)	install_cli ;;
+	-i|--self-install)	install_cli ;;		# Critical option, see the comments at function declaration for more info
 	-u|--self-update)	update_cli ;;		# Critical option, see the comments at function declaration for more info
 	--self-delete)		delete_all ;;
 	man)				$COMMAND_MAN ;;
