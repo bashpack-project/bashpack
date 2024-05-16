@@ -245,7 +245,11 @@ delete_cli() {
 	echo ""
 
 	if [ -f $file_main ]; then
-		echo "Error: $NAME $VERSION located at $(which $NAME_ALIAS) has not been uninstalled."
+		if [[ $exclude_main = "exclude_main" ]]; then
+			echo "$NAME $VERSION has been uninstalled ($file_main has been kept)."
+		else
+			echo "Error: $NAME $VERSION located at $(which $NAME_ALIAS) has not been uninstalled." && exit
+		fi
 	else
 		echo "Success! $NAME $VERSION has been uninstalled."
 	fi
