@@ -28,7 +28,7 @@
 URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# for Github tarball
 # URL="https://github.com/bashpack-project/bashpack/archive/refs/heads"	# for Github main branch
 
-VERSION="0.2.19"
+VERSION="0.2.20"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -62,15 +62,18 @@ else
 				&&		echo "Options:" \
 				&&		echo " -y, --assume-yes 	enable automatic installations without asking during the execution." \
 				&&		echo "     --ask    		ask to manually write your choice about updates installations confirmations." \
+				&&		echo "     --get-logs   	display systemd logs." \
+				&&		echo "     --when   		display systemd next service cycle." \
 				&&		echo "" \
 				&&		echo "" \
 				&&		exit ;;
-				esac
+			esac
 		;;
 		--help) echo "$USAGE" \
 		&&		echo "" \
 		&&		echo "$NAME is a user-friendly Linux toolbox." \
-		&&		echo "It has been designed for unexperimented Linux users and also for IT teams who needs to ensure security on their Linux laptop park." \
+		&&		echo "It has been designed for helping Linux users on their day to day tasks." \
+		&&		echo "It can also be useful for IT teams who needs to ensure security on their Linux park." \
 		&&		echo "You can easily setup automations with the differents options." \
 		&&		echo "" \
 		&&		echo "Features:" \
@@ -84,8 +87,6 @@ else
 		&&		echo " -i, --self-install	install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
 		&&		echo " -u, --self-update	update your current $NAME installation to the latest available version." \
 		&&		echo "     --self-delete	delete $NAME from your system." \
-		&&		echo "     --get-logs   	display systemd logs." \
-		&&		echo "     --when   		display systemd next service cycle." \
 		&&		echo "     --help   		display this information." \
 		&&		echo "     --version		display version." \
 		&&		echo "" \
@@ -202,12 +203,21 @@ COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
 # Delete the installed command from the system
 delete_cli() {
 	
-	local files=(
-		$dir_src
-		$file_autocompletion
-		$file_main_alias
-		$file_main
-	)
+	local exclude_main=${1}
+
+	if [[ $exclude_main = "exclude_main" ]]; then
+		local files=(
+			$dir_src
+			$file_autocompletion
+		)
+	else
+		local files=(
+			$dir_src
+			$file_autocompletion
+			$file_main_alias
+			$file_main
+		)
+	fi
 	
 
 	if [[ $(exists_command "$NAME_ALIAS") != "exists" ]]; then
@@ -285,7 +295,7 @@ delete_systemd() {
 
 # Helper function to assemble all functions that delete something
 delete_all() {
-	delete_systemd && delete_cli
+	delete_systemd && delete_cli 
 }
 
 
@@ -473,6 +483,9 @@ update_cli() {
 	# # Delete current installed version to clean all old files
 	# /!\ Deactivated for now because if we delete the last release from Github, the CLI is just beeing removed from the system...
 	# delete_all
+	delete_systemd && delete_cli exclude_main
+
+	echo ""
 
 	# Execute the install_cli function of the script downloaded in /tmp
 	exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
