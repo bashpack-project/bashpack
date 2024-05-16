@@ -113,25 +113,25 @@ fi
 
 
 
-# --- Update APT packages ---
-section_title=""$'\n'">>> APT"
+# # --- Update APT packages ---
+# section_title=""$'\n'">>> APT"
 
-if [[ $(exists_command "apt") = "exists" ]]; then
-	echo "$section_title"
+# if [[ $(exists_command "apt") = "exists" ]]; then
+# 	echo "$section_title"
 
-	apt update
-	apt install --fix-broken $install_confirmation
-	apt full-upgrade $install_confirmation
+# 	apt update
+# 	apt install --fix-broken $install_confirmation
+# 	apt full-upgrade $install_confirmation
 
-	# Ensure to delete all old packages & their configurations
-	apt autopurge $install_confirmation
+# 	# Ensure to delete all old packages & their configurations
+# 	apt autopurge $install_confirmation
 	
-	# Just repeat to check if everything is ok
-	apt full-upgrade $install_confirmation
+# 	# Just repeat to check if everything is ok
+# 	apt full-upgrade $install_confirmation
 
-	echo ""
-	echo ""
-fi
+# 	echo ""
+# 	echo ""
+# fi
 
 
 
@@ -142,9 +142,10 @@ section_title=""$'\n'">>> Snapcraft"
 # Usage : upgrade_with_snapcraft <-y>
 upgrade_with_snapcraft() {
 	# List available updates & ask for update if found any (or auto update if <-y>).
-	if [[ $(snap refresh --list | grep -q "All snaps up to date.") ]]; then
-		echo "No update found."
-	else
+	if [[ $(snap refresh --list | grep -v "All snaps up to date.") ]]; then
+
+		snap refresh --list
+
 		if [[ ${1} = "-y" ]]; then
 			snap refresh
 		else
