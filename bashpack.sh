@@ -28,7 +28,7 @@
 URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# for Github tarball
 # URL="https://github.com/bashpack-project/bashpack/archive/refs/heads"	# for Github main branch
 
-VERSION="0.2.21"
+VERSION="0.2.22"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -466,7 +466,7 @@ create_cli() {
 		# Clear temporary files & directories
 		# rm -f $archive_tmp
 		# rm -rf $archive_dir_tmp
-		rm -rf "$dir_tmp/$NAME_LOWERCASE*"		# Cleaning also temp files created during update process since create_cli is not called directly during update.
+		rm -rf $dir_tmp/$NAME_LOWERCASE*		# Cleaning also temp files created during update process since create_cli is not called directly during update.
 
 
 	else
