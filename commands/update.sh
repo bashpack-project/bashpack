@@ -113,25 +113,25 @@ fi
 
 
 
-# # --- Update APT packages ---
-# section_title=""$'\n'">>> APT"
+# --- Update APT packages ---
+section_title=""$'\n'">>> APT"
 
-# if [[ $(exists_command "apt") = "exists" ]]; then
-# 	echo "$section_title"
+if [[ $(exists_command "apt") = "exists" ]]; then
+	echo "$section_title"
 
-# 	apt update
-# 	apt install --fix-broken $install_confirmation
-# 	apt full-upgrade $install_confirmation
+	apt update
+	apt install --fix-broken $install_confirmation
+	apt full-upgrade $install_confirmation
 
-# 	# Ensure to delete all old packages & their configurations
-# 	apt autopurge $install_confirmation
+	# Ensure to delete all old packages & their configurations
+	apt autopurge $install_confirmation
 	
-# 	# Just repeat to check if everything is ok
-# 	apt full-upgrade $install_confirmation
+	# Just repeat to check if everything is ok
+	apt full-upgrade $install_confirmation
 
-# 	echo ""
-# 	echo ""
-# fi
+	echo ""
+	echo ""
+fi
 
 
 
