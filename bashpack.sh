@@ -61,13 +61,13 @@ else
 				&&		echo "" \
 				&&		echo "Options:" \
 				&&		echo " -y, --assume-yes 	enable automatic installations without asking during the execution." \
-				&&		echo "     --ask    		ask to manually write your choice about updates installations confirmations." \	
+				&&		echo "     --ask    		ask to manually write your choice about updates installations confirmations." \
 				&&		echo "     --get-logs   	display systemd logs." \
 				&&		echo "     --when   		display systemd next service cycle." \
 				&&		echo "" \
 				&&		echo "" \
 				&&		exit ;;
-				esac
+			esac
 		;;
 		--help) echo "$USAGE" \
 		&&		echo "" \
