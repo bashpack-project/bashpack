@@ -152,12 +152,12 @@ export -f exists_command
 
 
 # Error function.
-# Usage : error_file_not_downloaded <file> <file_url>
+# Usage : error_file_not_downloaded <file_url>
 error_file_not_downloaded() {
-	local file=${1}
-	local file_url=${2}
-
-	echo "Error: $file not found. Can you reach $file_url ?"
+	echo ""
+	echo "Error: ${1} not found."
+	echo "Are curl or wget able to reach it from your system?"
+	echo ""
 }
 
 
@@ -309,7 +309,7 @@ download_cli() {
 	
 	#local archive_name="$NAME_LOWERCASE-${1}.tar.gz"	# for basic web server
 	#local archive_url="$URL/$archive_name"				# for basic web server
-	local archive_url=${1}								# for Github
+	local archive_url=${1}								# for Github taball
 
 
 	# Prepare tmp directory
@@ -334,7 +334,7 @@ download_cli() {
 		archive_extract $archive_tmp $archive_dir_tmp
 
 	else
-		error_file_not_downloaded $archive_name $archive_url
+		error_file_not_downloaded $archive_url
 	fi
 }
 
@@ -440,7 +440,7 @@ create_cli() {
 		rm -rf $archive_dir_tmp
 
 	else
-		error_file_not_downloaded $archive_tmp $archive_url
+		error_file_not_downloaded $archive_url
 	fi
 }
 
