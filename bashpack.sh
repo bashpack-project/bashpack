@@ -70,7 +70,8 @@ else
 		--help) echo "$USAGE" \
 		&&		echo "" \
 		&&		echo "$NAME is a user-friendly Linux toolbox." \
-		&&		echo "It has been designed for unexperimented Linux users and also for IT teams who needs to ensure security on their Linux laptop park." \
+		&&		echo "It has been designed for helping Linux users on their day to day tasks." \
+		&&		echo "It can also be useful for IT teams who needs to ensure security on their Linux park." \
 		&&		echo "You can easily setup automations with the differents options." \
 		&&		echo "" \
 		&&		echo "Features:" \
@@ -473,6 +474,8 @@ update_cli() {
 	# # Delete current installed version to clean all old files
 	# /!\ Deactivated for now because if we delete the last release from Github, the CLI is just beeing removed from the system...
 	# delete_all
+
+	echo ""
 
 	# Execute the install_cli function of the script downloaded in /tmp
 	exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
