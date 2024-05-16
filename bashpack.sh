@@ -28,7 +28,7 @@
 URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# for Github tarball
 # URL="https://github.com/bashpack-project/bashpack/archive/refs/heads"	# for Github main branch
 
-VERSION="0.2.19"
+VERSION="0.2.20"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -203,12 +203,21 @@ COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
 # Delete the installed command from the system
 delete_cli() {
 	
-	local files=(
-		$dir_src
-		$file_autocompletion
-		$file_main_alias
-		$file_main
-	)
+	local exclude_main=${1}
+
+	if [[ $exclude_main = "exclude_main" ]]; then
+		local files=(
+			$dir_src
+			$file_autocompletion
+		)
+	else
+		local files=(
+			$dir_src
+			$file_autocompletion
+			$file_main_alias
+			$file_main
+		)
+	fi
 	
 
 	if [[ $(exists_command "$NAME_ALIAS") != "exists" ]]; then
@@ -286,7 +295,7 @@ delete_systemd() {
 
 # Helper function to assemble all functions that delete something
 delete_all() {
-	delete_systemd && delete_cli
+	delete_systemd && delete_cli 
 }
 
 
@@ -474,6 +483,7 @@ update_cli() {
 	# # Delete current installed version to clean all old files
 	# /!\ Deactivated for now because if we delete the last release from Github, the CLI is just beeing removed from the system...
 	# delete_all
+	delete_systemd && delete_cli exclude_main
 
 	echo ""
 
