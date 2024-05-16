@@ -16,17 +16,7 @@ You can easily setup automations with the differents options.
 
 <br>
 
-## Usage
-**Commands & options** are listed with the command:
-```javascript
-bp --help
-```
-
-**Builtin automations** are automatically configured with [Systemd](https://systemd.io/) on your system
-
-<br>
-
-## Management steps
+## Quick start
 Copy/paste the following command blocks on your Linux terminal to manage your Bashpack installation.
 * _You must be sudo._
 * _Once installed, Bashpack will automatically update itself (it checks for updates once a day)._
@@ -50,7 +40,17 @@ sudo bp --self-delete
 
 <br>
 
-## Features details
+## Usage
+**Commands & options** are listed with the command:
+```javascript
+bp --help
+```
+<br>
+
+**Builtin automations** are automatically configured with [Systemd](https://systemd.io/) on your system
+
+<br>
+
 ### Unified Linux updates
 Launch an automatic update of everything on your system:
 ```javascript
@@ -65,8 +65,14 @@ Get logs from last update:
 sudo bp update --get-logs
 ```
 
+<br>
+
+
 ### Linux firewall security
 Incoming
+
+<br>
+
 
 ### Routes over VPN
 Incoming
