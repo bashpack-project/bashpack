@@ -61,7 +61,9 @@ else
 				&&		echo "" \
 				&&		echo "Options:" \
 				&&		echo " -y, --assume-yes 	enable automatic installations without asking during the execution." \
-				&&		echo "     --ask    		ask to manually write your choice about updates installations confirmations." \
+				&&		echo "     --ask    		ask to manually write your choice about updates installations confirmations." \	
+				&&		echo "     --get-logs   	display systemd logs." \
+				&&		echo "     --when   		display systemd next service cycle." \
 				&&		echo "" \
 				&&		echo "" \
 				&&		exit ;;
@@ -85,8 +87,6 @@ else
 		&&		echo " -i, --self-install	install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
 		&&		echo " -u, --self-update	update your current $NAME installation to the latest available version." \
 		&&		echo "     --self-delete	delete $NAME from your system." \
-		&&		echo "     --get-logs   	display systemd logs." \
-		&&		echo "     --when   		display systemd next service cycle." \
 		&&		echo "     --help   		display this information." \
 		&&		echo "     --version		display version." \
 		&&		echo "" \
