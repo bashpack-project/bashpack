@@ -23,9 +23,10 @@
 # SOFTWARE.
 
 
+
 #URL="http://localhost"													# for local web server							
-URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# for Github
-# URL="https://github.com/bashpack-project/bashpack/archive/refs/heads"	# for Github
+URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# for Github tarball
+# URL="https://github.com/bashpack-project/bashpack/archive/refs/heads"	# for Github main branch
 
 VERSION="0.2.18"
 
@@ -41,7 +42,7 @@ export yes="@(yes|Yes|yEs|yeS|YEs|YeS|yES|YES|y|Y)"
 
 
 
-# The --help option can be called without root
+# Options that can be called without root
 # Display usage in case of empty option
 if [[ -z "$@" ]]; then
 	echo "$USAGE"
@@ -295,8 +296,8 @@ delete_all() {
 # - download_cli <n.n.n>
 download_cli() {
 	
-	# local archive_name="$NAME_LOWERCASE-${1}.tar.gz"	# for basic web server
-	# local archive_url="$URL/$archive_name"				# for basic web server
+	#local archive_name="$NAME_LOWERCASE-${1}.tar.gz"	# for basic web server
+	#local archive_url="$URL/$archive_name"				# for basic web server
 	local archive_url=${1}								# for Github
 
 
