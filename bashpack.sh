@@ -451,12 +451,12 @@ create_cli() {
 update_cli() {
 	# Download a first time the latest version from the "main" branch to be able to launch the installation script from it to get latest modifications.
 	# Ths install function will download the well-named archive with the version name
-	# (so yes, it means that we download the CLI twice, and it's why we don't display the output here)
+	# (so yes, it means that the CLI is downloaded twice)
 	
 	#download_cli "main"									# Github main branch
 	#download_cli "main" 2>&1 > /dev/null					# Github main branch
-	download_cli "$URL" 2>&1 > /dev/null					# Github latest tarball
-	#download_cli "$URL"									# Github latest tarball
+	#download_cli "$URL" 2>&1 > /dev/null					# Github latest tarball
+	download_cli "$URL"										# Github latest tarball
 	
 	# # Delete current installed version to clean all old files
 	# /!\ Deactivated for now because if we delete the last release from Github, the CLI is just beeing removed from the system...

@@ -50,7 +50,8 @@ sudo bp --self-delete
 
 <br>
 
-## Unified Linux updates
+## Features details
+### Unified Linux updates
 Launch an automatic update of everything on your system:
 ```javascript
 sudo bp update -y
@@ -63,5 +64,11 @@ Get logs from last update:
 ```javascript
 sudo bp update --get-logs
 ```
+
+### Linux firewall security
+Incoming
+
+### Routes over VPN
+Incoming
 
 <br>
