@@ -119,6 +119,7 @@ section_title=""$'\n'">>> APT"
 if [[ $(exists_command "apt") = "exists" ]]; then
 	echo "$section_title"
 
+	dpkg --configure -a
 	apt update
 	apt install --fix-broken $install_confirmation
 	apt full-upgrade $install_confirmation
