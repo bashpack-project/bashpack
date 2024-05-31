@@ -20,7 +20,7 @@ You can easily setup **automations** with the differents **options**.
 ## Quick start
 Copy/paste the following command blocks on your Linux terminal to manage your Bashpack installation.
 * _You must be sudo._
-* _[Systemd](https://systemd.io/) installations only: Once installed, Bashpack will automatically update itself (it checks for updates once a day)._
+* _Once installed, Bashpack will automatically update itself once a day (**[Systemd](https://systemd.io/) installations only**)._
 
 **Install**
 ```javascript
@@ -47,10 +47,9 @@ sudo bp --self-delete
 ```javascript
 bp --help
 ```
-<br>
-
 
 <br>
+
 
 ### Unified Linux updates
 Launch a pre-validated update of everything on your system:
@@ -58,7 +57,8 @@ Launch a pre-validated update of everything on your system:
 sudo bp update -y
 ```
 
-[Systemd](https://systemd.io/) installations only:
+**[Systemd](https://systemd.io/) installations only:**
+
 Check next update:
 ```javascript
 sudo bp update --when
