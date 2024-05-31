@@ -26,9 +26,8 @@
 
 #URL="http://localhost"													# for local web server							
 URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# for Github tarball
-# URL="https://github.com/bashpack-project/bashpack/archive/refs/heads"	# for Github main branch
 
-VERSION="0.2.23"
+VERSION="0.2.24"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -464,8 +463,6 @@ create_cli() {
 
 
 		# Clear temporary files & directories
-		# rm -f $archive_tmp
-		# rm -rf $archive_dir_tmp
 		rm -rf $dir_tmp/$NAME_LOWERCASE*		# Cleaning also temp files created during update process since create_cli is not called directly during update.
 
 
@@ -495,14 +492,12 @@ update_cli() {
 	# Ths install function will download the well-named archive with the version name
 	# (so yes, it means that the CLI is downloaded twice)
 	
-	#download_cli "main"									# Github main branch
-	#download_cli "main" 2>&1 > /dev/null					# Github main branch
+
 	#download_cli "$URL" 2>&1 > /dev/null					# Github latest tarball
 	download_cli "$URL"										# Github latest tarball
 	
 	# Delete current installed version to clean all old files
 	delete_all exclude_main
-	#delete_systemd && delete_cli exclude_main
 
 	echo ""
 
@@ -525,7 +520,6 @@ install_cli() {
 	detect_cli
 
 	download_cli "$URL/$VERSION"		# Github latest tarball
-	#download_cli $VERSION				# Github main branch
 
 	create_cli
 }
