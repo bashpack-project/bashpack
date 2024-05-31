@@ -79,7 +79,3 @@ Incoming
 Incoming
 
 <br>
-
-
-## Disclaimer
-For now, Bashpack is not POSIX.
