@@ -6,6 +6,7 @@ It has been designed for helping **Linux** users on their **day to day tasks**.
 It can also be useful for IT teams who needs to ensure security on their Linux park.
 
 You can easily setup automations with the differents options.
+
 **Builtin automations** are automatically configured with [Systemd](https://systemd.io/).
 
 <br>
@@ -54,7 +55,9 @@ bp --help
 <br>
 
 ### Unified Linux updates
-Launch an automatic update of everything on your system:
+If your system is running with [Systemd](https://systemd.io/), updates are automatically running under **bashpack-updates.service/timer**.
+
+Launch an pre-validate update of everything on your system:
 ```javascript
 sudo bp update -y
 ```
