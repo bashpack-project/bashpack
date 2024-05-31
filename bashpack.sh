@@ -24,8 +24,7 @@
 
 
 
-#URL="http://localhost"													# for local web server							
-URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# for Github tarball
+URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# Github latest tarball
 
 VERSION="0.2.24"
 
@@ -70,18 +69,6 @@ else
 		;;
 		--help) echo "$USAGE" \
 		&&		echo "" \
-		&&		echo "$NAME is a user-friendly Linux toolbox." \
-		&&		echo "It has been designed for helping Linux users on their day to day tasks." \
-		&&		echo "It can also be useful for IT teams who needs to ensure security on their Linux park." \
-		&&		echo "You can easily setup automations with the differents options." \
-		&&		echo "" \
-		&&		echo "Features:" \
-		&&		echo " (available)	Unified Linux updates (packages)." \
-		&&		echo " (incoming)	Unified Linux updates (firmwares)." \
-		&&		echo " (incoming)	Linux firewall security (close ports with nftables - Docker compatible)." \
-		&&		echo " (incoming)	Routes over VPN to one or many points (OpenVPN compatible)." \
-		&&		echo "" \
-		&&		echo "" \
 		&&		echo "Options:" \
 		&&		echo " -i, --self-install	install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
 		&&		echo " -u, --self-update	update your current $NAME installation to the latest available version." \
@@ -89,13 +76,11 @@ else
 		&&		echo "     --help   		display this information." \
 		&&		echo "     --version		display version." \
 		&&		echo "" \
-		&&		echo "" \
 		&&		echo "Commands:" \
 		&&		echo " update [OPTION]	use '$NAME_ALIAS update --help' for the command options." \
 		&&		echo "" \
 		&&		echo "" \
-		&&		echo "Written in Bash, and it's a pack." \
-		&&		echo "Version $VERSION" \
+		&&		echo "$NAME $VERSION" \
 		&&		exit ;;
 	esac
 fi
@@ -330,14 +315,11 @@ archive_extract() {
 
 # Download releases archives from the repository
 # Usages:
-# - download_cli <latest>
-# - download_cli <n.n.n>
+# - download_cli <url of latest>
+# - download_cli <url of n.n.n>
 download_cli() {
 	
-	#local archive_name="$NAME_LOWERCASE-${1}.tar.gz"	# for basic web server
-	#local archive_url="$URL/$archive_name"				# for basic web server
-	local archive_url=${1}								# for Github taball
-
+	local archive_url=${1}
 
 	# Prepare tmp directory
 	rm -rf $archive_dir_tmp
@@ -491,10 +473,7 @@ update_cli() {
 	# Download a first time the latest version from the "main" branch to be able to launch the installation script from it to get latest modifications.
 	# Ths install function will download the well-named archive with the version name
 	# (so yes, it means that the CLI is downloaded twice)
-	
-
-	#download_cli "$URL" 2>&1 > /dev/null					# Github latest tarball
-	download_cli "$URL"										# Github latest tarball
+	download_cli "$URL"
 	
 	# Delete current installed version to clean all old files
 	delete_all exclude_main
@@ -519,7 +498,7 @@ update_cli() {
 install_cli() {
 	detect_cli
 
-	download_cli "$URL/$VERSION"		# Github latest tarball
+	download_cli "$URL/$VERSION"
 
 	create_cli
 }
