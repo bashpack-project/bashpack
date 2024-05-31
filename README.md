@@ -5,9 +5,7 @@ Bashpack is a **user-friendly Linux toolbox**.
 It has been designed for helping **Linux** users on their **day to day tasks**.
 It can also be useful for IT teams who needs to ensure security on their Linux park.
 
-You can easily setup automations with the differents options.
-
-**Builtin automations** are automatically configured with [Systemd](https://systemd.io/).
+You can easily setup **automations** with the differents **options**.
 
 <br>
 
