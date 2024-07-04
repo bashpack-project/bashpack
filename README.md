@@ -10,7 +10,7 @@ You can easily setup **automations** with the differents **options**.
 <br>
 
 ## Features
-* Unified Linux updates ([APT](https://fr.wikipedia.org/wiki/Advanced_Packaging_Tool), [Snapcraft](https://snapcraft.io/)* packages & firmwares with [fwupd](https://github.com/fwupd/fwupd)*).
+* Unified Linux updates ([APT](https://fr.wikipedia.org/wiki/Advanced_Packaging_Tool), [Snapcraft](https://snapcraft.io/)* & firmwares with [fwupd](https://github.com/fwupd/fwupd)*).
 * (incoming)     Secure Linux firewall (close ports with [nftables](https://wiki.nftables.org/wiki-nftables/index.php/Main_Page) ([Docker](https://www.docker.com/) compatible)).
 * (incoming)     Routes over VPN to one or many points ([OpenVPN](https://openvpn.net/) compatible).
 
