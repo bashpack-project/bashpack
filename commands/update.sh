@@ -170,36 +170,32 @@ fi
 
 
 
-# # NEED TO RUN SOME TESTS BEFORE MAKE THIS PUBLIC
-# # --- Update Firmwares (with fwupd) ---
-# section_title=""$'\n'">>> fwupd"
+# --- Update Firmwares (with fwupd) ---
+section_title=""$'\n'">>> fwupd"
 
-# # Usage : upgrade_with_fwupd <-y>
-# upgrade_with_fwupd() {
-# 	echo "Upgrading with fwupd...  "
+# Checking if the system is bare-metal (and not virtualized) with the systemd-detect-virt command.
+# If not bare-metal, firmwares will not be updated.
+if [[ $(exists_command "systemd-detect-virt") = "exists" ]]; then
+        if [[ $(systemd-detect-virt) = "none" ]]; then
 
-# 	# Ask for confirmation or auto update if <-y>).
-# 	if  [[ ${1} != "-y" ]]; then
-# 		read -p "$continue_question" install_confirmation_fwupd
-# 		if [[ $install_confirmation_fwupd = $yes ]]; then
-# 			loading "fwupdmgr upgrade"
-# 		fi
-# 	else
-# 		loading "fwupdmgr upgrade"
-# 	fi
+                # Process to firmware updates with fwupdmgr
+                if [[ $(exists_command "fwupdmgr") = "exists" ]]; then
+                        echo "$section_title"
+                        fwupdmgr upgrade $install_confirmation
+                else
+                        echo "$section_title"
+                        install_package apt fwupd
 
-# 	echo ""
-# 	echo ""
-# }
+                        if [[ $(exists_command "fwupdmgr") = "exists" ]]; then
+                                fwupdmgr upgrade $install_confirmation
+                        fi
+                fi
+        fi
+else
+        echo "Error: can't detect if your system is bare-metal with the command 'systemd-detect-virt'. Will not upgrade firmwares."
+fi
 
-# if [[ $(exists_command "fwupdmgr") = "exists" ]]; then
-# 	echo "$section_title"
-# 	upgrade_with_fwupd $install_confirmation
-# else
-# 	echo "$section_title"
-# 	install_package apt fwupd
-# 	upgrade_with_fwupd $install_confirmation
-# fi
+
 
 
 # Properly exit

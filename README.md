@@ -10,10 +10,15 @@ You can easily setup **automations** with the differents **options**.
 <br>
 
 ## Features
-* (available)    Unified Linux updates ([APT](https://fr.wikipedia.org/wiki/Advanced_Packaging_Tool) and [Snapcraft](https://snapcraft.io/) packages (Snapcraft is not installed with this script, it just handled if already used)).
-* (incoming)     Unified Linux updates (firmwares with [fwupd](https://github.com/fwupd/fwupd)).
+* Unified Linux updates ([APT](https://fr.wikipedia.org/wiki/Advanced_Packaging_Tool), [Snapcraft](https://snapcraft.io/)* & firmwares with [fwupd](https://github.com/fwupd/fwupd)*).
 * (incoming)     Secure Linux firewall (close ports with [nftables](https://wiki.nftables.org/wiki-nftables/index.php/Main_Page) ([Docker](https://www.docker.com/) compatible)).
 * (incoming)     Routes over VPN to one or many points ([OpenVPN](https://openvpn.net/) compatible).
+
+<br>
+
+\* _Snapcraft is not installed with this script, it's just handled if already used._
+
+\* _fwupd is installed only if your system is bare-metal._
 
 <br>
 
