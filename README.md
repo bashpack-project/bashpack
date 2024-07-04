@@ -15,8 +15,10 @@ You can easily setup **automations** with the differents **options**.
 * (incoming)     Routes over VPN to one or many points ([OpenVPN](https://openvpn.net/) compatible).
 
 <br>
+
 * _Snapcraft is not installed with this script, it's just handled if already used._
 * _fwupd is installed only if your system is bare-metal._
+
 <br>
 
 ## Quick start
