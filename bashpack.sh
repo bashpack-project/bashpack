@@ -26,7 +26,7 @@
 
 URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# Github latest tarball
 
-VERSION="0.2.24"
+VERSION="0.3.0"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
