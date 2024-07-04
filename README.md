@@ -17,7 +17,6 @@ You can easily setup **automations** with the differents **options**.
 <br>
 
 \* _Snapcraft is not installed with this script, it's just handled if already used._
-
 \* _fwupd is installed only if your system is bare-metal._
 
 <br>
