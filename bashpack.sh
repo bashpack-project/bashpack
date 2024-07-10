@@ -24,7 +24,7 @@
 
 
 
-URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# Github latest tarball
+URL="https://api.github.com/repos/bashpack-project/bashpack-unstable/tarball"	# Github latest tarball
 
 VERSION="0.3.0"
 
