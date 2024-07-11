@@ -41,15 +41,18 @@ get_config_value() {
 	local parameter=${2}
 
 
-	#TO DO
+	while read -r line; do
 
-	if [[ "$parameter" =~ ^([^=]+)=([^=]+)$ ]]; 
-    then 
-        echo "${BASH_REMATCH[1]}=${BASH_REMATCH[2]}"; 
-    else 
-        echo ""
-    fi
+		# Test first word (= parameter name)...
+		if [[ "$parameter" == (*"$line"* | cut -d "=" -f 1)]]; then
+			# ... to get the second word (= value of the parameter)
+			value=$("$line" | cut -d "=" -f 2 | tr -d " ")
+
+			echo "[debug] $file -> $parameter = $value"
+		fi
+	done < "$file"
 }
+export -f get_config_value
 
 
 
@@ -196,7 +199,8 @@ file_config="$NAME_LOWERCASE"_config""
 
 
 BASE_URL="https://api.github.com/repos/bashpack-project"
-REPOSITORY="unstable"
+# REPOSITORY="unstable"
+REPOSITORY=$(get_config_value $file_config "repository")
 if [[ $REPOSITORY = "main" ]]; then
 	URL="$BASE_URL/bashpack"
 
@@ -471,7 +475,7 @@ create_cli() {
 		# Checking if the config directory exists and create it if doesn't exists
 		echo "Installing configuration..."
 		if [ ! -d $dir_config ]; then
-			echo "[install] Error: $dir_config not found. Creating it..."
+			echo "[install] $dir_config not found. Creating it..."
 			mkdir $dir_config
 		fi
 
