@@ -548,8 +548,6 @@ update_cli() {
 		# Delete current installed version to clean all old files
 		delete_all exclude_main
 
-		echo ""
-
 		# Execute the install_cli function of the script downloaded in /tmp
 		exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
 	fi
