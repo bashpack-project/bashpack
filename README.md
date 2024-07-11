@@ -1,6 +1,6 @@
-**This is the unstable repository of Bashpack.**
-
-**Stable releases are available at https://github.com/bashpack-project/bashpack**
+> [!CAUTION]
+> **This is the unstable repository of Bashpack.**
+> **Stable releases are available at https://github.com/bashpack-project/bashpack**
 
 # Bashpack unstable
 
@@ -17,10 +17,7 @@ curl -sL https://raw.githubusercontent.com/bashpack-project/bashpack-unstable/ma
 sudo bp --self-delete
 ```
 
-<br>
-
-## Usage
-**Commands & options** are listed with the command:
+**Usage**
 ```javascript
 bp --help
 ```
