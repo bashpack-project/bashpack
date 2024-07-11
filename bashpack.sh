@@ -164,6 +164,7 @@ dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
 dir_src="/usr/local/src/$NAME_LOWERCASE"
 dir_systemd="/lib/systemd/system"
+dir_config="/etc/$NAME_LOWERCASE"
 
 archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
 archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
@@ -184,6 +185,8 @@ file_systemd_update="$NAME_LOWERCASE-updates"
 file_systemd_timers=(
 	"$file_systemd_update.timer"
 )
+
+file_config="$NAME_LOWERCASE"_config""
 
 
 
@@ -212,11 +215,13 @@ delete_cli() {
 	if [[ $exclude_main = "exclude_main" ]]; then
 		local files=(
 			$dir_src
+			$dir_config
 			$file_autocompletion
 		)
 	else
 		local files=(
 			$dir_src
+			$dir_config
 			$file_autocompletion
 			$file_main_alias
 			$file_main
@@ -403,7 +408,7 @@ create_cli() {
 		# Checking if the autocompletion directory exists and create it if doesn't exists
 		echo "Installing autocompletion..."
 		if [ ! -d $dir_autocompletion ]; then
-			echo "Error: $dir_autocompletion not found. Creating it... "
+			echo "[install] Error: $dir_autocompletion not found. Creating it..."
 			mkdir $dir_autocompletion
 		fi
 		cp "$archive_dir_tmp/bash_completion" $file_autocompletion
@@ -440,6 +445,24 @@ create_cli() {
 				fi
 			done
 		fi
+
+
+		# Config installation
+		# Checking if the config directory exists and create it if doesn't exists
+		echo "Installing configuration..."
+		if [ ! -d $dir_config ]; then
+			echo "[install] Error: $dir_config not found. Creating it..."
+			mkdir $dir_config
+		fi
+
+		if [ ! -f $file_config ]; then
+			echo "[install] Error: $file_config not found. Creating it... "
+			cp "$archive_dir_tmp/$file_config" "$dir_config/$file_config"
+		else
+			echo "[install] $file_config already exists. Leaving current values."
+		fi
+		chmod +r -R $dir_config
+
 
 
 		# Success message
@@ -517,7 +540,7 @@ update_cli() {
 install_cli() {
 	detect_cli
 
-	download_cli "$URL/$VERSION"
+	download_cli "$URL/tarball/$VERSION"
 
 	create_cli
 }
