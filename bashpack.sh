@@ -23,10 +23,22 @@
 # SOFTWARE.
 
 
+BASE_URL="https://api.github.com/repos/bashpack-project"
 
-URL="https://api.github.com/repos/bashpack-project/bashpack-unstable/tarball"	# Github latest tarball
+PUBLICATION="unstable"
 
-VERSION="0.3.0"
+if [[ $PUBLICATION = "main" ]]; then
+	URL="$BASE_URL/bashpack"
+
+elif [[ $PUBLICATION = "unstable" ]]; then
+	URL="$BASE_URL/bashpack-unstable"
+else 
+	echo "Error: repository not found at $URL."
+	echo "Please ensure that the publication parameter is configured with 'main' or 'unstable'."
+	exit
+fi
+
+VERSION="0.3.1"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -471,9 +483,18 @@ create_cli() {
 #			- Github latest tarball release is accessible from https://api.github.com/repos/bashpack-project/bashpack/tarball
 update_cli() {
 	# Download a first time the latest version from the "main" branch to be able to launch the installation script from it to get latest modifications.
-	# Ths install function will download the well-named archive with the version name
+	# The install function will download the well-named archive with the version name
 	# (so yes, it means that the CLI is downloaded twice)
-	download_cli "$URL"
+
+
+	# Testing if a new version exists to avoid reinstall if not
+	if [[ $(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4) = "$VERSION" ]]; then
+		echo "$NAME $VERSION is already installed."
+	else
+		download_cli "$URL/tarball"
+		# download_cli "$URL/bashpack-main.tar.gz"
+
+	fi
 	
 	# Delete current installed version to clean all old files
 	delete_all exclude_main
