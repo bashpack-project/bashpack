@@ -1,6 +1,6 @@
 > [!CAUTION]
-> **This is the unstable repository of Bashpack.**
-> **Stable releases are available at https://github.com/bashpack-project/bashpack**
+> **This is the unstable repository of Bashpack.**\
+> Stable releases are available at https://github.com/bashpack-project/bashpack
 
 # Bashpack unstable
 
