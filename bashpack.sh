@@ -23,20 +23,7 @@
 # SOFTWARE.
 
 
-BASE_URL="https://api.github.com/repos/bashpack-project"
 
-PUBLICATION="unstable"
-
-if [[ $PUBLICATION = "main" ]]; then
-	URL="$BASE_URL/bashpack"
-
-elif [[ $PUBLICATION = "unstable" ]]; then
-	URL="$BASE_URL/bashpack-unstable"
-else 
-	echo "Error: repository not found at $URL."
-	echo "Please ensure that the publication parameter is configured with 'main' or 'unstable'."
-	exit
-fi
 
 VERSION="0.3.1"
 
@@ -47,8 +34,26 @@ NAME_ALIAS="bp"
 USAGE="Usage: sudo $NAME_ALIAS [COMMAND] [OPTION]..."$'\n'"$NAME_ALIAS --help"
 
 
-export yes="@(yes|Yes|yEs|yeS|YEs|YeS|yES|YES|y|Y)"
+# Getting values stored in configuration files
+# Usage: read_config_value "<file>" "<parameter>"
+get_config_value() {
+	local file=${1}
+	local parameter=${2}
 
+
+	#TO DO
+
+	if [[ "$parameter" =~ ^([^=]+)=([^=]+)$ ]]; 
+    then 
+        echo "${BASH_REMATCH[1]}=${BASH_REMATCH[2]}"; 
+    else 
+        echo ""
+    fi
+}
+
+
+
+export yes="@(yes|Yes|yEs|yeS|YEs|YeS|yES|YES|y|Y)"
 
 
 
@@ -187,6 +192,21 @@ file_systemd_timers=(
 )
 
 file_config="$NAME_LOWERCASE"_config""
+
+
+
+BASE_URL="https://api.github.com/repos/bashpack-project"
+REPOSITORY="unstable"
+if [[ $REPOSITORY = "main" ]]; then
+	URL="$BASE_URL/bashpack"
+
+elif [[ $REPOSITORY = "unstable" ]]; then
+	URL="$BASE_URL/bashpack-unstable"
+else 
+	echo "Error: repository not found at $URL."
+	echo "Please ensure that the repository parameter is configured with 'main' or 'unstable' in $file_config."
+	exit
+fi
 
 
 
