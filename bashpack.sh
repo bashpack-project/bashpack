@@ -455,9 +455,10 @@ create_cli() {
 			mkdir $dir_config
 		fi
 
+		# Must testing if config file exists to avoid overwrite user customizations 
 		if [ ! -f $file_config ]; then
-			echo "[install] Error: $file_config not found. Creating it... "
-			cp "$archive_dir_tmp/$file_config" "$dir_config/$file_config"
+			echo "[install] $file_config not found. Creating it... "
+			cp "$archive_dir_tmp/config/$file_config" "$dir_config/$file_config"
 		else
 			echo "[install] $file_config already exists. Leaving current values."
 		fi
