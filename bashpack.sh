@@ -44,8 +44,8 @@ get_config_value() {
 	while read -r line; do
 
 		# Test first word (= parameter name)...
-		if [[ "$parameter" == $(*"$line"* | cut -d "=" -f 1) ]]; then
-		# if [[ "$parameter" == *"$line"* ]]; then
+		# if [[ "$parameter" == $(*"$line"* | cut -d "=" -f 1) ]]; then
+		if [[ "$parameter" == *"$line"* ]]; then
 			# ... to get the second word (= value of the parameter)
 			value=$("$line" | cut -d "=" -f 2 | tr -d " ")
 
@@ -201,7 +201,7 @@ file_config="$NAME_LOWERCASE"_config""
 
 BASE_URL="https://api.github.com/repos/bashpack-project"
 # REPOSITORY="unstable"
-REPOSITORY=$(get_config_value $file_config "repository")
+REPOSITORY=$(get_config_value "$dir_config/$file_config" "repository")
 if [[ $REPOSITORY = "main" ]]; then
 	URL="$BASE_URL/bashpack"
 
