@@ -31,6 +31,8 @@ NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
 NAME_ALIAS="bp"
 
+BASE_URL="https://api.github.com/repos/bashpack-project"
+
 USAGE="Usage: sudo $NAME_ALIAS [COMMAND] [OPTION]..."$'\n'"$NAME_ALIAS --help"
 
 export yes="@(yes|Yes|yEs|yeS|YEs|YeS|yES|YES|y|Y)"
@@ -199,8 +201,18 @@ file_config=$NAME_LOWERCASE"_config"
 
 
 
-BASE_URL="https://api.github.com/repos/bashpack-project"
-PUBLICATION=$(get_config_value "$dir_config/$file_config" "publication")
+
+# Workaround that permit to download the stable release in case of first installation
+# (unless it cannot detect the config file where is it supposed to be written)
+if [ ! -f $file_config ]; then
+	PUBLICATION="main"
+else
+	PUBLICATION=$(get_config_value "$dir_config/$file_config" "publication")
+fi
+
+# Depending on the chosen publication, the repository will be different:
+# - Main (= stable) releases:	https://github.com/bashpack-project/bashpack
+# - Unstable releases:			https://github.com/bashpack-project/bashpack-unstable
 if [[ $PUBLICATION = "main" ]]; then
 	URL="$BASE_URL/bashpack"
 
@@ -410,7 +422,6 @@ detect_cli() {
 create_cli() {
 
 	# Cannot display "Installing $NAME $VERSION..." until the new version is not there.
-	echo ""
 	echo "Installing $NAME...  "
 
 
@@ -494,7 +505,6 @@ create_cli() {
 		if [[ $(exists_command "$NAME_ALIAS") = "exists" ]] && [ -f $file_autocompletion ]; then
 			echo ""
 			echo "Success! $NAME $($NAME_ALIAS --version) has been installed."
-			echo ""
 			# echo "Info: autocompletion options might not be ready on your current session, you should open a new tab or manually launch the command: source ~/.bashrc"
 		elif [[ $(exists_command "$NAME_ALIAS") = "exists" ]] && [ ! -f $file_autocompletion ]; then
 			echo ""
