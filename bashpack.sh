@@ -25,37 +25,13 @@
 
 
 
-VERSION="0.3.1"
+VERSION="0.3.2"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
 NAME_ALIAS="bp"
 
 USAGE="Usage: sudo $NAME_ALIAS [COMMAND] [OPTION]..."$'\n'"$NAME_ALIAS --help"
-
-
-# Getting values stored in configuration files
-# Usage: read_config_value "<file>" "<parameter>"
-get_config_value() {
-	local file=${1}
-	local parameter=${2}
-
-
-	while read -r line; do
-
-		# Test first word (= parameter name)...
-		# if [[ "$parameter" == $(*"$line"* | cut -d "=" -f 1) ]]; then
-		if [[ "$parameter" == *"$line"* ]]; then
-			# ... to get the second word (= value of the parameter)
-			value=$("$line" | cut -d "=" -f 2 | tr -d " ")
-
-			echo "[debug] $file -> $parameter = $value"
-		fi
-	done < "$file"
-}
-export -f get_config_value
-
-
 
 export yes="@(yes|Yes|yEs|yeS|YEs|YeS|yES|YES|y|Y)"
 
@@ -169,6 +145,30 @@ error_file_not_downloaded() {
 
 
 
+# Getting values stored in configuration files
+# Usage: read_config_value "<file>" "<parameter>"
+get_config_value() {
+	local file=${1}
+	local parameter=${2}
+
+	while read -r line; do
+		if [[ $line =~ ^([^=]+)[[:space:]]([^=]+)$ ]]; then
+			# Test first word (= parameter name)...
+			if [[ $parameter = ${BASH_REMATCH[1]} ]]; then
+				# ... to get the second word (= value of the parameter)
+				echo "${BASH_REMATCH[2]}" # As this is a string, we use echo to return the value
+				break
+			fi
+		else 
+			break
+		fi
+	done < "$file"
+}
+export -f get_config_value
+
+
+
+
 dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
 dir_src="/usr/local/src/$NAME_LOWERCASE"
@@ -195,21 +195,20 @@ file_systemd_timers=(
 	"$file_systemd_update.timer"
 )
 
-file_config="$NAME_LOWERCASE"_config""
+file_config=$NAME_LOWERCASE"_config"
 
 
 
 BASE_URL="https://api.github.com/repos/bashpack-project"
-# REPOSITORY="unstable"
-REPOSITORY=$(get_config_value "$dir_config/$file_config" "repository")
-if [[ $REPOSITORY = "main" ]]; then
+PUBLICATION=$(get_config_value "$dir_config/$file_config" "publication")
+if [[ $PUBLICATION = "main" ]]; then
 	URL="$BASE_URL/bashpack"
 
-elif [[ $REPOSITORY = "unstable" ]]; then
+elif [[ $PUBLICATION = "unstable" ]]; then
 	URL="$BASE_URL/bashpack-unstable"
 else 
-	echo "Error: repository not found at $URL."
-	echo "Please ensure that the repository parameter is configured with 'main' or 'unstable' in $file_config."
+	echo "Error: repository not found."
+	echo "Please ensure that the publication parameter is configured with 'main' or 'unstable' in $dir_config/$file_config."
 	exit
 fi
 
