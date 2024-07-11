@@ -204,11 +204,12 @@ file_config=$NAME_LOWERCASE"_config"
 
 
 # Workaround that permit to download the stable release in case of first installation
-# (unless it cannot detect the config file where is it supposed to be written)
-if [ ! -f $file_config ]; then
-	PUBLICATION="main"
-else
+# - detect if the config file exists (unless it cannot detect the config file where the publication is supposed to be written)
+# - detect if the new function exists
+if [ -f $file_config ] && [[ $(type -t get_config_value) == function ]]; then
 	PUBLICATION=$(get_config_value "$dir_config/$file_config" "publication")
+else
+	PUBLICATION="main"
 fi
 
 # Depending on the chosen publication, the repository will be different:
