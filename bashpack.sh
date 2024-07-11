@@ -251,7 +251,6 @@ delete_cli() {
 	if [[ $exclude_main = "exclude_main" ]]; then
 		local files=(
 			$dir_src
-			$dir_config
 			$file_autocompletion
 		)
 	else
