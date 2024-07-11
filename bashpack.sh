@@ -150,6 +150,7 @@ error_file_not_downloaded() {
 # Getting values stored in configuration files
 # Usage: read_config_value "<file>" "<parameter>"
 get_config_value() {
+
 	local file=${1}
 	local parameter=${2}
 
@@ -278,8 +279,6 @@ delete_cli() {
 		done
 	fi
 
-	echo ""
-
 	if [ -f $file_main ]; then
 		if [[ $exclude_main = "exclude_main" ]]; then
 			echo "$NAME $VERSION has been uninstalled ($file_main has been kept)."
@@ -289,8 +288,6 @@ delete_cli() {
 	else
 		echo "Success! $NAME $VERSION has been uninstalled."
 	fi
-
-	echo ""
 }
 
 
@@ -409,8 +406,6 @@ detect_cli() {
 			echo "$NAME $($NAME_ALIAS --version) detected at $(which $NAME_LOWERCASE)"
 		fi
 	fi
-
-	echo ""
 }
 
 
