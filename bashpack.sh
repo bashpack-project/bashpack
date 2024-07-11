@@ -44,7 +44,7 @@ get_config_value() {
 	while read -r line; do
 
 		# Test first word (= parameter name)...
-		if [[ "$parameter" == (*"$line"* | cut -d "=" -f 1)]]; then
+		if [[ "$parameter" == $(*"$line"* | cut -d "=" -f 1)]]; then
 			# ... to get the second word (= value of the parameter)
 			value=$("$line" | cut -d "=" -f 2 | tr -d " ")
 
