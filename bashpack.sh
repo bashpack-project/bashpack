@@ -23,20 +23,7 @@
 # SOFTWARE.
 
 
-BASE_URL="https://api.github.com/repos/bashpack-project"
 
-PUBLICATION="unstable"
-
-if [[ $PUBLICATION = "main" ]]; then
-	URL="$BASE_URL/bashpack"
-
-elif [[ $PUBLICATION = "unstable" ]]; then
-	URL="$BASE_URL/bashpack-unstable"
-else 
-	echo "Error: repository not found at $URL."
-	echo "Please ensure that the publication parameter is configured with 'main' or 'unstable'."
-	exit
-fi
 
 VERSION="0.3.1"
 
@@ -47,8 +34,26 @@ NAME_ALIAS="bp"
 USAGE="Usage: sudo $NAME_ALIAS [COMMAND] [OPTION]..."$'\n'"$NAME_ALIAS --help"
 
 
-export yes="@(yes|Yes|yEs|yeS|YEs|YeS|yES|YES|y|Y)"
+# Getting values stored in configuration files
+# Usage: read_config_value "<file>" "<parameter>"
+get_config_value() {
+	local file=${1}
+	local parameter=${2}
 
+
+	#TO DO
+
+	if [[ "$parameter" =~ ^([^=]+)=([^=]+)$ ]]; 
+    then 
+        echo "${BASH_REMATCH[1]}=${BASH_REMATCH[2]}"; 
+    else 
+        echo ""
+    fi
+}
+
+
+
+export yes="@(yes|Yes|yEs|yeS|YEs|YeS|yES|YES|y|Y)"
 
 
 
@@ -164,6 +169,7 @@ dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
 dir_src="/usr/local/src/$NAME_LOWERCASE"
 dir_systemd="/lib/systemd/system"
+dir_config="/etc/$NAME_LOWERCASE"
 
 archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
 archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
@@ -184,6 +190,23 @@ file_systemd_update="$NAME_LOWERCASE-updates"
 file_systemd_timers=(
 	"$file_systemd_update.timer"
 )
+
+file_config="$NAME_LOWERCASE"_config""
+
+
+
+BASE_URL="https://api.github.com/repos/bashpack-project"
+REPOSITORY="unstable"
+if [[ $REPOSITORY = "main" ]]; then
+	URL="$BASE_URL/bashpack"
+
+elif [[ $REPOSITORY = "unstable" ]]; then
+	URL="$BASE_URL/bashpack-unstable"
+else 
+	echo "Error: repository not found at $URL."
+	echo "Please ensure that the repository parameter is configured with 'main' or 'unstable' in $file_config."
+	exit
+fi
 
 
 
@@ -212,11 +235,13 @@ delete_cli() {
 	if [[ $exclude_main = "exclude_main" ]]; then
 		local files=(
 			$dir_src
+			$dir_config
 			$file_autocompletion
 		)
 	else
 		local files=(
 			$dir_src
+			$dir_config
 			$file_autocompletion
 			$file_main_alias
 			$file_main
@@ -403,7 +428,7 @@ create_cli() {
 		# Checking if the autocompletion directory exists and create it if doesn't exists
 		echo "Installing autocompletion..."
 		if [ ! -d $dir_autocompletion ]; then
-			echo "Error: $dir_autocompletion not found. Creating it... "
+			echo "[install] Error: $dir_autocompletion not found. Creating it..."
 			mkdir $dir_autocompletion
 		fi
 		cp "$archive_dir_tmp/bash_completion" $file_autocompletion
@@ -440,6 +465,25 @@ create_cli() {
 				fi
 			done
 		fi
+
+
+		# Config installation
+		# Checking if the config directory exists and create it if doesn't exists
+		echo "Installing configuration..."
+		if [ ! -d $dir_config ]; then
+			echo "[install] Error: $dir_config not found. Creating it..."
+			mkdir $dir_config
+		fi
+
+		# Must testing if config file exists to avoid overwrite user customizations 
+		if [ ! -f $file_config ]; then
+			echo "[install] $file_config not found. Creating it... "
+			cp "$archive_dir_tmp/config/$file_config" "$dir_config/$file_config"
+		else
+			echo "[install] $file_config already exists. Leaving current values."
+		fi
+		chmod +r -R $dir_config
+
 
 
 		# Success message
@@ -480,7 +524,7 @@ create_cli() {
 # /!\	This function can only works if a generic name like "bashpack-main.tar.gz" exists and can be used as an URL.
 #		By default, 
 #			- Github main branch archive is accessible from https://github.com/<user>/<repository>/archive/refs/heads/main.tar.gz
-#			- Github latest tarball release is accessible from https://api.github.com/repos/bashpack-project/bashpack/tarball
+#			- Github latest tarball release is accessible from https://api.github.com/repos/<user>/<repository>/tarball
 update_cli() {
 	# Download a first time the latest version from the "main" branch to be able to launch the installation script from it to get latest modifications.
 	# The install function will download the well-named archive with the version name
@@ -492,17 +536,15 @@ update_cli() {
 		echo "$NAME $VERSION is already installed."
 	else
 		download_cli "$URL/tarball"
-		# download_cli "$URL/bashpack-main.tar.gz"
-
-	fi
 	
-	# Delete current installed version to clean all old files
-	delete_all exclude_main
+		# Delete current installed version to clean all old files
+		delete_all exclude_main
 
-	echo ""
+		echo ""
 
-	# Execute the install_cli function of the script downloaded in /tmp
-	exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
+		# Execute the install_cli function of the script downloaded in /tmp
+		exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
+	fi
 }
 
 
@@ -519,7 +561,7 @@ update_cli() {
 install_cli() {
 	detect_cli
 
-	download_cli "$URL/$VERSION"
+	download_cli "$URL/tarball/$VERSION"
 
 	create_cli
 }
