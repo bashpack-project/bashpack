@@ -480,7 +480,7 @@ create_cli() {
 # /!\	This function can only works if a generic name like "bashpack-main.tar.gz" exists and can be used as an URL.
 #		By default, 
 #			- Github main branch archive is accessible from https://github.com/<user>/<repository>/archive/refs/heads/main.tar.gz
-#			- Github latest tarball release is accessible from https://api.github.com/repos/bashpack-project/bashpack/tarball
+#			- Github latest tarball release is accessible from https://api.github.com/repos/<user>/<repository>/tarball
 update_cli() {
 	# Download a first time the latest version from the "main" branch to be able to launch the installation script from it to get latest modifications.
 	# The install function will download the well-named archive with the version name
@@ -492,17 +492,15 @@ update_cli() {
 		echo "$NAME $VERSION is already installed."
 	else
 		download_cli "$URL/tarball"
-		# download_cli "$URL/bashpack-main.tar.gz"
-
-	fi
 	
-	# Delete current installed version to clean all old files
-	delete_all exclude_main
+		# Delete current installed version to clean all old files
+		delete_all exclude_main
 
-	echo ""
+		echo ""
 
-	# Execute the install_cli function of the script downloaded in /tmp
-	exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
+		# Execute the install_cli function of the script downloaded in /tmp
+		exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
+	fi
 }
 
 
