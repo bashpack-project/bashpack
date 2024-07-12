@@ -206,7 +206,7 @@ file_config=$NAME_LOWERCASE"_config"
 # Workaround that permit to download the stable release in case of first installation
 # - detect if the config file exists (unless it cannot detect the config file where the publication is supposed to be written)
 # - detect if the new function exists
-if [ -f "$dir_config/$file_config" ]; then
+if [ -f "$dir_config/$file_config" ] && [[ $(type -t get_config_value) == function ]]; then
 	PUBLICATION=$(get_config_value "$dir_config/$file_config" "publication")
 else
 	PUBLICATION="main"
