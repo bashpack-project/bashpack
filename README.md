@@ -8,16 +8,22 @@
 ```javascript
 curl -sL https://raw.githubusercontent.com/bashpack-project/bashpack-unstable/main/bashpack.sh -o bashpack.sh \
  && chmod +x bashpack.sh \
- && sudo ./bashpack.sh -i \
+ && sudo ./bashpack.sh -u \
  && rm bashpack.sh
 ```
 
 **Install dev**
 ```javascript
-curl -sL https://raw.githubusercontent.com/bashpack-project/bashpack-unstable/main/bashpack.sh -o bashpack.sh \
+curl -sL https://raw.githubusercontent.com/bashpack-project/bashpack-dev/main/bashpack.sh -o bashpack.sh \
  && chmod +x bashpack.sh \
- && sudo ./bashpack.sh -i \
+ && sudo ./bashpack.sh -u \
  && rm bashpack.sh
+```
+
+**Switch from main to unstable repository**
+```javascript
+sudo sed -i 's/main/unstable/g' /etc/bashpack/bashpack_config \
+ && sudo bp -u
 ```
 
 **Switch from unstable to dev repository**
