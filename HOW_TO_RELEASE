@@ -4,3 +4,14 @@ After you're satisfied of your code (it means it must be tested) :
 - On Github, merge the working branch to main
 - Create a new release & tag with the same version written in $VERSION earlier
 - Test on a Linux that the update is working as expected with: sudo bp -u 
+
+
+Workflow:
+Main <- [Unstable <-> Dev]
+
+Main is the stable repository that host the usable CLI. The code stored on this repository must work.
+Unstable purpose is to test updates process coming from Dev. The code stored on this repository can not work.
+Dev purpose is to develop new features. The code stored on this repository can not work.
+
+
+

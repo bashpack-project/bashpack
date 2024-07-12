@@ -1,12 +1,12 @@
 > [!CAUTION]
-> **This is the unstable repository of Bashpack.**\
+> **This is the dev repository of Bashpack.**\
 > Stable releases are available at https://github.com/bashpack-project/bashpack
 
-# Bashpack unstable
+# Bashpack dev
 
 **Install**
 ```javascript
-curl -sL https://raw.githubusercontent.com/bashpack-project/bashpack-unstable/main/bashpack.sh -o bashpack.sh \
+curl -sL https://raw.githubusercontent.com/bashpack-project/bashpack-dev/main/bashpack.sh -o bashpack.sh \
  && chmod +x bashpack.sh \
  && sudo ./bashpack.sh -i \
  && rm bashpack.sh
