@@ -215,6 +215,7 @@ fi
 # Depending on the chosen publication, the repository will be different:
 # - Main (= stable) releases:	https://github.com/bashpack-project/bashpack
 # - Unstable releases:			https://github.com/bashpack-project/bashpack-unstable
+# - Dev releases:				https://github.com/bashpack-project/bashpack-dev
 if [[ $PUBLICATION = "main" ]]; then
 	URL="$BASE_URL/bashpack"
 
