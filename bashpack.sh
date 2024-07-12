@@ -25,7 +25,7 @@
 
 
 
-VERSION="0.3.2"
+VERSION="0.3.3"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -220,9 +220,12 @@ if [[ $PUBLICATION = "main" ]]; then
 
 elif [[ $PUBLICATION = "unstable" ]]; then
 	URL="$BASE_URL/bashpack-unstable"
+
+elif [[ $PUBLICATION = "dev" ]]; then
+	URL="$BASE_URL/bashpack-dev"
 else 
 	echo "Error: repository not found."
-	echo "Please ensure that the publication parameter is configured with 'main' or 'unstable' in $dir_config/$file_config."
+	echo "Please ensure that the publication parameter is configured with 'main', 'unstable' or 'dev' in $dir_config/$file_config."
 	exit
 fi
 
