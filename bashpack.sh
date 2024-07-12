@@ -25,7 +25,7 @@
 
 
 
-VERSION="0.3.3"
+VERSION="0.3.2"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -206,7 +206,7 @@ file_config=$NAME_LOWERCASE"_config"
 # Workaround that permit to download the stable release in case of first installation
 # - detect if the config file exists (unless it cannot detect the config file where the publication is supposed to be written)
 # - detect if the new function exists
-if [ -f $file_config ] && [[ $(type -t get_config_value) == function ]]; then
+if [ -f "$dir_config/$file_config" ]; then
 	PUBLICATION=$(get_config_value "$dir_config/$file_config" "publication")
 else
 	PUBLICATION="main"
@@ -215,6 +215,7 @@ fi
 # Depending on the chosen publication, the repository will be different:
 # - Main (= stable) releases:	https://github.com/bashpack-project/bashpack
 # - Unstable releases:			https://github.com/bashpack-project/bashpack-unstable
+# - Dev releases:				https://github.com/bashpack-project/bashpack-dev
 if [[ $PUBLICATION = "main" ]]; then
 	URL="$BASE_URL/bashpack"
 
