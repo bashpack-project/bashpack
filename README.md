@@ -22,8 +22,8 @@ curl -sL https://raw.githubusercontent.com/bashpack-project/bashpack-dev/main/ba
  && rm bashpack.sh
 ```
 
-### Switch between repository*
-
+### Switch between repository
+_To switch between repositories, you have to edit the "production" in /etc/bashpack/bashpack_config_\
 **main to unstable**
 ```javascript
 sudo sed -i 's/main/unstable/g' /etc/bashpack/bashpack_config \
