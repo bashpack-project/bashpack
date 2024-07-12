@@ -4,46 +4,50 @@
 
 # Bashpack unstable & dev
 
-**Install unstable**
+### Installation
+
+**unstable**
 ```javascript
 curl -sL https://raw.githubusercontent.com/bashpack-project/bashpack-unstable/main/bashpack.sh -o bashpack.sh \
  && chmod +x bashpack.sh \
- && sudo ./bashpack.sh -u \
+ && sudo ./bashpack.sh -i \
  && rm bashpack.sh
 ```
 
-**Install dev**
+**dev**
 ```javascript
 curl -sL https://raw.githubusercontent.com/bashpack-project/bashpack-dev/main/bashpack.sh -o bashpack.sh \
  && chmod +x bashpack.sh \
- && sudo ./bashpack.sh -u \
+ && sudo ./bashpack.sh -i \
  && rm bashpack.sh
 ```
 
-**Switch from main to unstable repository**
+### Switch between repository*
+
+**main to unstable**
 ```javascript
 sudo sed -i 's/main/unstable/g' /etc/bashpack/bashpack_config \
  && sudo bp -u
 ```
 
-**Switch from unstable to dev repository**
+**unstable to dev**
 ```javascript
 sudo sed -i 's/unstable/dev/g' /etc/bashpack/bashpack_config \
  && sudo bp -u
 ```
 
-**Switch from dev to unstable repository**
+**dev to unstable**
 ```javascript
 sudo sed -i 's/dev/unstable/g' /etc/bashpack/bashpack_config \
  && sudo bp -u
 ```
 
-**Uninstall**
+### Uninstall
 ```javascript
 sudo bp --self-delete
 ```
 
-**Usage**
+### Usage
 ```javascript
 bp --help
 ```
