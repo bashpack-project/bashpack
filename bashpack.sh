@@ -25,7 +25,7 @@
 
 
 
-VERSION="0.3.4"
+VERSION="1.0.0"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -521,7 +521,7 @@ create_cli() {
 		# Success message
 		if [[ $(exists_command "$NAME_ALIAS") = "exists" ]] && [ -f $file_autocompletion ]; then
 			echo ""
-			echo "Success! $NAME $($NAME_ALIAS --version) has been installed."
+			echo "Success! $NAME $($NAME_ALIAS --version) $(detect_publication) has been installed."
 			# echo "Info: autocompletion options might not be ready on your current session, you should open a new tab or manually launch the command: source ~/.bashrc"
 		elif [[ $(exists_command "$NAME_ALIAS") = "exists" ]] && [ ! -f $file_autocompletion ]; then
 			echo ""
@@ -564,7 +564,7 @@ update_cli() {
 
 	# Testing if a new version exists to avoid reinstall if not
 	if [[ $(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4) = "$VERSION" ]]; then
-		echo "$NAME $VERSION (latest release) is already installed."
+		echo "$NAME $VERSION (latest $(detect_publication) release) is already installed."
 	else
 		download_cli "$URL/tarball"
 	
