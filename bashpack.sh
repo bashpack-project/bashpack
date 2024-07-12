@@ -199,6 +199,7 @@ file_systemd_timers=(
 )
 
 file_config=$NAME_LOWERCASE"_config"
+file_current_publication=$dir_config"/.current_production"
 
 
 
@@ -416,6 +417,19 @@ detect_cli() {
 
 
 
+# Detect what is the current publication installed
+detect_publication() {
+	if [ -f $file_current_publication]; then
+		cat $file_current_publication
+	else
+		echo "Error: publication not found."
+	fi
+}
+
+
+
+
+
 # Create the command from the downloaded archives
 # Works together with install or update functions
 create_cli() {
@@ -496,6 +510,10 @@ create_cli() {
 		else
 			echo "[install] "$dir_config/$file_config" already exists. Leaving current values."
 		fi
+
+		# Creating a file that permit to know what is the current installed publication
+		echo "$PUBLICATION" > $file_current_publication
+
 		chmod +rw -R $dir_config
 
 
@@ -546,7 +564,7 @@ update_cli() {
 
 	# Testing if a new version exists to avoid reinstall if not
 	if [[ $(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4) = "$VERSION" ]]; then
-		echo "$NAME $VERSION is already installed."
+		echo "$NAME $VERSION (latest release) is already installed."
 	else
 		download_cli "$URL/tarball"
 	
@@ -582,10 +600,11 @@ install_cli() {
 
 # The options (except --help) must be called with root
 case "$1" in
-	-i|--self-install)	install_cli ;;		# Critical option, see the comments at function declaration for more info
-	-u|--self-update)	update_cli ;;		# Critical option, see the comments at function declaration for more info
-	--self-delete)		delete_all ;;
-	man)				$COMMAND_MAN ;;
+	-i|--self-install)			install_cli ;;		# Critical option, see the comments at function declaration for more info
+	-u|--self-update)			update_cli ;;		# Critical option, see the comments at function declaration for more info
+	--self-delete)				delete_all ;;
+	-p|--current-publication)	detect_publication ;;
+	man)						$COMMAND_MAN ;;
 	update)
 		if [[ -z "$2" ]]; then
 			install_confirmation="no" && exec $COMMAND_UPDATE
