@@ -419,7 +419,7 @@ detect_cli() {
 
 # Detect what is the current publication installed
 detect_publication() {
-	if [ -f $file_current_publication]; then
+	if [ -f $file_current_publication ]; then
 		cat $file_current_publication
 	else
 		echo "Error: publication not found."
