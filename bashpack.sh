@@ -25,7 +25,7 @@
 
 
 
-VERSION="0.3.2"
+VERSION="0.3.3"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
