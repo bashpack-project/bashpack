@@ -23,13 +23,13 @@ curl -sL https://raw.githubusercontent.com/bashpack-project/bashpack-unstable/ma
 **Switch from unstable to dev repository**
 ```javascript
 sudo sed -i 's/unstable/dev/g' /etc/bashpack/bashpack_config \
- && sudo bp -i
+ && sudo bp -u
 ```
 
 **Switch from dev to unstable repository**
 ```javascript
 sudo sed -i 's/dev/unstable/g' /etc/bashpack/bashpack_config \
- && sudo bp -i
+ && sudo bp -u
 ```
 
 **Uninstall**
