@@ -25,7 +25,7 @@
 
 
 
-VERSION="1.0.0"
+VERSION="1.0.1"
 
 NAME="Bashpack"
 NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -69,11 +69,12 @@ else
 		--help) echo "$USAGE" \
 		&&		echo "" \
 		&&		echo "Options:" \
-		&&		echo " -i, --self-install	install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
-		&&		echo " -u, --self-update	update your current $NAME installation to the latest available version." \
-		&&		echo "     --self-delete	delete $NAME from your system." \
-		&&		echo "     --help   		display this information." \
-		&&		echo "     --version		display version." \
+		&&		echo " -i, --self-install			install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
+		&&		echo " -u, --self-update			update your current $NAME installation to the latest available version." \
+		&&		echo "     --self-delete			delete $NAME from your system." \
+		&&		echo "     --help   				display this information." \
+		&&		echo " -p, --current-publication	display your current $NAME installation publication stage (main, unstable, dev)." \
+		&&		echo "     --version				display version." \
 		&&		echo "" \
 		&&		echo "Commands:" \
 		&&		echo " update [OPTION]	use '$NAME_ALIAS update --help' for the command options." \
@@ -204,13 +205,13 @@ file_current_publication=$dir_config"/.current_production"
 
 
 
-# Workaround that permit to download the stable release in case of first installation
+# Workaround that permit to download the stable release in case of first installation from a version that didn't had the config file
 # - detect if the config file exists (unless it cannot detect the config file where the publication is supposed to be written)
 # - detect if the new function exists
 if [ -f "$dir_config/$file_config" ]; then
 	PUBLICATION=$(get_config_value "$dir_config/$file_config" "publication")
 else
-	PUBLICATION="main"
+	PUBLICATION="unstable"
 fi
 
 # Depending on the chosen publication, the repository will be different:
@@ -521,7 +522,7 @@ create_cli() {
 		# Success message
 		if [[ $(exists_command "$NAME_ALIAS") = "exists" ]] && [ -f $file_autocompletion ]; then
 			echo ""
-			echo "Success! $NAME $($NAME_ALIAS --version) $(detect_publication) has been installed."
+			echo "Success! $NAME $($NAME_ALIAS --version) ($(detect_publication)) has been installed."
 			# echo "Info: autocompletion options might not be ready on your current session, you should open a new tab or manually launch the command: source ~/.bashrc"
 		elif [[ $(exists_command "$NAME_ALIAS") = "exists" ]] && [ ! -f $file_autocompletion ]; then
 			echo ""
@@ -564,7 +565,7 @@ update_cli() {
 
 	# Testing if a new version exists to avoid reinstall if not
 	if [[ $(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4) = "$VERSION" ]]; then
-		echo "$NAME $VERSION (latest $(detect_publication) release) is already installed."
+		echo "$NAME $VERSION (latest release) is already installed. (Publication $(detect_publication))"
 	else
 		download_cli "$URL/tarball"
 	
@@ -587,6 +588,29 @@ update_cli() {
 #
 # /!\	This function must work everytime a modification is made in the code. 
 #		Because it's called by the update function.
+# install_cli() {
+
+# 	local chosen_publication=${1}
+
+# 	detect_cli
+
+# 	if [ $chosen_publication = "unstable" ]; then
+# 		# Install "unstable" publication
+# 		download_cli "$URL/tarball/$VERSION"
+
+# 	elif [ $chosen_publication = "dev" ]; then
+# 		# Install "dev" publication
+# 		download_cli "$URL/tarball/$VERSION"
+
+# 	else
+# 		# Install "main" publication if nothing is precised
+# 		download_cli "$URL/tarball/$VERSION"
+# 	fi
+
+
+# 	create_cli
+# }
+
 install_cli() {
 	detect_cli
 
@@ -594,7 +618,6 @@ install_cli() {
 
 	create_cli
 }
-
 
 
 
