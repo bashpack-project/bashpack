@@ -69,12 +69,12 @@ else
 		--help) echo "$USAGE" \
 		&&		echo "" \
 		&&		echo "Options:" \
-		&&		echo " -i, --self-install			install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
-		&&		echo " -u, --self-update			update your current $NAME installation to the latest available version." \
-		&&		echo "     --self-delete			delete $NAME from your system." \
-		&&		echo "     --help   				display this information." \
+		&&		echo " -i, --self-install		install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
+		&&		echo " -u, --self-update		update your current $NAME installation to the latest available version on the chosen publication." \
+		&&		echo "     --self-delete		delete $NAME from your system." \
+		&&		echo "     --help   			display this information." \
 		&&		echo " -p, --current-publication	display your current $NAME installation publication stage (main, unstable, dev)." \
-		&&		echo "     --version				display version." \
+		&&		echo "     --version			display version." \
 		&&		echo "" \
 		&&		echo "Commands:" \
 		&&		echo " update [OPTION]	use '$NAME_ALIAS update --help' for the command options." \
