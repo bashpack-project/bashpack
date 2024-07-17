@@ -211,7 +211,7 @@ file_current_publication=$dir_config"/.current_production"
 if [ -f "$dir_config/$file_config" ]; then
 	PUBLICATION=$(get_config_value "$dir_config/$file_config" "publication")
 else
-	PUBLICATION="unstable"
+	PUBLICATION="main"
 fi
 
 # Depending on the chosen publication, the repository will be different:
@@ -562,18 +562,21 @@ update_cli() {
 	# The install function will download the well-named archive with the version name
 	# (so yes, it means that the CLI is downloaded twice)
 
+	local error_already_installed="Latest $NAME version is already installed ($VERSION $(detect_publication))."
 
-	# Testing if a new version exists to avoid reinstall if not
-	if [[ $(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4) = "$VERSION" ]]; then
-		echo "$NAME $VERSION (latest release) is already installed. (Publication $(detect_publication))"
+
+	# Testing if a new version exists and if publication has changed to avoid reinstall if not.
+	if [[ $(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4) = "$VERSION" ]] && [[ $(detect_publication) = $(get_config_value "$dir_config/$file_config" "publication") ]]; then
+		echo $error_already_installed
 	else
 		download_cli "$URL/tarball"
-	
+		
 		# Delete current installed version to clean all old files
 		delete_all exclude_main
 
 		# Execute the install_cli function of the script downloaded in /tmp
 		exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
+
 	fi
 }
 
@@ -588,29 +591,6 @@ update_cli() {
 #
 # /!\	This function must work everytime a modification is made in the code. 
 #		Because it's called by the update function.
-# install_cli() {
-
-# 	local chosen_publication=${1}
-
-# 	detect_cli
-
-# 	if [ $chosen_publication = "unstable" ]; then
-# 		# Install "unstable" publication
-# 		download_cli "$URL/tarball/$VERSION"
-
-# 	elif [ $chosen_publication = "dev" ]; then
-# 		# Install "dev" publication
-# 		download_cli "$URL/tarball/$VERSION"
-
-# 	else
-# 		# Install "main" publication if nothing is precised
-# 		download_cli "$URL/tarball/$VERSION"
-# 	fi
-
-
-# 	create_cli
-# }
-
 install_cli() {
 	detect_cli
 
@@ -623,11 +603,11 @@ install_cli() {
 
 # The options (except --help) must be called with root
 case "$1" in
-	-i|--self-install)			install_cli ;;		# Critical option, see the comments at function declaration for more info
-	-u|--self-update)			update_cli ;;		# Critical option, see the comments at function declaration for more info
-	--self-delete)				delete_all ;;
+	-i|--self-install)		install_cli ;;		# Critical option, see the comments at function declaration for more info
+	-u|--self-update)		update_cli ;;		# Critical option, see the comments at function declaration for more info
+	--self-delete)			delete_all ;;
 	-p|--current-publication)	detect_publication ;;
-	man)						$COMMAND_MAN ;;
+	man)					$COMMAND_MAN ;;
 	update)
 		if [[ -z "$2" ]]; then
 			install_confirmation="no" && exec $COMMAND_UPDATE
