@@ -239,7 +239,7 @@ COMMAND_UPDATE="$dir_src/update.sh"
 COMMAND_MAN="$dir_src/man.sh"
 COMMAND_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $file_systemd_update.service`"
 COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
-
+COMMAND_TEST_INTALLATION="$dir_src/tests.sh"
 
 
 
@@ -607,6 +607,7 @@ case "$1" in
 	-u|--self-update)		update_cli ;;		# Critical option, see the comments at function declaration for more info
 	--self-delete)			delete_all ;;
 	-p|--current-publication)	detect_publication ;;
+	-t|--test-installation)	$COMMAND_TEST_INTALLATION ;;
 	man)					$COMMAND_MAN ;;
 	update)
 		if [[ -z "$2" ]]; then
