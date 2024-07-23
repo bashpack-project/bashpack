@@ -24,19 +24,18 @@
 
 
 
-URL="https://api.github.com/repos/bashpack-project/bashpack/tarball"	# Github latest tarball
 
-VERSION="0.3.0"
+export VERSION="1.0.4"
 
-NAME="Bashpack"
-NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
-NAME_ALIAS="bp"
+export NAME="Bashpack"
+export NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
+export NAME_ALIAS="bp"
+
+BASE_URL="https://api.github.com/repos/bashpack-project"
 
 USAGE="Usage: sudo $NAME_ALIAS [COMMAND] [OPTION]..."$'\n'"$NAME_ALIAS --help"
 
-
 export yes="@(yes|Yes|yEs|yeS|YEs|YeS|yES|YES|y|Y)"
-
 
 
 
@@ -70,11 +69,12 @@ else
 		--help) echo "$USAGE" \
 		&&		echo "" \
 		&&		echo "Options:" \
-		&&		echo " -i, --self-install	install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
-		&&		echo " -u, --self-update	update your current $NAME installation to the latest available version." \
-		&&		echo "     --self-delete	delete $NAME from your system." \
-		&&		echo "     --help   		display this information." \
-		&&		echo "     --version		display version." \
+		&&		echo " -i, --self-install		install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
+		&&		echo " -u, --self-update		update your current $NAME installation to the latest available version on the chosen publication." \
+		&&		echo "     --self-delete		delete $NAME from your system." \
+		&&		echo "     --help   			display this information." \
+		&&		echo " -p, --publication		display your current $NAME installation publication stage (main, unstable, dev)." \
+		&&		echo "     --version			display version." \
 		&&		echo "" \
 		&&		echo "Commands:" \
 		&&		echo " update [OPTION]	use '$NAME_ALIAS update --help' for the command options." \
@@ -148,10 +148,36 @@ error_file_not_downloaded() {
 
 
 
+# Getting values stored in configuration files
+# Usage: read_config_value "<file>" "<parameter>"
+get_config_value() {
+
+	local file=${1}
+	local parameter=${2}
+
+	while read -r line; do
+		if [[ $line =~ ^([^=]+)[[:space:]]([^=]+)$ ]]; then
+			# Test first word (= parameter name)...
+			if [[ $parameter = ${BASH_REMATCH[1]} ]]; then
+				# ... to get the second word (= value of the parameter)
+				echo "${BASH_REMATCH[2]}" # As this is a string, we use echo to return the value
+				break
+			fi
+		else 
+			break
+		fi
+	done < "$file"
+}
+export -f get_config_value
+
+
+
+
 dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
 dir_src="/usr/local/src/$NAME_LOWERCASE"
 dir_systemd="/lib/systemd/system"
+dir_config="/etc/$NAME_LOWERCASE"
 
 archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
 archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
@@ -173,6 +199,39 @@ file_systemd_timers=(
 	"$file_systemd_update.timer"
 )
 
+file_config=$NAME_LOWERCASE"_config"
+file_current_publication=$dir_config"/.current_publication"
+
+
+
+
+# Workaround that permit to download the stable release in case of first installation from a version that didn't had the config file
+# - detect if the config file exists (unless it cannot detect the config file where the publication is supposed to be written)
+# - detect if the new function exists
+if [ -f "$dir_config/$file_config" ]; then
+	PUBLICATION=$(get_config_value "$dir_config/$file_config" "publication")
+else
+	PUBLICATION="main"
+fi
+
+# Depending on the chosen publication, the repository will be different:
+# - Main (= stable) releases:	https://github.com/bashpack-project/bashpack
+# - Unstable releases:			https://github.com/bashpack-project/bashpack-unstable
+# - Dev releases:				https://github.com/bashpack-project/bashpack-dev
+if [[ $PUBLICATION = "main" ]]; then
+	URL="$BASE_URL/bashpack"
+
+elif [[ $PUBLICATION = "unstable" ]]; then
+	URL="$BASE_URL/bashpack-unstable"
+
+elif [[ $PUBLICATION = "dev" ]]; then
+	URL="$BASE_URL/bashpack-dev"
+else 
+	echo "Error: repository not found."
+	echo "Please ensure that the publication parameter is configured with 'main', 'unstable' or 'dev' in $dir_config/$file_config."
+	exit
+fi
+
 
 
 
@@ -180,8 +239,8 @@ COMMAND_UPDATE="$dir_src/update.sh"
 COMMAND_MAN="$dir_src/man.sh"
 COMMAND_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $file_systemd_update.service`"
 COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
-
-
+# COMMAND_TEST_INTALLATION="$dir_src/tests.sh"	# The tests.sh file must be part of the release and cannot be called directly with ./bashpack.sh -t
+COMMAND_TEST_INTALLATION="commands/tests.sh"
 
 
 # Delete the installed command from the system
@@ -205,6 +264,7 @@ delete_cli() {
 	else
 		local files=(
 			$dir_src
+			$dir_config
 			$file_autocompletion
 			$file_main_alias
 			$file_main
@@ -226,8 +286,6 @@ delete_cli() {
 		done
 	fi
 
-	echo ""
-
 	if [ -f $file_main ]; then
 		if [[ $exclude_main = "exclude_main" ]]; then
 			echo "$NAME $VERSION has been uninstalled ($file_main has been kept)."
@@ -237,8 +295,6 @@ delete_cli() {
 	else
 		echo "Success! $NAME $VERSION has been uninstalled."
 	fi
-
-	echo ""
 }
 
 
@@ -357,9 +413,20 @@ detect_cli() {
 			echo "$NAME $($NAME_ALIAS --version) detected at $(which $NAME_LOWERCASE)"
 		fi
 	fi
-
-	echo ""
 }
+
+
+
+
+# Detect what is the current publication installed
+detect_publication() {
+	if [ -f $file_current_publication ]; then
+		cat $file_current_publication
+	else
+		echo "Error: publication not found."
+	fi
+}
+
 
 
 
@@ -369,7 +436,6 @@ detect_cli() {
 create_cli() {
 
 	# Cannot display "Installing $NAME $VERSION..." until the new version is not there.
-	echo ""
 	echo "Installing $NAME...  "
 
 
@@ -391,7 +457,7 @@ create_cli() {
 		# Checking if the autocompletion directory exists and create it if doesn't exists
 		echo "Installing autocompletion..."
 		if [ ! -d $dir_autocompletion ]; then
-			echo "Error: $dir_autocompletion not found. Creating it... "
+			echo "[install] Error: $dir_autocompletion not found. Creating it..."
 			mkdir $dir_autocompletion
 		fi
 		cp "$archive_dir_tmp/bash_completion" $file_autocompletion
@@ -430,11 +496,33 @@ create_cli() {
 		fi
 
 
+		# Config installation
+		# Checking if the config directory exists and create it if doesn't exists
+		echo "Installing configuration..."
+		if [ ! -d $dir_config ]; then
+			echo "[install] $dir_config not found. Creating it..."
+			mkdir $dir_config
+		fi
+
+		# Must testing if config file exists to avoid overwrite user customizations 
+		if [ ! -f "$dir_config/$file_config" ]; then
+			echo "[install] "$dir_config/$file_config" not found. Creating it... "
+			cp "$archive_dir_tmp/config/$file_config" "$dir_config/$file_config"
+		else
+			echo "[install] "$dir_config/$file_config" already exists. Leaving current values."
+		fi
+
+		# Creating a file that permit to know what is the current installed publication
+		echo "$PUBLICATION" > $file_current_publication
+
+		chmod +rw -R $dir_config
+
+
+
 		# Success message
 		if [[ $(exists_command "$NAME_ALIAS") = "exists" ]] && [ -f $file_autocompletion ]; then
 			echo ""
-			echo "Success! $NAME $($NAME_ALIAS --version) has been installed."
-			echo ""
+			echo "Success! $NAME $($NAME_ALIAS --version) ($(detect_publication)) has been installed."
 			# echo "Info: autocompletion options might not be ready on your current session, you should open a new tab or manually launch the command: source ~/.bashrc"
 		elif [[ $(exists_command "$NAME_ALIAS") = "exists" ]] && [ ! -f $file_autocompletion ]; then
 			echo ""
@@ -468,20 +556,28 @@ create_cli() {
 # /!\	This function can only works if a generic name like "bashpack-main.tar.gz" exists and can be used as an URL.
 #		By default, 
 #			- Github main branch archive is accessible from https://github.com/<user>/<repository>/archive/refs/heads/main.tar.gz
-#			- Github latest tarball release is accessible from https://api.github.com/repos/bashpack-project/bashpack/tarball
+#			- Github latest tarball release is accessible from https://api.github.com/repos/<user>/<repository>/tarball
 update_cli() {
 	# Download a first time the latest version from the "main" branch to be able to launch the installation script from it to get latest modifications.
-	# Ths install function will download the well-named archive with the version name
+	# The install function will download the well-named archive with the version name
 	# (so yes, it means that the CLI is downloaded twice)
-	download_cli "$URL"
-	
-	# Delete current installed version to clean all old files
-	delete_all exclude_main
 
-	echo ""
+	local error_already_installed="Latest $NAME version is already installed ($VERSION $(detect_publication))."
 
-	# Execute the install_cli function of the script downloaded in /tmp
-	exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
+
+	# Testing if a new version exists and if publication has changed to avoid reinstall if not.
+	if [[ $(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4) = "$VERSION" ]] && [[ $(detect_publication) = $(get_config_value "$dir_config/$file_config" "publication") ]]; then
+		echo $error_already_installed
+	else
+		download_cli "$URL/tarball"
+		
+		# Delete current installed version to clean all old files
+		delete_all exclude_main
+
+		# Execute the install_cli function of the script downloaded in /tmp
+		exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
+
+	fi
 }
 
 
@@ -498,20 +594,21 @@ update_cli() {
 install_cli() {
 	detect_cli
 
-	download_cli "$URL/$VERSION"
+	download_cli "$URL/tarball/$VERSION"
 
 	create_cli
 }
 
 
 
-
 # The options (except --help) must be called with root
 case "$1" in
-	-i|--self-install)	install_cli ;;		# Critical option, see the comments at function declaration for more info
-	-u|--self-update)	update_cli ;;		# Critical option, see the comments at function declaration for more info
-	--self-delete)		delete_all ;;
-	man)				$COMMAND_MAN ;;
+	-i|--self-install)		install_cli ;;		# Critical option, see the comments at function declaration for more info
+	-u|--self-update)		update_cli ;;		# Critical option, see the comments at function declaration for more info
+	--self-delete)			delete_all ;;
+	-p|--publication)		detect_publication ;;
+	-t|--test-installation)	$COMMAND_TEST_INTALLATION ;;
+	man)					$COMMAND_MAN ;;
 	update)
 		if [[ -z "$2" ]]; then
 			install_confirmation="no" && exec $COMMAND_UPDATE
