@@ -25,11 +25,11 @@
 
 
 
-VERSION="1.0.2"
+export VERSION="1.0.4"
 
-NAME="Bashpack"
-NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
-NAME_ALIAS="bp"
+export NAME="Bashpack"
+export NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
+export NAME_ALIAS="bp"
 
 BASE_URL="https://api.github.com/repos/bashpack-project"
 
@@ -73,7 +73,7 @@ else
 		&&		echo " -u, --self-update		update your current $NAME installation to the latest available version on the chosen publication." \
 		&&		echo "     --self-delete		delete $NAME from your system." \
 		&&		echo "     --help   			display this information." \
-		&&		echo " -p, --current-publication	display your current $NAME installation publication stage (main, unstable, dev)." \
+		&&		echo " -p, --publication		display your current $NAME installation publication stage (main, unstable, dev)." \
 		&&		echo "     --version			display version." \
 		&&		echo "" \
 		&&		echo "Commands:" \
@@ -200,7 +200,7 @@ file_systemd_timers=(
 )
 
 file_config=$NAME_LOWERCASE"_config"
-file_current_publication=$dir_config"/.current_production"
+file_current_publication=$dir_config"/.current_publication"
 
 
 
@@ -239,8 +239,8 @@ COMMAND_UPDATE="$dir_src/update.sh"
 COMMAND_MAN="$dir_src/man.sh"
 COMMAND_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $file_systemd_update.service`"
 COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
-
-
+# COMMAND_TEST_INTALLATION="$dir_src/tests.sh"	# The tests.sh file must be part of the release and cannot be called directly with ./bashpack.sh -t
+COMMAND_TEST_INTALLATION="commands/tests.sh"
 
 
 # Delete the installed command from the system
@@ -606,7 +606,8 @@ case "$1" in
 	-i|--self-install)		install_cli ;;		# Critical option, see the comments at function declaration for more info
 	-u|--self-update)		update_cli ;;		# Critical option, see the comments at function declaration for more info
 	--self-delete)			delete_all ;;
-	-p|--current-publication)	detect_publication ;;
+	-p|--publication)		detect_publication ;;
+	-t|--test-installation)	$COMMAND_TEST_INTALLATION ;;
 	man)					$COMMAND_MAN ;;
 	update)
 		if [[ -z "$2" ]]; then
