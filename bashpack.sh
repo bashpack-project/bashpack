@@ -239,8 +239,8 @@ COMMAND_UPDATE="$dir_src/update.sh"
 COMMAND_MAN="$dir_src/man.sh"
 COMMAND_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $file_systemd_update.service`"
 COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
-# COMMAND_TEST_INTALLATION="$dir_src/tests.sh"	# The tests.sh file must be part of the release and cannot be called directly with ./bashpack.sh -t
-COMMAND_TEST_INTALLATION="commands/tests.sh"
+COMMAND_TEST_INTALLATION="$dir_src/tests.sh"	# The tests.sh file must be part of the release and cannot be called directly with ./bashpack.sh -t
+# COMMAND_TEST_INTALLATION="commands/tests.sh"
 
 
 # Delete the installed command from the system
