@@ -30,6 +30,12 @@
 # It must be used within the main CLI file since most of the variables used here are declared in the main CLI file.
 
 
+# To do :
+#	- Create a test that ensure "bp -i", "bp -u" and "bp --self-delete" is working as expected
+# 	- Create a test in case of "bp" or "bashpack" is not available and make this command useless
+
+
+
 
 dir_bin="/usr/local/sbin"
 dir_src="/usr/local/src/$NAME_LOWERCASE"

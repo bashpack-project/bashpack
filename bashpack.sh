@@ -73,7 +73,7 @@ else
 		&&		echo " -u, --self-update		update your current $NAME installation to the latest available version on the chosen publication." \
 		&&		echo "     --self-delete		delete $NAME from your system." \
 		&&		echo "     --help   			display this information." \
-		&&		echo " -p, --current-publication	display your current $NAME installation publication stage (main, unstable, dev)." \
+		&&		echo " -p, --publication		display your current $NAME installation publication stage (main, unstable, dev)." \
 		&&		echo "     --version			display version." \
 		&&		echo "" \
 		&&		echo "Commands:" \
