@@ -374,7 +374,7 @@ archive_extract() {
 # - download_cli <url of latest>
 # - download_cli <url of n.n.n>
 download_cli() {
-	
+
 	local archive_url=${1}
 
 	# Prepare tmp directory
@@ -566,14 +566,15 @@ update_cli() {
 
 
 	# Testing if a new version exists and if publication has changed to avoid reinstall if not.
-	# This test requires curl, if not usable, then the reinstall the CLI will be reinstall at each update.
+	# This test requires curl, if not usable, then the CLI will be reinstalled at each update.
 	if [[ $(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4) = "$VERSION" ]] && [[ $(detect_publication) = $(get_config_value "$dir_config/$file_config" "publication") ]]; then
 		echo $error_already_installed
 	else
 		download_cli "$URL/tarball"
 		
-		# Testing if temp directory exists before deleting anything to avoid broken installations
-		if [[ -d $archive_dir_tmp ]]; then
+		# Testing if download archive exists before deleting anything to avoid broken installations
+		# (Archive is deleted in create_cli, which is called after in the process)
+		if [[ -f $archive_tmp ]]; then
 			# Delete current installed version to clean all old files
 			delete_all exclude_main
 		
