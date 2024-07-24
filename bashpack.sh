@@ -566,17 +566,20 @@ update_cli() {
 
 
 	# Testing if a new version exists and if publication has changed to avoid reinstall if not.
+	# This test requires curl, if not usable, then the reinstall the CLI will be reinstall at each update.
 	if [[ $(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4) = "$VERSION" ]] && [[ $(detect_publication) = $(get_config_value "$dir_config/$file_config" "publication") ]]; then
 		echo $error_already_installed
 	else
 		download_cli "$URL/tarball"
 		
-		# Delete current installed version to clean all old files
-		delete_all exclude_main
-
-		# Execute the install_cli function of the script downloaded in /tmp
-		exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
-
+		# Testing if temp directory exists before deleting anything to avoid broken installations
+		if [[ -d $archive_dir_tmp ]]; then
+			# Delete current installed version to clean all old files
+			delete_all exclude_main
+		
+			# Execute the install_cli function of the script downloaded in /tmp
+			exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
+		fi
 	fi
 }
 
