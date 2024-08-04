@@ -32,8 +32,26 @@
 
 # To do :
 #	- Create a test that ensure "bp -i", "bp -u" and "bp --self-delete" is working as expected
-# 	- Create a test in case of "bp" or "bashpack" is not available and make this command useless
 
+
+
+# Testing if the exported variables from the main CLI are empty.
+# This permit to use the value from: 
+# - sudo bp -t					(= installed CLI)
+# - sudo /usr/local/sbin/bp -t	(= installed CLI)
+# - sudo ./bashpack.sh -t		(= cloned repository)
+# - sudo ./commands/tests.sh	(= cloned repository)
+if [[ $NAME = "" ]]; then
+	NAME="Bashpack"
+fi
+
+if [[ $NAME_LOWERCASE = "" ]]; then
+	NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
+fi
+
+if [[ $NAME_ALIAS = "" ]]; then
+	NAME_ALIAS="bp"
+fi
 
 
 
