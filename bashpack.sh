@@ -363,18 +363,18 @@ delete_all() {
 # Helper function to extract a .tar.gz archive
 # Usage: archive_extract <archive> <destination directory>
 archive_extract() {
-	# "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
-	tar -xf ${1} -C ${2} --strip-components 1
+	# # "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
+	# tar -xf ${1} -C ${2} --strip-components 1
 
-	# # Testing if actually using a working tarball, and if not exiting script so we avoid breaking any installations.
-	# if file ${1} | grep -q 'gzip compressed data'; then
-	# 	# "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
-	# 	tar -xf ${1} -C ${2} --strip-components 1
-	# else
-	# 	echo "Error: file '${1}' is not a real .tar.gz tarball and cannot be used. Deleting it, then exiting."
-	# 	rm -f ${1}
-	# 	exit
-	# fi
+	# Testing if actually using a working tarball, and if not exiting script so we avoid breaking any installations.
+	if file ${1} | grep -q 'gzip compressed data'; then
+		# "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
+		tar -xf ${1} -C ${2} --strip-components 1
+	else
+		echo "Error: file '${1}' is not a real .tar.gz tarball and cannot be used. Deleting it, then exiting."
+		rm -f ${1}
+		exit
+	fi
 }
 
 
@@ -583,10 +583,9 @@ update_cli() {
 	else
 		download_cli "$URL/tarball"
 		
-		# To avoid broken installations, before deleting anything, testing if :
-		# - downloaded archive exists (archive is deleted in create_cli, which is called after in the process)
-		# - downloaded archive is a working tarball
-		if [[ -f $archive_tmp ]] && file $archive_tmp | grep -q 'gzip compressed data'; then
+		# To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
+		# (archive is deleted in create_cli, which is called after in the process)
+		if file $archive_tmp | grep -q 'gzip compressed data'; then
 			# Delete current installed version to clean all old files
 			delete_all exclude_main
 		
