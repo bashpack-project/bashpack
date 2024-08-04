@@ -25,10 +25,11 @@
 
 
 
-# General information
+# General informations
 # This file permit to test if the current installation is working or not.
-# It must be used within the main CLI file since most of the variables used here are declared in the main CLI file.
-
+# It can be used in two ways:
+# - from the main installed CLI
+# - directly by calling the script from the cloned repository
 
 # To do :
 #	- Create a test that ensure "bp -i", "bp -u" and "bp --self-delete" is working as expected

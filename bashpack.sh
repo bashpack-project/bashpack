@@ -69,15 +69,16 @@ else
 		--help) echo "$USAGE" \
 		&&		echo "" \
 		&&		echo "Options:" \
-		&&		echo " -i, --self-install		install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
-		&&		echo " -u, --self-update		update your current $NAME installation to the latest available version on the chosen publication." \
-		&&		echo "     --self-delete		delete $NAME from your system." \
-		&&		echo "     --help   			display this information." \
-		&&		echo " -p, --publication		display your current $NAME installation publication stage (main, unstable, dev)." \
-		&&		echo "     --version			display version." \
+		&&		echo " -i, --self-install	install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
+		&&		echo " -u, --self-update	update your current $NAME installation to the latest available version on the chosen publication." \
+		&&		echo "     --self-delete	delete $NAME from your system." \
+		&&		echo "     --help   		display this information." \
+		&&		echo " -p, --publication	display your current $NAME installation publication stage (main, unstable, dev)." \
+		&&		echo "     --version		display version." \
 		&&		echo "" \
 		&&		echo "Commands:" \
 		&&		echo " update [OPTION]	use '$NAME_ALIAS update --help' for the command options." \
+		&&		echo " verify			verify the current $NAME installation health." \
 		&&		echo "" \
 		&&		echo "" \
 		&&		echo "$NAME $VERSION" \
@@ -611,7 +612,7 @@ case "$1" in
 	-u|--self-update)		update_cli ;;		# Critical option, see the comments at function declaration for more info
 	--self-delete)			delete_all ;;
 	-p|--publication)		detect_publication ;;
-	-t|--test-installation)	$COMMAND_TEST_INTALLATION ;;
+	verify)					$COMMAND_TEST_INTALLATION ;;
 	man)					$COMMAND_MAN ;;
 	update)
 		if [[ -z "$2" ]]; then
