@@ -363,8 +363,15 @@ delete_all() {
 # Helper function to extract a .tar.gz archive
 # Usage: archive_extract <archive> <destination directory>
 archive_extract() {
-	# "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
-	tar -xf ${1} -C ${2} --strip-components 1 
+	
+	# Testing if actually using a working tarball, and if not exiting script so we avoid breaking any installations.
+	if file ${1} | grep -q 'gzip compressed data'; then
+		# "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
+		tar -xf ${1} -C ${2} --strip-components 1
+	else
+		echo "Error: file '${1}' is not a real .tar.gz tarball and cannot be used."
+		exit
+	fi
 }
 
 
