@@ -229,7 +229,7 @@ check_download() {
 	rm -rf $archive_dir_tmp
 
 
-	if [ $not_found -ge 0 ]; then
+	if [ $not_found -gt 0 ]; then
 		echo ""
 		echo "Error: $not_found download verification(s) not working as expected."
 	else
