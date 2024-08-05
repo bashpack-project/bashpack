@@ -241,7 +241,12 @@ check_download() {
 
 
 if [[ $function_to_launch = "check_all" ]]; then
+	echo ""
+	echo ">>> Verifying files"
 	check_files
+	
+	echo ""
+	echo ">>> Verifying download"
 	check_download
 fi
 
