@@ -103,6 +103,8 @@ check_files() {
 	local number_other_found=0
 	local number_other_notfound=0
 	
+	echo ">>> Verifying files"
+
 	# Core directories
 	for directory in "${directories_core[@]}"; do
 		if [ -d $directory ]; then
@@ -165,7 +167,7 @@ check_files() {
 		echo "Error: core file(s) are working, but some features are not working as expected. 'sudo bp -i' should solve the issue (if not, you can open an issue at https://github.com/bashpack-project/bashpack/issues)"
 	else
 		echo ""
-		echo "$NAME is working as expected !"
+		echo "Success! Current installation is working as expected."
 	fi
 }
 
@@ -176,8 +178,8 @@ check_download() {
 
 	local not_found=0
 
+	echo ">>> Verifying download"
 	echo "Attempting to download and extract archive from $URL"
-	
 
 
 	# Verification : download and extract latest available tarball
@@ -241,12 +243,9 @@ check_download() {
 
 
 if [[ $function_to_launch = "check_all" ]]; then
-	echo ""
-	echo ">>> Verifying files"
 	check_files
 	
 	echo ""
-	echo ">>> Verifying download"
 	check_download
 fi
 
