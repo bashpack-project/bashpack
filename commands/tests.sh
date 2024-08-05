@@ -240,6 +240,10 @@ check_download() {
 
 
 
+if [[ $function_to_launch = "check_all" ]]; then
+	check_files
+	check_download
+fi
 
 if [[ $function_to_launch = "check_files" ]]; then
 	check_files

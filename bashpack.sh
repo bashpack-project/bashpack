@@ -646,7 +646,7 @@ case "$1" in
 	man)					$COMMAND_MAN ;;
 	verify)
 		if [[ -z "$2" ]]; then
-			export function_to_launch="check_files" && exec $COMMAND_VERIFY_INTALLATION
+			export function_to_launch="check_all" && exec $COMMAND_VERIFY_INTALLATION
 		else
 			case "$2" in
 				-f|--files)			export function_to_launch="check_files" && exec $COMMAND_VERIFY_INTALLATION ;;
