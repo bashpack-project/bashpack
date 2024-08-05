@@ -31,6 +31,7 @@ _bashpack() {
     2)
       case ${prev} in
         update) COMPREPLY=($(compgen -W "--help --assume-yes --ask --when --get-logs" -- ${cur})) ;;
+        verify) COMPREPLY=($(compgen -W "--help --files --download" -- ${cur})) ;;
       esac ;;
     *) COMPREPLY=() ;;
   esac

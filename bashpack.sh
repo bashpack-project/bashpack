@@ -25,7 +25,7 @@
 
 
 
-VERSION="1.0.7"
+export VERSION="1.0.7"
 
 export NAME="Bashpack"
 export NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -62,7 +62,21 @@ else
 				&&		echo "     --get-logs   	display systemd logs." \
 				&&		echo "     --when   		display systemd next service cycle." \
 				&&		echo "" \
+				&&		echo "$NAME $VERSION" \
+				&&		exit ;;
+			esac
+		;;
+		verify)
+			case "$2" in
+				--help) echo "$USAGE" \
 				&&		echo "" \
+				&&		echo "Verify current $NAME installation on your system." \
+				&&		echo "" \
+				&&		echo "Options:" \
+				&&		echo " -f, --files		verify that all files composing the CLI are presents." \
+				&&		echo " -d, --download		verify that download functions are working." \
+				&&		echo "" \
+				&&		echo "$NAME $VERSION" \
 				&&		exit ;;
 			esac
 		;;
@@ -77,9 +91,8 @@ else
 		&&		echo "     --version		display version." \
 		&&		echo "" \
 		&&		echo "Commands:" \
-		&&		echo " update [OPTION]	use '$NAME_ALIAS update --help' for the command options." \
-		&&		echo " verify			verify the current $NAME installation health." \
-		&&		echo "" \
+		&&		echo " update [OPTION]	update everything on your system. '$NAME_ALIAS update --help' for options." \
+		&&		echo " verify [OPTION]	verify the current $NAME installation health. '$NAME_ALIAS verify --help' for options." \
 		&&		echo "" \
 		&&		echo "$NAME $VERSION" \
 		&&		exit ;;
@@ -180,8 +193,8 @@ dir_src="/usr/local/src/$NAME_LOWERCASE"
 dir_systemd="/lib/systemd/system"
 dir_config="/etc/$NAME_LOWERCASE"
 
-archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
-archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
+export archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
+export archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
 
 file_main="$dir_bin/$NAME_LOWERCASE"
 file_main_alias="$dir_bin/$NAME_ALIAS"
@@ -232,6 +245,7 @@ else
 	echo "Please ensure that the publication parameter is configured with 'main', 'unstable' or 'dev' in $dir_config/$file_config."
 	exit
 fi
+export URL # Export URL to be usable on tests
 
 
 
@@ -240,8 +254,8 @@ COMMAND_UPDATE="$dir_src/update.sh"
 COMMAND_MAN="$dir_src/man.sh"
 COMMAND_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $file_systemd_update.service`"
 COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
-COMMAND_TEST_INTALLATION="$dir_src/tests.sh"	# The tests.sh file must be part of the release and cannot be called directly with ./bashpack.sh -t
-# COMMAND_TEST_INTALLATION="commands/tests.sh"
+# COMMAND_VERIFY_INTALLATION="$dir_src/tests.sh"	# The tests.sh file must be part of the release and cannot be called directly with ./bashpack.sh verify
+COMMAND_VERIFY_INTALLATION="commands/tests.sh"
 
 
 # Delete the installed command from the system
@@ -371,11 +385,11 @@ archive_extract() {
 		# "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
 		tar -xf ${1} -C ${2} --strip-components 1
 	else
-		echo "Error: file '${1}' is not a real .tar.gz tarball and cannot be used. Deleting it, then exiting."
+		echo "Error: file '${1}' is not a real .tar.gz tarball and cannot be used. Deleting it."
 		rm -f ${1}
-		exit
 	fi
 }
+export -f archive_extract
 
 
 
@@ -387,6 +401,8 @@ archive_extract() {
 download_cli() {
 
 	local archive_url=${1}
+	local archive_tmp=${2}
+	local archive_dir_tmp=${3}
 
 	# Prepare tmp directory
 	rm -rf $archive_dir_tmp
@@ -413,6 +429,7 @@ download_cli() {
 		error_file_not_downloaded $archive_url
 	fi
 }
+export -f download_cli
 
 
 
@@ -581,7 +598,7 @@ update_cli() {
 	if [[ $(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4) = "$VERSION" ]] && [[ $(detect_publication) = $(get_config_value "$dir_config/$file_config" "publication") ]]; then
 		echo $error_already_installed
 	else
-		download_cli "$URL/tarball"
+		download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
 		
 		# To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
 		# (archive is deleted in create_cli, which is called after in the process)
@@ -613,7 +630,7 @@ update_cli() {
 install_cli() {
 	detect_cli
 
-	download_cli "$URL/tarball/$VERSION"
+	download_cli "$URL/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
 	create_cli
 }
@@ -626,8 +643,17 @@ case "$1" in
 	-u|--self-update)		update_cli ;;		# Critical option, see the comments at function declaration for more info
 	--self-delete)			delete_all ;;
 	-p|--publication)		detect_publication ;;
-	verify)					$COMMAND_TEST_INTALLATION ;;
 	man)					$COMMAND_MAN ;;
+	verify)
+		if [[ -z "$2" ]]; then
+			export function_to_launch="check_files" && exec $COMMAND_VERIFY_INTALLATION
+		else
+			case "$2" in
+				-f|--files)			export function_to_launch="check_files" && exec $COMMAND_VERIFY_INTALLATION ;;
+				-d|--download)		export function_to_launch="check_download" && exec $COMMAND_VERIFY_INTALLATION ;;
+				*)					echo "Error: unknown [verify] option '$2'."$'\n'"$USAGE" && exit ;;
+			esac
+		fi ;;
 	update)
 		if [[ -z "$2" ]]; then
 			install_confirmation="no" && exec $COMMAND_UPDATE

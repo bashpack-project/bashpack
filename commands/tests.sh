@@ -172,7 +172,82 @@ check_files() {
 
 
 
-check_files
+check_download() {
+
+	local not_found=0
+
+	echo "Attempting to download and extract archive from $URL"
+	
+
+
+	# Verification : download and extract latest available tarball
+	echo ""
+	echo "Verification 1 -> Latest tarball"
+	download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
+	
+	if [[ -f $archive_tmp ]]; then
+		echo "Success! Verification passed. $archive_tmp found."
+	else
+		not_found=$((not_found+1))
+		echo "Error: verification failed. $archive_tmp not found."
+	fi
+	
+	if [[ -d $archive_dir_tmp ]]; then
+		echo "Success! Verification passed. $archive_dir_tmp found."
+	else
+		not_found=$((not_found+1))
+		echo "Error: verification failed. $archive_dir_tmp not found."
+	fi
+
+	# Cleaning files to prepare next verifications.
+	rm -rf $archive_tmp
+	rm -rf $archive_dir_tmp
+
+
+
+	# Verification : download and extract given version tarball
+	echo ""
+	echo "Verification 2 -> $VERSION tarball"
+	download_cli "$URL/tarball/$VERSION" $archive_tmp $archive_dir_tmp
+	
+	if [[ -f $archive_tmp ]]; then
+		echo "Success! Verification passed. $archive_tmp found."
+	else
+		not_found=$((not_found+1))
+		echo "Error: verification failed. $archive_tmp not found."
+	fi
+	
+	if [[ -d $archive_dir_tmp ]]; then
+		echo "Success! Verification passed. $archive_dir_tmp found."
+	else
+		not_found=$((not_found+1))
+		echo "Error: verification failed. $archive_dir_tmp not found."
+	fi
+
+	# Cleaning files to prepare next verifications.
+	rm -rf $archive_tmp
+	rm -rf $archive_dir_tmp
+
+
+	if [ $not_found -ge 0 ]; then
+		echo ""
+		echo "Error: $not_found download verification(s) not working as expected."
+	else
+		echo ""
+		echo "Success! Download functions are working as expected."
+	fi
+}
+
+
+
+
+if [[ $function_to_launch = "check_files" ]]; then
+	check_files
+fi
+
+if [[ $function_to_launch = "check_download" ]]; then
+	check_download
+fi
 
 
 
