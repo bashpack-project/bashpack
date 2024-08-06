@@ -622,10 +622,6 @@ update_cli() {
 		
 			# Execute the install_cli function of the script downloaded in /tmp
 			exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
-		else
-			echo "Error: file '${1}' is not a real .tar.gz tarball and cannot be used. Deleting it, then exiting."
-			rm -f ${1}
-			exit
 		fi
 
 		# # Delete current installed version to clean all old files
