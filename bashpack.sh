@@ -614,25 +614,25 @@ update_cli() {
 		# 	exit
 		# fi
 
-		# # To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
-		# # (archive is deleted in create_cli, which is called after in the process)
-		# if ! $NAME_LOWERCASE verify -d | grep -q 'Error:'; then
-		# 	# Delete current installed version to clean all old files
-		# 	delete_all exclude_main
+		# To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
+		# (archive is deleted in create_cli, which is called after in the process)
+		if ! $NAME_LOWERCASE verify -d | grep -q 'Error:'; then
+			# Delete current installed version to clean all old files
+			delete_all exclude_main
 		
-		# 	# Execute the install_cli function of the script downloaded in /tmp
-		# 	exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
-		# else
-		# 	echo "Error: file '${1}' is not a real .tar.gz tarball and cannot be used. Deleting it, then exiting."
-		# 	rm -f ${1}
-		# 	exit
-		# fi
+			# Execute the install_cli function of the script downloaded in /tmp
+			exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
+		else
+			echo "Error: file '${1}' is not a real .tar.gz tarball and cannot be used. Deleting it, then exiting."
+			rm -f ${1}
+			exit
+		fi
 
-		# Delete current installed version to clean all old files
-		delete_all exclude_main
+		# # Delete current installed version to clean all old files
+		# delete_all exclude_main
 		
-		# Execute the install_cli function of the script downloaded in /tmp
-		exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
+		# # Execute the install_cli function of the script downloaded in /tmp
+		# exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
 
 	fi
 }
