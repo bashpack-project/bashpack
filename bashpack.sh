@@ -153,10 +153,16 @@ export -f exists_command
 # Error function.
 # Usage: error_file_not_downloaded <file_url>
 error_file_not_downloaded() {
-	echo ""
-	echo "Error: ${1} not found."
-	echo "Are curl or wget able to reach it from your system?"
-	echo ""
+	echo "Error: ${1} not found. Are curl or wget able to reach it from your system?"
+}
+
+
+
+
+# Error function.
+# Usage: error_tarball_non_working <file_name>
+error_tarball_non_working() {
+	echo "Error: file '${1}' is a non-working .tar.gz tarball and cannot be used. Deleting it."
 }
 
 
@@ -385,7 +391,7 @@ archive_extract() {
 		# "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
 		tar -xf ${1} -C ${2} --strip-components 1
 	else
-		echo "Error: file '${1}' is not a real .tar.gz tarball and cannot be used. Deleting it."
+		error_tarball_non_working ${1}
 		rm -f ${1}
 	fi
 }
@@ -587,8 +593,8 @@ create_cli() {
 #			- Github latest tarball release is accessible from https://api.github.com/repos/<user>/<repository>/tarball
 update_cli() {
 	# Download a first time the latest version from the "main" branch to be able to launch the installation script from it to get latest modifications.
-	# The install function will download the well-named archive with the version name
-	# (so yes, it means that the CLI is downloaded twice)
+	# The install function will download the well-named archive with the version name.
+	# (so yes, it means that the CLI is downloaded multiple times)
 
 	local error_already_installed="Latest $NAME version is already installed ($VERSION $(detect_publication))."
 
@@ -598,25 +604,11 @@ update_cli() {
 	if [[ $(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4) = "$VERSION" ]] && [[ $(detect_publication) = $(get_config_value "$dir_config/$file_config" "publication") ]]; then
 		echo $error_already_installed
 	else
-		
-		# # To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
-		# # (archive is deleted in create_cli, which is called after in the process)
-		# if file $archive_tmp | grep -q 'gzip compressed data'; then
-		# 	# Delete current installed version to clean all old files
-		# 	delete_all exclude_main
-		
-		# 	# Execute the install_cli function of the script downloaded in /tmp
-		# 	exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
-		# else
-		# 	echo "Error: file '${1}' is not a real .tar.gz tarball and cannot be used. Deleting it, then exiting."
-		# 	rm -f ${1}
-		# 	exit
-		# fi
-
 		# To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
 		# (archive is deleted in create_cli, which is called after in the process)
 		if ! $NAME_LOWERCASE verify -d | grep -q 'Error:'; then
 
+			# Download latest available version
 			download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
 
 			# Delete current installed version to clean all old files
@@ -624,14 +616,9 @@ update_cli() {
 		
 			# Execute the install_cli function of the script downloaded in /tmp
 			exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
+		else
+			error_tarball_non_working $archive_tmp
 		fi
-
-		# # Delete current installed version to clean all old files
-		# delete_all exclude_main
-		
-		# # Execute the install_cli function of the script downloaded in /tmp
-		# exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
-
 	fi
 }
 
