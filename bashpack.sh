@@ -25,7 +25,7 @@
 
 
 
-export VERSION="1.0.9"
+export VERSION="1.0.10"
 
 export NAME="Bashpack"
 export NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
