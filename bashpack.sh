@@ -598,7 +598,6 @@ update_cli() {
 	if [[ $(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4) = "$VERSION" ]] && [[ $(detect_publication) = $(get_config_value "$dir_config/$file_config" "publication") ]]; then
 		echo $error_already_installed
 	else
-		download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
 		
 		# # To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
 		# # (archive is deleted in create_cli, which is called after in the process)
@@ -617,6 +616,9 @@ update_cli() {
 		# To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
 		# (archive is deleted in create_cli, which is called after in the process)
 		if ! $NAME_LOWERCASE verify -d | grep -q 'Error:'; then
+
+			download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
+
 			# Delete current installed version to clean all old files
 			delete_all exclude_main
 		
