@@ -606,7 +606,7 @@ update_cli() {
 	else
 		# Testing if publication has changed to get the latest available version from the chosen publication.
 		# This permit to change the used repository.
-		if ! $(detect_publication) = $(get_config_value "$dir_config/$file_config" "publication"); then
+		if [[ ! $(detect_publication) = $(get_config_value "$dir_config/$file_config" "publication") ]]; then
 			download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
 		fi
 
