@@ -126,7 +126,7 @@ loading() {
 
 	# Delete the loader character displayed after the loading has ended 
 	printf "\b%c" " "
-
+	
 	echo ""
 }
 export -f loading
@@ -259,14 +259,15 @@ export URL # Export URL to be usable on tests
 
 # Testing if currently in the cloned repository or in the installed CLI to get the wanted files for each situation.
 # This permit to test the CLI from the scripts directly and avoid having to release it at each test.
-if [[ -f "bashpack.sh" ]] && [[ -d "commands" ]] && [[ -d ".git" ]]; then
+if [[ -f "bashpack.sh" ]] && [[ -d "commands" ]]; then
+	echo "Warning: you are currently using a cloned repository of $NAME in $(pwd)."
 	COMMAND_UPDATE="commands/update.sh"
 	COMMAND_MAN="commands/man.sh"
 	COMMAND_VERIFY_INTALLATION="commands/tests.sh"
 else
 	COMMAND_UPDATE="$dir_src/update.sh"
 	COMMAND_MAN="$dir_src/man.sh"
-	COMMAND_VERIFY_INTALLATION="$dir_src/tests.sh"	# The tests.sh file must be part of the release and cannot be called directly with ./bashpack.sh verify
+	COMMAND_VERIFY_INTALLATION="$dir_src/tests.sh"
 fi
 COMMAND_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $file_systemd_update.service`"
 COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
@@ -427,7 +428,7 @@ download_cli() {
 
 	# Download source scripts
 	# Testing if repository is reachable with HTTP before doing anything.
-	if ! $NAME_LOWERCASE verify -r | grep -q 'Error:'; then
+	if ! export function_to_launch="check_repository_reachability" && exec $COMMAND_VERIFY_INTALLATION | grep -q 'Error:'; then
 		# Try to download with curl if exists
 		echo -n "Downloading sources from $archive_url "
 		if [[ $(exists_command "curl") = "exists" ]]; then
@@ -446,6 +447,8 @@ download_cli() {
 		else
 			error_file_not_downloaded $archive_url
 		fi
+	# else
+	# 	echo "Error: sources can't be downloaded because the repository is not reachable."
 	fi
 
 }
@@ -628,7 +631,7 @@ update_cli() {
 
 		# To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
 		# (archive is deleted in create_cli, which is called after in the process)
-		if ! $NAME_LOWERCASE verify -d | grep -q 'Error:'; then
+		# if ! $NAME_LOWERCASE verify -d | grep -q 'Error:'; then
 
 			# Download latest available version
 			download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
@@ -638,9 +641,9 @@ update_cli() {
 		
 			# Execute the install_cli function of the script downloaded in /tmp
 			exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
-		else
-			error_tarball_non_working $archive_tmp
-		fi
+		# else
+		# 	error_tarball_non_working $archive_tmp
+		# fi
 	fi
 }
 

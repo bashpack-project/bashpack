@@ -176,6 +176,43 @@ check_files() {
 
 
 
+
+# Permit to verify if downloading tarball works as expected.
+# Usage: 
+# - Latest version:		check_download
+# - Current version:	check_download <VERSION>
+check_download() {
+
+	local not_found=0
+	local defined_version=${1}
+
+
+	echo ">>> Attempting to download and extract archive from $URL/tarball/$defined_version"
+
+	download_cli "$URL/tarball/$defined_version" $archive_tmp $archive_dir_tmp
+	
+	if [[ -f $archive_tmp ]]; then
+		echo "Success! Verification passed. $archive_tmp found."
+	else
+		not_found=$((not_found+1))
+		echo "Error: verification failed. $archive_tmp not found."
+	fi
+	
+	if [[ -d $archive_dir_tmp ]]; then
+		echo "Success! Verification passed. $archive_dir_tmp found."
+	else
+		not_found=$((not_found+1))
+		echo "Error: verification failed. $archive_dir_tmp not found."
+	fi
+
+	# Cleaning downloaded temp files.
+	rm -rf $archive_tmp
+	rm -rf $archive_dir_tmp
+}
+
+
+
+
 # Permit to verify if the remote repository is reachable with HTTP.
 # Usage: 
 # - check_repository_reachability
@@ -202,42 +239,6 @@ check_repository_reachability() {
 
 
 
-
-# Permit to verify if downloading tarball works as expected.
-# Usage: 
-# - Latest version:		check_download
-# - Current version:	check_download <VERSION>
-check_download() {
-
-	local not_found=0
-	local defined_version=${1}
-
-
-	echo ">>> Attempting to download and extract archive from $URL"
-
-	download_cli "$URL/tarball/$defined_version" $archive_tmp $archive_dir_tmp
-	
-	if [[ -f $archive_tmp ]]; then
-		echo "Success! Verification passed. $archive_tmp found."
-	else
-		not_found=$((not_found+1))
-		echo "Error: verification failed. $archive_tmp not found."
-	fi
-	
-	if [[ -d $archive_dir_tmp ]]; then
-		echo "Success! Verification passed. $archive_dir_tmp found."
-	else
-		not_found=$((not_found+1))
-		echo "Error: verification failed. $archive_dir_tmp not found."
-	fi
-
-	# Cleaning downloaded temp files.
-	rm -rf $archive_tmp
-	rm -rf $archive_dir_tmp
-}
-
-
-
 if [[ $function_to_launch = "check_all" ]]; then
 	check_files
 	
@@ -249,7 +250,7 @@ if [[ $function_to_launch = "check_all" ]]; then
 
 
 	echo ""
-	check_repository_reachability
+	loading "check_repository_reachability"
 fi
 
 
@@ -270,7 +271,7 @@ fi
 
 
 if [[ $function_to_launch = "check_repository_reachability" ]]; then
-	check_repository_reachability
+	loading "check_repository_reachability"
 fi
 
 
