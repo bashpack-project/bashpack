@@ -256,12 +256,22 @@ export URL # Export URL to be usable on tests
 
 
 
-COMMAND_UPDATE="$dir_src/update.sh"
-COMMAND_MAN="$dir_src/man.sh"
+
+# Testing if currently in the cloned repository or in the installed CLI to get the wanted files for each situation.
+# This permit to test the CLI from the scripts directly and avoid having to release it at each test.
+if [[ -f "bashpack.sh" ]] && [[ -d "commands" ]] && [[ -d ".git" ]]; then
+	COMMAND_UPDATE="commands/update.sh"
+	COMMAND_MAN="commands/man.sh"
+	COMMAND_VERIFY_INTALLATION="commands/tests.sh"
+else
+	COMMAND_UPDATE="$dir_src/update.sh"
+	COMMAND_MAN="$dir_src/man.sh"
+	COMMAND_VERIFY_INTALLATION="$dir_src/tests.sh"	# The tests.sh file must be part of the release and cannot be called directly with ./bashpack.sh verify
+fi
 COMMAND_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $file_systemd_update.service`"
 COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
-COMMAND_VERIFY_INTALLATION="$dir_src/tests.sh"	# The tests.sh file must be part of the release and cannot be called directly with ./bashpack.sh verify
-# COMMAND_VERIFY_INTALLATION="commands/tests.sh"
+
+
 
 
 # Delete the installed command from the system
@@ -613,6 +623,9 @@ update_cli() {
 	if [[ $(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4) = "$VERSION" ]] && [[ $(detect_publication) = $(get_config_value "$dir_config/$file_config" "publication") ]]; then
 		echo $error_already_installed
 	else
+
+		# download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
+
 		# To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
 		# (archive is deleted in create_cli, which is called after in the process)
 		if ! $NAME_LOWERCASE verify -d | grep -q 'Error:'; then

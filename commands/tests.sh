@@ -192,7 +192,9 @@ check_repository_reachability() {
 
 
 	# Need to be improved to all 1**, 2** and 3** codes.
-	if [[ $http_code -ne 200 ]]; then
+	if [[ $http_code -eq 200 ]]; then
+		echo "Success! HTTP status code $http_code. Repository is reachable."
+	else 
 		echo "Error: HTTP status code $http_code. Repository is not reachable."
 	fi
 }
