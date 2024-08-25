@@ -402,8 +402,8 @@ export -f archive_extract
 
 # Download releases archives from the repository
 # Usages:
-# - download_cli <url of latest>
-# - download_cli <url of n.n.n>
+# - download_cli <url of latest> <temp archive> <temp dir for extraction>
+# - download_cli <url of n.n.n> <temp archive> <temp dir for extraction>
 download_cli() {
 
 	local archive_url=${1}
@@ -416,24 +416,28 @@ download_cli() {
 
 
 	# Download source scripts
-	# Try to download with curl if exists
-	echo -n "Downloading sources from $archive_url "
-	if [[ $(exists_command "curl") = "exists" ]]; then
-		echo -n "with curl...   "
-		loading "curl -sL $archive_url -o $archive_tmp"
+	# Testing if repository is reachable with HTTP before doing anything.
+	if ! $NAME_LOWERCASE verify -r | grep -q 'Error:'; then
+		# Try to download with curl if exists
+		echo -n "Downloading sources from $archive_url "
+		if [[ $(exists_command "curl") = "exists" ]]; then
+			echo -n "with curl...   "
+			loading "curl -sL $archive_url -o $archive_tmp"
 
-		archive_extract $archive_tmp $archive_dir_tmp
-		
-	# Try to download with wget if exists
-	elif [[ $(exists_command "wget") = "exists" ]]; then
-		echo -n "with wget...  "
-		loading "wget -q $archive_url -O $archive_tmp"
-		
-		archive_extract $archive_tmp $archive_dir_tmp
+			archive_extract $archive_tmp $archive_dir_tmp
+			
+		# Try to download with wget if exists
+		elif [[ $(exists_command "wget") = "exists" ]]; then
+			echo -n "with wget...  "
+			loading "wget -q $archive_url -O $archive_tmp"
+			
+			archive_extract $archive_tmp $archive_dir_tmp
 
-	else
-		error_file_not_downloaded $archive_url
+		else
+			error_file_not_downloaded $archive_url
+		fi
 	fi
+
 }
 export -f download_cli
 
@@ -609,8 +613,6 @@ update_cli() {
 	if [[ $(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4) = "$VERSION" ]] && [[ $(detect_publication) = $(get_config_value "$dir_config/$file_config" "publication") ]]; then
 		echo $error_already_installed
 	else
-		
-
 		# To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
 		# (archive is deleted in create_cli, which is called after in the process)
 		if ! $NAME_LOWERCASE verify -d | grep -q 'Error:'; then
@@ -662,9 +664,10 @@ case "$1" in
 			export function_to_launch="check_all" && exec $COMMAND_VERIFY_INTALLATION
 		else
 			case "$2" in
-				-f|--files)			export function_to_launch="check_files" && exec $COMMAND_VERIFY_INTALLATION ;;
-				-d|--download)		export function_to_launch="check_download" && exec $COMMAND_VERIFY_INTALLATION ;;
-				*)					echo "Error: unknown [verify] option '$2'."$'\n'"$USAGE" && exit ;;
+				-f|--files)						export function_to_launch="check_files" && exec $COMMAND_VERIFY_INTALLATION ;;
+				-d|--download)					export function_to_launch="check_download" && exec $COMMAND_VERIFY_INTALLATION ;;
+				-r|--repository-reachability)	export function_to_launch="check_repository_reachability" && exec $COMMAND_VERIFY_INTALLATION ;;
+				*)								echo "Error: unknown [verify] option '$2'."$'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
 	update)
