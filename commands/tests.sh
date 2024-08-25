@@ -220,9 +220,13 @@ if [[ $function_to_launch = "check_all" ]]; then
 	check_download $VERSION
 fi
 
+
+
 if [[ $function_to_launch = "check_files" ]]; then
 	check_files
 fi
+
+
 
 if [[ $function_to_launch = "check_download" ]]; then
 	check_download
