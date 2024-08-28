@@ -396,16 +396,16 @@ delete_all() {
 # Usage: archive_extract <archive> <destination directory>
 archive_extract() {
 	# # "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
-	tar -xf ${1} -C ${2} --strip-components 1
+	# tar -xf ${1} -C ${2} --strip-components 1
 
-	# # Testing if actually using a working tarball, and if not exiting script so we avoid breaking any installations.
-	# if file ${1} | grep -q 'gzip compressed data'; then
-	# 	# "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
-	# 	tar -xf ${1} -C ${2} --strip-components 1
-	# else
-	# 	error_tarball_non_working ${1}
-	# 	rm -f ${1}
-	# fi
+	# Testing if actually using a working tarball, and if not exiting script so we avoid breaking any installations.
+	if file ${1} | grep -q 'gzip compressed data'; then
+		# "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
+		tar -xf ${1} -C ${2} --strip-components 1
+	else
+		error_tarball_non_working ${1}
+		rm -f ${1}
+	fi
 }
 export -f archive_extract
 
@@ -475,9 +475,9 @@ download_cli() {
 		else
 			error_file_not_downloaded $archive_url
 		fi
-	else
-		# Just call again the same function to get its error message
-		check_repository_reachability
+	# else
+	# 	# Just call again the same function to get its error message
+	# 	check_repository_reachability
 	fi
 
 }
