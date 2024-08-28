@@ -456,7 +456,7 @@ download_cli() {
 
 	# Download source scripts
 	# Testing if repository is reachable with HTTP before doing anything.
-	if ! export function_to_launch="check_repository_reachability" && exec $COMMAND_VERIFY_INTALLATION | grep -q 'Error:'; then
+	if ! check_repository_reachability | grep -q 'Error:'; then
 		# Try to download with curl if exists
 		echo -n "Downloading sources from $archive_url "
 		if [[ $(exists_command "curl") = "exists" ]]; then
@@ -475,8 +475,9 @@ download_cli() {
 		else
 			error_file_not_downloaded $archive_url
 		fi
-	# else
-	# 	echo "Error: sources can't be downloaded because the repository is not reachable."
+	else
+		# Just call again the same function to get its error message
+		check_repository_reachability
 	fi
 
 }
@@ -660,7 +661,7 @@ update_cli() {
 		# # To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
 		# # (archive is deleted in create_cli, which is called after in the process)
 		# # if ! $NAME_LOWERCASE verify -d | grep -q 'Error:'; then
-		# if ! check_repository_reachability | grep -q 'Error:'; then
+		if ! check_repository_reachability | grep -q 'Error:'; then
 
 			# Download latest available version
 			download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
@@ -670,9 +671,9 @@ update_cli() {
 		
 			# Execute the install_cli function of the script downloaded in /tmp
 			exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
-		# else
-		# 	error_tarball_non_working $archive_tmp
-		# fi
+		else
+			error_tarball_non_working $archive_tmp
+		fi
 	fi
 }
 
