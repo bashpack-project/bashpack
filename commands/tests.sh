@@ -213,28 +213,28 @@ check_download() {
 
 
 
-# Permit to verify if the remote repository is reachable with HTTP.
-# Usage: 
-# - check_repository_reachability
-# - check_repository_reachability | grep -q "Error: "
-check_repository_reachability() {
+# # Permit to verify if the remote repository is reachable with HTTP.
+# # Usage: 
+# # - check_repository_reachability
+# # - check_repository_reachability | grep -q "Error: "
+# check_repository_reachability() {
 
-	if [[ $(exists_command "curl") = "exists" ]]; then
-		http_code=$(curl -s -I $URL | awk '/^HTTP/{print $2}')
-	elif [[ $(exists_command "wget") = "exists" ]]; then
-		http_code=$(wget --server-response "$URL" 2>&1 | awk '/^  HTTP/{print $2}')
-	else
-		echo "Error: can't get HTTP status code with curl or wget."
-	fi
+# 	if [[ $(exists_command "curl") = "exists" ]]; then
+# 		http_code=$(curl -s -I $URL | awk '/^HTTP/{print $2}')
+# 	elif [[ $(exists_command "wget") = "exists" ]]; then
+# 		http_code=$(wget --server-response "$URL" 2>&1 | awk '/^  HTTP/{print $2}')
+# 	else
+# 		echo "Error: can't get HTTP status code with curl or wget."
+# 	fi
 
 
-	# Need to be improved to all 1**, 2** and 3** codes.
-	if [[ $http_code -eq 200 ]]; then
-		echo "Success! HTTP status code $http_code. Repository is reachable."
-	else 
-		echo "Error: HTTP status code $http_code. Repository is not reachable."
-	fi
-}
+# 	# Need to be improved to all 1**, 2** and 3** codes.
+# 	if [[ $http_code -eq 200 ]]; then
+# 		echo "Success! HTTP status code $http_code. Repository is reachable."
+# 	else 
+# 		echo "Error: HTTP status code $http_code. Repository is not reachable."
+# 	fi
+# }
 
 
 

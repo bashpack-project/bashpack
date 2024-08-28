@@ -411,6 +411,32 @@ export -f archive_extract
 
 
 
+# Permit to verify if the remote repository is reachable with HTTP.
+# Usage: 
+# - check_repository_reachability
+# - check_repository_reachability | grep -q "Error: "
+check_repository_reachability() {
+
+	if [[ $(exists_command "curl") = "exists" ]]; then
+		http_code=$(curl -s -I $URL | awk '/^HTTP/{print $2}')
+	elif [[ $(exists_command "wget") = "exists" ]]; then
+		http_code=$(wget --server-response "$URL" 2>&1 | awk '/^  HTTP/{print $2}')
+	else
+		echo "Error: can't get HTTP status code with curl or wget."
+	fi
+
+
+	# Need to be improved to all 1**, 2** and 3** codes.
+	if [[ $http_code -eq 200 ]]; then
+		echo "Success! HTTP status code $http_code. Repository is reachable."
+	else 
+		echo "Error: HTTP status code $http_code. Repository is not reachable."
+	fi
+}
+
+
+
+
 # Download releases archives from the repository
 # Usages:
 # - download_cli <url of latest> <temp archive> <temp dir for extraction>
@@ -632,6 +658,7 @@ update_cli() {
 		# To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
 		# (archive is deleted in create_cli, which is called after in the process)
 		# if ! $NAME_LOWERCASE verify -d | grep -q 'Error:'; then
+		if ! check_repository_reachability | grep -q 'Error:'; then
 
 			# Download latest available version
 			download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
@@ -641,9 +668,9 @@ update_cli() {
 		
 			# Execute the install_cli function of the script downloaded in /tmp
 			exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
-		# else
-		# 	error_tarball_non_working $archive_tmp
-		# fi
+		else
+			error_tarball_non_working $archive_tmp
+		fi
 	fi
 }
 
