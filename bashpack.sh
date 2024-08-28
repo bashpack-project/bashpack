@@ -261,6 +261,7 @@ export URL # Export URL to be usable on tests
 # This permit to test the CLI from the scripts directly and avoid having to release it at each test.
 if [[ $0 = "./$NAME_LOWERCASE.sh" ]] && [[ -d "commands" ]]; then
 	echo "Warning: you are currently using '$0' which is located in $(pwd). This might be a cloned repository of $NAME."
+	echo ""
 	COMMAND_UPDATE="commands/update.sh"
 	COMMAND_MAN="commands/man.sh"
 	COMMAND_VERIFY_INTALLATION="commands/tests.sh"
@@ -433,6 +434,7 @@ check_repository_reachability() {
 		echo "Error: HTTP status code $http_code. Repository is not reachable."
 	fi
 }
+export -f check_repository_reachability
 
 
 
@@ -653,7 +655,7 @@ update_cli() {
 		echo $error_already_installed
 	else
 
-		# download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
+		download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
 
 		# To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
 		# (archive is deleted in create_cli, which is called after in the process)
@@ -692,6 +694,7 @@ install_cli() {
 
 	create_cli
 }
+
 
 
 
