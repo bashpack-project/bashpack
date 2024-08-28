@@ -259,8 +259,8 @@ export URL # Export URL to be usable on tests
 
 # Testing if currently in the cloned repository or in the installed CLI to get the wanted files for each situation.
 # This permit to test the CLI from the scripts directly and avoid having to release it at each test.
-if [[ -f "bashpack.sh" ]] && [[ -d "commands" ]]; then
-	echo "Warning: you are currently using a cloned repository of $NAME in $(pwd)."
+if [[ $0 = "bashpack.sh" ]] && [[ -d "commands" ]]; then
+	echo "Warning: you are currently using '$0' which is located in $(pwd). This might be a cloned repository of $NAME."
 	COMMAND_UPDATE="commands/update.sh"
 	COMMAND_MAN="commands/man.sh"
 	COMMAND_VERIFY_INTALLATION="commands/tests.sh"
