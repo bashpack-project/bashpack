@@ -25,7 +25,7 @@
 
 
 
-export VERSION="1.0.11"
+export VERSION="1.0.12"
 
 export NAME="Bashpack"
 export NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -430,8 +430,12 @@ check_repository_reachability() {
 	# Need to be improved to all 1**, 2** and 3** codes.
 	if [[ $http_code -eq 200 ]]; then
 		echo "Success! HTTP status code $http_code. Repository is reachable."
+	elif [ -z $http_code ]; then
+		echo "Error: HTTP status code not found. Repository is not reachable."
+		exit
 	else 
 		echo "Error: HTTP status code $http_code. Repository is not reachable."
+		exit
 	fi
 }
 export -f check_repository_reachability
@@ -453,7 +457,7 @@ download_cli() {
 	rm -rf $archive_dir_tmp
 	mkdir $archive_dir_tmp
 
-
+	
 	# Download source scripts
 	# Testing if repository is reachable with HTTP before doing anything.
 	if ! check_repository_reachability | grep -q 'Error:'; then
@@ -475,9 +479,9 @@ download_cli() {
 		else
 			error_file_not_downloaded $archive_url
 		fi
-	# else
-	# 	# Just call again the same function to get its error message
-	# 	check_repository_reachability
+	else
+		# Just call again the same function to get its error message
+		check_repository_reachability
 	fi
 
 }
@@ -661,7 +665,7 @@ update_cli() {
 		# # To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
 		# # (archive is deleted in create_cli, which is called after in the process)
 		# # if ! $NAME_LOWERCASE verify -d | grep -q 'Error:'; then
-		if ! check_repository_reachability | grep -q 'Error:'; then
+		# if ! check_repository_reachability | grep -q 'Error:'; then
 
 			# Download latest available version
 			download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
@@ -671,9 +675,10 @@ update_cli() {
 		
 			# Execute the install_cli function of the script downloaded in /tmp
 			exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
-		else
-			error_tarball_non_working $archive_tmp
-		fi
+		# else
+		# 	# error_tarball_non_working $archive_tmp
+		# 	check_repository_reachability
+		# fi
 	fi
 }
 
