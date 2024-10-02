@@ -1,56 +1,86 @@
-> [!CAUTION]
-> **This repository is intended for development and testing purposes.**\
-> Stable releases are available at https://github.com/bashpack-project/bashpack
+# Bashpack
 
-# Bashpack unstable & dev
+Bashpack is a **user-friendly Linux toolbox**.
 
-### Installation
+It has been designed for helping **Linux** users on their **day to day tasks**.
+It can also be useful for IT teams who needs to ensure security on their Linux park.
 
-**unstable**
+You can easily setup **automations** with the differents **options**.
+
+<br>
+
+## Features
+* Unified Linux updates ([APT](https://fr.wikipedia.org/wiki/Advanced_Packaging_Tool), [Snapcraft](https://snapcraft.io/)* & firmwares with [fwupd](https://github.com/fwupd/fwupd)*).
+* (incoming)     Secured Linux firewall (close ports with [nftables](https://wiki.nftables.org/wiki-nftables/index.php/Main_Page) ([Docker](https://www.docker.com/) compatible)).
+* (incoming)     Routes over VPN to one or many points ([OpenVPN](https://openvpn.net/) compatible).
+
+<br>
+
+\* _Snapcraft is not installed with this script, it's just handled if already used._
+
+\* _fwupd is installed only if your system is bare-metal._
+
+<br>
+
+## Quick start
+Copy/paste the following command blocks on your Linux terminal to manage your Bashpack installation.
+* _You must be sudo._
+* _Once installed, Bashpack will automatically update itself once a day ([Systemd](https://systemd.io/) installations **only**)._
+
+**Install**
 ```javascript
-curl -sL https://raw.githubusercontent.com/bashpack-project/bashpack-unstable/main/bashpack.sh -o bashpack.sh \
+curl -sL https://raw.githubusercontent.com/bashpack-project/bashpack/main/bashpack.sh -o bashpack.sh \
  && chmod +x bashpack.sh \
  && sudo ./bashpack.sh -i \
  && rm bashpack.sh
 ```
 
-**dev**
+**Update**
 ```javascript
-curl -sL https://raw.githubusercontent.com/bashpack-project/bashpack-dev/main/bashpack.sh -o bashpack.sh \
- && chmod +x bashpack.sh \
- && sudo ./bashpack.sh -i \
- && rm bashpack.sh
+sudo bp -u
 ```
 
-### Switch between repositories
-_To switch between repositories, you have to edit the "publication" parameter in /etc/bashpack/bashpack_config_
-
-**main to unstable**
-```javascript
-sudo sed -i 's/main/unstable/g' /etc/bashpack/bashpack_config \
- && sudo bp -u
-```
-
-**unstable to dev**
-```javascript
-sudo sed -i 's/unstable/dev/g' /etc/bashpack/bashpack_config \
- && sudo bp -u
-```
-
-**dev to unstable**
-```javascript
-sudo sed -i 's/dev/unstable/g' /etc/bashpack/bashpack_config \
- && sudo bp -u
-```
-
-### Uninstall
+**Uninstall**
 ```javascript
 sudo bp --self-delete
 ```
 
-### Usage
+<br>
+
+## Usage
+**Commands & options** are listed with the command:
 ```javascript
 bp --help
 ```
+
+<br>
+
+
+### Unified Linux updates
+Launch a pre-validated update of everything on your system:
+```javascript
+sudo bp update -y
+```
+
+Check next update ([Systemd](https://systemd.io/) installations **only**):
+```javascript
+sudo bp update --when
+```
+Get logs from last update ([Systemd](https://systemd.io/) installations **only**):
+```javascript
+sudo bp update --get-logs
+```
+
+<br>
+
+
+### Secured Linux firewall
+Incoming
+
+<br>
+
+
+### Routes over VPN
+Incoming
 
 <br>
