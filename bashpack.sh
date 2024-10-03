@@ -526,12 +526,8 @@ install_new_config_file() {
 		# Avoid reading comments and empty lines
 		if [[ ${line:0:1} != "#" ]] && [[ ${line:0:1} != "" ]]; then
 
-
 			option=$(echo $line | cut -d " " -f 1)
 			value=$(echo $line | cut -d " " -f 2)
-
-			echo "line:	" $line
-			echo "option:	" $option
 
 			# Replacing options values in temp config file with current configured values
 			# /^#/! is to avoid commented lines
@@ -625,14 +621,15 @@ create_cli() {
 			echo "[install] "$dir_config/$file_config" not found. Creating it... "
 			cp "$archive_dir_tmp/config/$file_config" "$dir_config/$file_config"
 		else
-			echo "[install] "$dir_config/$file_config" already exists. Leaving current values."
+			echo "[install] "$dir_config/$file_config" already exists. Copy new file while leaving current configured options."
+			install_new_config_file
 		fi
+		
 
 		# Creating a file that permit to know what is the current installed publication
 		echo "$PUBLICATION" > $file_current_publication
 
 		chmod +rw -R $dir_config
-
 
 
 		# Success message
@@ -646,11 +643,6 @@ create_cli() {
 			echo "$NAME $VERSION has been installed, but auto-completion options could not be installed because $dir_autocompletion does not exists."
 			echo "Please ensure that bash-completion package is installed, and retry the installation of $NAME."
 		fi
-
-
-		# Get latest config file version
-		install_new_config_file
-
 
 		# Clear temporary files & directories
 		rm -rf $dir_tmp/$NAME_LOWERCASE*		# Cleaning also temp files created during update process since create_cli is not called directly during update.

@@ -1,4 +1,8 @@
-# How to use this file ?
+# This is the main Bashpack configuration file.
+# Here are provided defaults options, and their values can be changed.
+# This file can meet several modifications within futures updates. Any value configured here will remain after updates.
+
+# How to use ?
 # A single space is necessary to match options with their values:
 # <option> <value>
 
