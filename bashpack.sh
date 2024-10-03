@@ -32,7 +32,7 @@ export NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
 export NAME_UPPERCASE=$(echo "$NAME" | tr a-z A-Z)
 export NAME_ALIAS="bp"
 
-BASE_URL="https://api.github.com/repos/bashpack-project"
+BASE_URL="https://api.github.com/repos/$NAME_LOWERCASE-project"
 
 USAGE="Usage: sudo $NAME_ALIAS [COMMAND] [OPTION]..."$'\n'"$NAME_ALIAS --help"
 
@@ -178,12 +178,6 @@ get_config_value() {
 	local parameter=${2}
 
 	while read -r line; do
-
-		# Avoid reading comments
-		if [[ $line =~ ^"${#}" ]]; then
-			break
-		fi
-
 		if [[ $line =~ ^([^=]+)[[:space:]]([^=]+)$ ]]; then
 			# Test first word (= parameter name)...
 			if [[ $parameter = ${BASH_REMATCH[1]} ]]; then
@@ -243,17 +237,17 @@ else
 fi
 
 # Depending on the chosen publication, the repository will be different:
-# - Main (= stable) releases:	https://github.com/bashpack-project/bashpack
-# - Unstable releases:			https://github.com/bashpack-project/bashpack-unstable
-# - Dev releases:				https://github.com/bashpack-project/bashpack-dev
+# - Main (= stable) releases:	https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE
+# - Unstable releases:			https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-unstable
+# - Dev releases:				https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-dev
 if [[ $PUBLICATION = "main" ]]; then
-	URL="$BASE_URL/bashpack"
+	URL="$BASE_URL/$NAME_LOWERCASE"
 
 elif [[ $PUBLICATION = "unstable" ]]; then
-	URL="$BASE_URL/bashpack-unstable"
+	URL="$BASE_URL/$NAME_LOWERCASE-unstable"
 
 elif [[ $PUBLICATION = "dev" ]]; then
-	URL="$BASE_URL/bashpack-dev"
+	URL="$BASE_URL/$NAME_LOWERCASE-dev"
 else 
 	echo "Error: repository not found."
 	echo "Please ensure that the publication parameter is configured with 'main', 'unstable' or 'dev' in $dir_config/$file_config."
@@ -378,7 +372,7 @@ delete_systemd() {
 			# Delete everything related to this script remaining in systemd directory
 			rm -f $dir_systemd/$NAME_LOWERCASE*
 
-			ls -al $dir_systemd | grep bashpack
+			ls -al $dir_systemd | grep $NAME_LOWERCASE
 
 			systemctl daemon-reload
 		fi
@@ -405,12 +399,9 @@ delete_all() {
 # Helper function to extract a .tar.gz archive
 # Usage: archive_extract <archive> <destination directory>
 archive_extract() {
-	# # "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
-	# tar -xf ${1} -C ${2} --strip-components 1
-
 	# Testing if actually using a working tarball, and if not exiting script so we avoid breaking any installations.
 	if file ${1} | grep -q 'gzip compressed data'; then
-		# "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
+		# "tar --strip-components 1" permit to extract sources in /tmp/$NAME_LOWERCASE and don't create a new directory /tmp/$NAME_LOWERCASE/$NAME_LOWERCASE
 		tar -xf ${1} -C ${2} --strip-components 1
 	else
 		error_tarball_non_working ${1}
@@ -524,6 +515,37 @@ detect_publication() {
 
 
 
+# This function will install the new config file given within new versions, while keeping user configured values
+# Usage : install_new_config_file
+install_new_config_file() {
+
+	local file_config_current="$dir_config/$file_config"
+	local file_config_temp="$archive_dir_tmp/config/$file_config"
+
+	while read -r line; do
+		# Avoid reading comments and empty lines
+		if [[ ${line:0:1} != "#" ]] && [[ ${line:0:1} != "" ]]; then
+
+
+			option=$(echo $line | cut -d " " -f 1)
+			value=$(echo $line | cut -d " " -f 2)
+
+			echo "line:	" $line
+			echo "option:	" $option
+
+			# Replacing options values in temp config file with current configured values
+			# /^#/! is to avoid commented lines
+			sed -i "/^#/! s/$option.*/$line/g" $file_config_temp
+
+		fi	
+	done < "$file_config_current"
+
+	cp $file_config_temp $file_config_current
+
+}
+
+
+
 
 # Create the command from the downloaded archives
 # Works together with install or update functions
@@ -624,6 +646,10 @@ create_cli() {
 			echo "$NAME $VERSION has been installed, but auto-completion options could not be installed because $dir_autocompletion does not exists."
 			echo "Please ensure that bash-completion package is installed, and retry the installation of $NAME."
 		fi
+
+
+		# Get latest config file version
+		install_new_config_file
 
 
 		# Clear temporary files & directories

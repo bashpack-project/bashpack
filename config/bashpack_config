@@ -5,9 +5,11 @@
 # publication can be "main", "unstable" or "dev"
 # - Production systems should always be configured with "main"
 # - "dev" and "unstable" are meant for development use only, you should never use them.
-publication main
+publication maingfghryjh
 
 # firewall can be "auto" or "disable"
 # auto = automatically install & configure firewall at each update
 # disable = do not
-firewall auto
+firewall autoqsdqsdqd
+
+#EOF
