@@ -25,10 +25,11 @@
 
 
 
-export VERSION="1.0.12"
+export VERSION="1.1.0"
 
 export NAME="Bashpack"
 export NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
+export NAME_UPPERCASE=$(echo "$NAME" | tr a-z A-Z)
 export NAME_ALIAS="bp"
 
 BASE_URL="https://api.github.com/repos/bashpack-project"
@@ -36,6 +37,7 @@ BASE_URL="https://api.github.com/repos/bashpack-project"
 USAGE="Usage: sudo $NAME_ALIAS [COMMAND] [OPTION]..."$'\n'"$NAME_ALIAS --help"
 
 export yes="@(yes|Yes|yEs|yeS|YEs|YeS|yES|YES|y|Y)"
+export continue_question="Do you want to continue? [y/N] "
 
 
 
@@ -176,6 +178,12 @@ get_config_value() {
 	local parameter=${2}
 
 	while read -r line; do
+
+		# Avoid reading comments
+		if [[ $line =~ ^"${#}" ]]; then
+			break
+		fi
+
 		if [[ $line =~ ^([^=]+)[[:space:]]([^=]+)$ ]]; then
 			# Test first word (= parameter name)...
 			if [[ $parameter = ${BASH_REMATCH[1]} ]]; then
@@ -264,11 +272,13 @@ if [[ $0 = "./$NAME_LOWERCASE.sh" ]] && [[ -d "commands" ]]; then
 	echo ""
 	COMMAND_UPDATE="commands/update.sh"
 	COMMAND_MAN="commands/man.sh"
-	COMMAND_VERIFY_INTALLATION="commands/tests.sh"
+	COMMAND_VERIFY="commands/tests.sh"
+	COMMAND_FIREWALL="commands/firewall.sh"
 else
 	COMMAND_UPDATE="$dir_src/update.sh"
 	COMMAND_MAN="$dir_src/man.sh"
-	COMMAND_VERIFY_INTALLATION="$dir_src/tests.sh"
+	COMMAND_VERIFY="$dir_src/tests.sh"
+	COMMAND_FIREWALL="$dir_src/firewall.sh"	
 fi
 COMMAND_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $file_systemd_update.service`"
 COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
@@ -713,13 +723,24 @@ case "$1" in
 	man)					$COMMAND_MAN ;;
 	verify)
 		if [[ -z "$2" ]]; then
-			export function_to_launch="check_all" && exec $COMMAND_VERIFY_INTALLATION
+			export function_to_launch="check_all" && exec $COMMAND_VERIFY
 		else
 			case "$2" in
-				-f|--files)						export function_to_launch="check_files" && exec $COMMAND_VERIFY_INTALLATION ;;
-				-d|--download)					export function_to_launch="check_download" && exec $COMMAND_VERIFY_INTALLATION ;;
-				-r|--repository-reachability)	export function_to_launch="check_repository_reachability" && exec $COMMAND_VERIFY_INTALLATION ;;
-				*)								echo "Error: unknown [verify] option '$2'."$'\n'"$USAGE" && exit ;;
+				-f|--files)						export function_to_launch="check_files" && exec $COMMAND_VERIFY ;;
+				-d|--download)					export function_to_launch="check_download" && exec $COMMAND_VERIFY ;;
+				-r|--repository-reachability)	export function_to_launch="check_repository_reachability" && exec $COMMAND_VERIFY ;;
+				*)								echo "Error: unknown [$1] option '$2'."$'\n'"$USAGE" && exit ;;
+			esac
+		fi ;;
+	firewall)
+		if [[ -z "$2" ]]; then
+			exec $COMMAND_FIREWALL
+		else
+			case "$2" in
+				-o|--open-inbound-port)			exec $COMMAND_FIREWALL ;;
+				-e|--enable)					exec $COMMAND_FIREWALL ;;
+				--disable)						exec $COMMAND_FIREWALL ;;
+				*)								echo "Error: unknown [$1] option '$2'."$'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
 	update)
@@ -732,7 +753,7 @@ case "$1" in
 					--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $COMMAND_UPDATE ;;
 					--when)				$COMMAND_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
 					--get-logs)			$COMMAND_SYSTEMD_LOGS ;;
-					*)					echo "Error: unknown [update] option '$2'."$'\n'"$USAGE" && exit ;;
+					*)					echo "Error: unknown [$1] option '$2'."$'\n'"$USAGE" && exit ;;
 				esac
 			# done
 		fi ;;
