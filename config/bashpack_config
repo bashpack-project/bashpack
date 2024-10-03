@@ -6,13 +6,17 @@
 # A single space is necessary to match options with their values:
 # <option> <value>
 
-# [option] publication can be "main", "unstable" or "dev"
-# - Production systems should always be configured with "main"
-# - "dev" and "unstable" are meant for development use only, you should never use them.
+# [option] publication
+# This option allow to change remote repository to get futures updates.
+# - main = repository for production systems 
+# - unstable = meant for development use only, you should never use this.
+# - dev = meant for development use only, you should never use this.
 publication main
 
-# [option] firewall can be "auto" or "disable"
-# - auto = let manage the firewall with Bashpack. Default is inbounds = closed and outbounds = open. You can add custom rules within the firewall configuration.
+# [option] firewall
+# This option allow Bashpack to manage the firewall of the system.
+# Default is inbounds = closed and outbounds = open. You can add custom rules within the firewall configuration.
+# - auto = let manage the firewall with Bashpack. 
 # - disabled = do not manage the firewall with Bashpack
 firewall disabled
 
