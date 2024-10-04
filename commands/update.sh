@@ -25,67 +25,67 @@
 
 
 
-continue_question="Do you want to continue? [y/N] "
+# continue_question="Do you want to continue? [y/N] "
 
 
 
 
-# Usage : text_error_cant_install <manager>
-install_package_error() {
-	echo "Error: could not be installed with ${1}."
-}
+# # Usage : text_error_cant_install <manager>
+# install_package_error() {
+# 	echo "Error: could not be installed with ${1}."
+# }
 
 
 
 
-# Function to install packages on the system (and package managers also, because package managers are packages themselves).
-# Package manager order to search packages candidates: Apt -> Snapcraft -> Error "not found"
-# Usage : install_package <manager> <package>
-install_package() {
-	local manager=${1}
-	local package=${2}
+# # Function to install packages on the system (and package managers also, because package managers are packages themselves).
+# # Package manager order to search packages candidates: Apt -> Snapcraft -> Error "not found"
+# # Usage : install_package <manager> <package>
+# install_package() {
+# 	local manager=${1}
+# 	local package=${2}
 
-	echo ""
-	echo "Installing $package with $manager...  "
-	echo ""
+# 	echo ""
+# 	echo "Installing $package with $manager...  "
+# 	echo ""
 
-	if ([[ $manager = "apt" ]] && [[ $(exists_command "apt") = "exists" ]]) || [[ $(exists_command "apt") = "exists" ]]; then
-		apt install -y $package
-	elif ([[ $manager = "snap" ]] && [[ $(exists_command "snap") = "exists" ]]) || [[ $(exists_command "snap") = "exists" ]]; then
-		snap install $package
-	else
-		echo "$package: Error: package not found."
-	fi
+# 	if ([[ $manager = "apt" ]] && [[ $(exists_command "apt") = "exists" ]]) || [[ $(exists_command "apt") = "exists" ]]; then
+# 		apt install -y $package
+# 	elif ([[ $manager = "snap" ]] && [[ $(exists_command "snap") = "exists" ]]) || [[ $(exists_command "snap") = "exists" ]]; then
+# 		snap install $package
+# 	else
+# 		echo "$package: Error: package not found."
+# 	fi
 
-	echo ""
-}
-
-
+# 	echo ""
+# }
 
 
-# Function to delete packages on the system.
-# Package manager order to search packages candidates: Apt -> Snapcraft -> Error "not found"
-# Usage : delete_package $package <$manager> <yes>
-delete_package() {
-	local package=${1}
-	local manager=${2}
 
-	echo ""
-	if [[ $manager != "" ]]; then
-		echo "Uninstalling $package with $manager...  "
-	else
-		echo "Uninstalling $package with the default system manager...  "
-	fi
-	echo ""
 
-	if ([[ $manager = "apt" ]] && [[ $(exists_command "apt") = "exists" ]]) || [[ $(exists_command "apt") = "exists" ]]; then
-		apt remove -y $package
-	elif ([[ $manager = "snap" ]] && [[ $(exists_command "snap") = "exists" ]]) || [[ $(exists_command "snap") = "exists" ]]; then
-		snap remove $package
-	else
-		echo "$package: Error: package not found."
-	fi
-}
+# # Function to delete packages on the system.
+# # Package manager order to search packages candidates: Apt -> Snapcraft -> Error "not found"
+# # Usage : delete_package $package <$manager> <yes>
+# delete_package() {
+# 	local package=${1}
+# 	local manager=${2}
+
+# 	echo ""
+# 	if [[ $manager != "" ]]; then
+# 		echo "Uninstalling $package with $manager...  "
+# 	else
+# 		echo "Uninstalling $package with the default system manager...  "
+# 	fi
+# 	echo ""
+
+# 	if ([[ $manager = "apt" ]] && [[ $(exists_command "apt") = "exists" ]]) || [[ $(exists_command "apt") = "exists" ]]; then
+# 		apt remove -y $package
+# 	elif ([[ $manager = "snap" ]] && [[ $(exists_command "snap") = "exists" ]]) || [[ $(exists_command "snap") = "exists" ]]; then
+# 		snap remove $package
+# 	else
+# 		echo "$package: Error: package not found."
+# 	fi
+# }
 
 
 

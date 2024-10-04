@@ -25,17 +25,19 @@
 
 
 
-export VERSION="1.0.12"
+export VERSION="1.1.1"
 
 export NAME="Bashpack"
 export NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
+export NAME_UPPERCASE=$(echo "$NAME" | tr a-z A-Z)
 export NAME_ALIAS="bp"
 
-BASE_URL="https://api.github.com/repos/bashpack-project"
+BASE_URL="https://api.github.com/repos/$NAME_LOWERCASE-project"
 
 USAGE="Usage: sudo $NAME_ALIAS [COMMAND] [OPTION]..."$'\n'"$NAME_ALIAS --help"
 
 export yes="@(yes|Yes|yEs|yeS|YEs|YeS|yES|YES|y|Y)"
+export continue_question="Do you want to continue? [y/N] "
 
 
 
@@ -169,23 +171,23 @@ error_tarball_non_working() {
 
 
 # Getting values stored in configuration files
-# Usage: read_config_value "<file>" "<parameter>"
+# Usage: read_config_value "<file>" "<option>"
 get_config_value() {
-
 	local file=${1}
-	local parameter=${2}
+	local option=${2}
 
 	while read -r line; do
-		if [[ $line =~ ^([^=]+)[[:space:]]([^=]+)$ ]]; then
-			# Test first word (= parameter name)...
-			if [[ $parameter = ${BASH_REMATCH[1]} ]]; then
-				# ... to get the second word (= value of the parameter)
-				echo "${BASH_REMATCH[2]}" # As this is a string, we use echo to return the value
-				break
+		# Avoid reading comments and empty lines
+		if [[ ${line:0:1} != "#" ]] && [[ ${line:0:1} != "" ]]; then
+			if [[ $line =~ ^([^=]+)[[:space:]]([^=]+)$ ]]; then
+				# Test first word (= option name)...
+				if [[ $option = ${BASH_REMATCH[1]} ]]; then
+					# ... to get the second word (= value of the option)
+					echo "${BASH_REMATCH[2]}" # As this is a string, we use echo to return the value
+					break
+				fi
 			fi
-		else 
-			break
-		fi
+		fi	
 	done < "$file"
 }
 export -f get_config_value
@@ -235,20 +237,19 @@ else
 fi
 
 # Depending on the chosen publication, the repository will be different:
-# - Main (= stable) releases:	https://github.com/bashpack-project/bashpack
-# - Unstable releases:			https://github.com/bashpack-project/bashpack-unstable
-# - Dev releases:				https://github.com/bashpack-project/bashpack-dev
+# - Main (= stable) releases:	https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE
+# - Unstable releases:			https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-unstable
+# - Dev releases:				https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-dev
 if [[ $PUBLICATION = "main" ]]; then
-	URL="$BASE_URL/bashpack"
+	URL="$BASE_URL/$NAME_LOWERCASE"
 
 elif [[ $PUBLICATION = "unstable" ]]; then
-	URL="$BASE_URL/bashpack-unstable"
+	URL="$BASE_URL/$NAME_LOWERCASE-unstable"
 
 elif [[ $PUBLICATION = "dev" ]]; then
-	URL="$BASE_URL/bashpack-dev"
+	URL="$BASE_URL/$NAME_LOWERCASE-dev"
 else 
-	echo "Error: repository not found."
-	echo "Please ensure that the publication parameter is configured with 'main', 'unstable' or 'dev' in $dir_config/$file_config."
+	echo "Error: publication not found. Please ensure that the publication option is configured with 'main', 'unstable' or 'dev' in $dir_config/$file_config."
 	exit
 fi
 export URL # Export URL to be usable on tests
@@ -264,11 +265,13 @@ if [[ $0 = "./$NAME_LOWERCASE.sh" ]] && [[ -d "commands" ]]; then
 	echo ""
 	COMMAND_UPDATE="commands/update.sh"
 	COMMAND_MAN="commands/man.sh"
-	COMMAND_VERIFY_INTALLATION="commands/tests.sh"
+	COMMAND_VERIFY="commands/tests.sh"
+	COMMAND_FIREWALL="commands/firewall.sh"
 else
 	COMMAND_UPDATE="$dir_src/update.sh"
 	COMMAND_MAN="$dir_src/man.sh"
-	COMMAND_VERIFY_INTALLATION="$dir_src/tests.sh"
+	COMMAND_VERIFY="$dir_src/tests.sh"
+	COMMAND_FIREWALL="$dir_src/firewall.sh"	
 fi
 COMMAND_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $file_systemd_update.service`"
 COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
@@ -368,7 +371,7 @@ delete_systemd() {
 			# Delete everything related to this script remaining in systemd directory
 			rm -f $dir_systemd/$NAME_LOWERCASE*
 
-			ls -al $dir_systemd | grep bashpack
+			ls -al $dir_systemd | grep $NAME_LOWERCASE
 
 			systemctl daemon-reload
 		fi
@@ -395,12 +398,9 @@ delete_all() {
 # Helper function to extract a .tar.gz archive
 # Usage: archive_extract <archive> <destination directory>
 archive_extract() {
-	# # "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
-	# tar -xf ${1} -C ${2} --strip-components 1
-
 	# Testing if actually using a working tarball, and if not exiting script so we avoid breaking any installations.
 	if file ${1} | grep -q 'gzip compressed data'; then
-		# "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
+		# "tar --strip-components 1" permit to extract sources in /tmp/$NAME_LOWERCASE and don't create a new directory /tmp/$NAME_LOWERCASE/$NAME_LOWERCASE
 		tar -xf ${1} -C ${2} --strip-components 1
 	else
 		error_tarball_non_working ${1}
@@ -514,6 +514,33 @@ detect_publication() {
 
 
 
+# This function will install the new config file given within new versions, while keeping user configured values
+# Usage : install_new_config_file
+install_new_config_file() {
+
+	local file_config_current="$dir_config/$file_config"
+	local file_config_temp="$archive_dir_tmp/config/$file_config"
+
+	while read -r line; do
+		# Avoid reading comments and empty lines
+		if [[ ${line:0:1} != "#" ]] && [[ ${line:0:1} != "" ]]; then
+
+			option=$(echo $line | cut -d " " -f 1)
+			value=$(echo $line | cut -d " " -f 2)
+
+			# Replacing options values in temp config file with current configured values
+			# /^#/! is to avoid commented lines
+			sed -i "/^#/! s/$option.*/$line/g" $file_config_temp
+
+		fi	
+	done < "$file_config_current"
+
+	cp $file_config_temp $file_config_current
+
+}
+
+
+
 
 # Create the command from the downloaded archives
 # Works together with install or update functions
@@ -593,14 +620,15 @@ create_cli() {
 			echo "[install] "$dir_config/$file_config" not found. Creating it... "
 			cp "$archive_dir_tmp/config/$file_config" "$dir_config/$file_config"
 		else
-			echo "[install] "$dir_config/$file_config" already exists. Leaving current values."
+			echo "[install] "$dir_config/$file_config" already exists. Copy new file while leaving current configured options."
+			install_new_config_file
 		fi
+		
 
 		# Creating a file that permit to know what is the current installed publication
 		echo "$PUBLICATION" > $file_current_publication
 
 		chmod +rw -R $dir_config
-
 
 
 		# Success message
@@ -614,7 +642,6 @@ create_cli() {
 			echo "$NAME $VERSION has been installed, but auto-completion options could not be installed because $dir_autocompletion does not exists."
 			echo "Please ensure that bash-completion package is installed, and retry the installation of $NAME."
 		fi
-
 
 		# Clear temporary files & directories
 		rm -rf $dir_tmp/$NAME_LOWERCASE*		# Cleaning also temp files created during update process since create_cli is not called directly during update.
@@ -713,13 +740,24 @@ case "$1" in
 	man)					$COMMAND_MAN ;;
 	verify)
 		if [[ -z "$2" ]]; then
-			export function_to_launch="check_all" && exec $COMMAND_VERIFY_INTALLATION
+			export function_to_launch="check_all" && exec $COMMAND_VERIFY
 		else
 			case "$2" in
-				-f|--files)						export function_to_launch="check_files" && exec $COMMAND_VERIFY_INTALLATION ;;
-				-d|--download)					export function_to_launch="check_download" && exec $COMMAND_VERIFY_INTALLATION ;;
-				-r|--repository-reachability)	export function_to_launch="check_repository_reachability" && exec $COMMAND_VERIFY_INTALLATION ;;
-				*)								echo "Error: unknown [verify] option '$2'."$'\n'"$USAGE" && exit ;;
+				-f|--files)						export function_to_launch="check_files" && exec $COMMAND_VERIFY ;;
+				-d|--download)					export function_to_launch="check_download" && exec $COMMAND_VERIFY ;;
+				-r|--repository-reachability)	export function_to_launch="check_repository_reachability" && exec $COMMAND_VERIFY ;;
+				*)								echo "Error: unknown [$1] option '$2'."$'\n'"$USAGE" && exit ;;
+			esac
+		fi ;;
+	firewall)
+		if [[ -z "$2" ]]; then
+			exec $COMMAND_FIREWALL
+		else
+			case "$2" in
+				-o|--open-inbound-port)			exec $COMMAND_FIREWALL ;;
+				-e|--enable)					exec $COMMAND_FIREWALL ;;
+				--disable)						exec $COMMAND_FIREWALL ;;
+				*)								echo "Error: unknown [$1] option '$2'."$'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
 	update)
@@ -732,7 +770,7 @@ case "$1" in
 					--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $COMMAND_UPDATE ;;
 					--when)				$COMMAND_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
 					--get-logs)			$COMMAND_SYSTEMD_LOGS ;;
-					*)					echo "Error: unknown [update] option '$2'."$'\n'"$USAGE" && exit ;;
+					*)					echo "Error: unknown [$1] option '$2'."$'\n'"$USAGE" && exit ;;
 				esac
 			# done
 		fi ;;
