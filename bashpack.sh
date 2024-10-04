@@ -173,28 +173,12 @@ error_tarball_non_working() {
 # Getting values stored in configuration files
 # Usage: read_config_value "<file>" "<option>"
 get_config_value() {
-
 	local file=${1}
 	local option=${2}
-
-	# while read -r line; do
-	# 	if [[ $line =~ ^([^=]+)[[:space:]]([^=]+)$ ]]; then
-	# 		# Test first word (= option name)...
-	# 		if [[ $option = ${BASH_REMATCH[1]} ]]; then
-	# 			# ... to get the second word (= value of the option)
-	# 			echo "${BASH_REMATCH[2]}" # As this is a string, we use echo to return the value
-	# 			break
-	# 		fi
-	# 	else 
-	# 		break
-	# 	fi
-	# done < "$file"
-
 
 	while read -r line; do
 		# Avoid reading comments and empty lines
 		if [[ ${line:0:1} != "#" ]] && [[ ${line:0:1} != "" ]]; then
-
 			if [[ $line =~ ^([^=]+)[[:space:]]([^=]+)$ ]]; then
 				# Test first word (= option name)...
 				if [[ $option = ${BASH_REMATCH[1]} ]]; then
@@ -203,9 +187,8 @@ get_config_value() {
 					break
 				fi
 			fi
-
 		fi	
-	done < "$file_config_current"
+	done < "$file"
 }
 export -f get_config_value
 
@@ -266,8 +249,7 @@ elif [[ $PUBLICATION = "unstable" ]]; then
 elif [[ $PUBLICATION = "dev" ]]; then
 	URL="$BASE_URL/$NAME_LOWERCASE-dev"
 else 
-	echo "Error: repository not found."
-	echo "Please ensure that the publication option is configured with 'main', 'unstable' or 'dev' in $dir_config/$file_config."
+	echo "Error: publication not found. Please ensure that the publication option is configured with 'main', 'unstable' or 'dev' in $dir_config/$file_config."
 	exit
 fi
 export URL # Export URL to be usable on tests
