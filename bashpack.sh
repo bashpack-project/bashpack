@@ -177,35 +177,35 @@ get_config_value() {
 	local file=${1}
 	local option=${2}
 
-	while read -r line; do
-		if [[ $line =~ ^([^=]+)[[:space:]]([^=]+)$ ]]; then
-			# Test first word (= option name)...
-			if [[ $option = ${BASH_REMATCH[1]} ]]; then
-				# ... to get the second word (= value of the option)
-				echo "${BASH_REMATCH[2]}" # As this is a string, we use echo to return the value
-				break
-			fi
-		else 
-			break
-		fi
-	done < "$file"
-
-
 	# while read -r line; do
-	# 	# Avoid reading comments and empty lines
-	# 	if [[ ${line:0:1} != "#" ]] && [[ ${line:0:1} != "" ]]; then
-
-	# 		if [[ $line =~ ^([^=]+)[[:space:]]([^=]+)$ ]]; then
-	# 			# Test first word (= option name)...
-	# 			if [[ $option = ${BASH_REMATCH[1]} ]]; then
-	# 				# ... to get the second word (= value of the option)
-	# 				echo "${BASH_REMATCH[2]}" # As this is a string, we use echo to return the value
-	# 				break
-	# 			fi
+	# 	if [[ $line =~ ^([^=]+)[[:space:]]([^=]+)$ ]]; then
+	# 		# Test first word (= option name)...
+	# 		if [[ $option = ${BASH_REMATCH[1]} ]]; then
+	# 			# ... to get the second word (= value of the option)
+	# 			echo "${BASH_REMATCH[2]}" # As this is a string, we use echo to return the value
+	# 			break
 	# 		fi
+	# 	else 
+	# 		break
+	# 	fi
+	# done < "$file"
 
-	# 	fi	
-	# done < "$file_config_current"
+
+	while read -r line; do
+		# Avoid reading comments and empty lines
+		if [[ ${line:0:1} != "#" ]] && [[ ${line:0:1} != "" ]]; then
+
+			if [[ $line =~ ^([^=]+)[[:space:]]([^=]+)$ ]]; then
+				# Test first word (= option name)...
+				if [[ $option = ${BASH_REMATCH[1]} ]]; then
+					# ... to get the second word (= value of the option)
+					echo "${BASH_REMATCH[2]}" # As this is a string, we use echo to return the value
+					break
+				fi
+			fi
+
+		fi	
+	done < "$file_config_current"
 }
 export -f get_config_value
 

@@ -15,9 +15,9 @@ publication main
 
 # [option] firewall
 # This option allow Bashpack to manage the firewall of the system.
-# Default is inbounds = closed and outbounds = open. You can add custom rules within the firewall configuration.
-# - auto = let manage the firewall with Bashpack. 
-# - disabled = do not manage the firewall with Bashpack
-firewall disabled
+# Default ruleset: [inbounds any block] and [outbounds any allow]. You can add custom rules within the firewall configuration.
+# - true = let manage the firewall with Bashpack. 
+# - false = do not manage the firewall with Bashpack
+firewall false
 
 #EOF
