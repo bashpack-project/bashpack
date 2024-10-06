@@ -1,1 +1,23 @@
+# This is the main Bashpack configuration file.
+# Here are provided defaults options, and their values can be changed.
+# This file can meet several modifications within futures updates. Any value configured here will remain after updates.
+
+# How to use ?
+# A single space is necessary to match options with their values:
+# <option> <value>
+
+# [option] publication
+# This option allow to change remote repository to get futures updates.
+# - main = repository for production systems 
+# - unstable = meant for development use only, you should never use this.
+# - dev = meant for development use only, you should never use this.
 publication main
+
+# [option] firewall
+# This option allow Bashpack to manage the firewall of the system.
+# Default ruleset: [inbounds any block] and [outbounds any allow]. You can add custom rules within the firewall configuration.
+# - true = let manage the firewall with Bashpack. 
+# - false = do not manage the firewall with Bashpack
+firewall false
+
+#EOF

@@ -25,17 +25,19 @@
 
 
 
-export VERSION="1.0.4"
+export VERSION="1.1.1"
 
 export NAME="Bashpack"
 export NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
+export NAME_UPPERCASE=$(echo "$NAME" | tr a-z A-Z)
 export NAME_ALIAS="bp"
 
-BASE_URL="https://api.github.com/repos/bashpack-project"
+BASE_URL="https://api.github.com/repos/$NAME_LOWERCASE-project"
 
 USAGE="Usage: sudo $NAME_ALIAS [COMMAND] [OPTION]..."$'\n'"$NAME_ALIAS --help"
 
 export yes="@(yes|Yes|yEs|yeS|YEs|YeS|yES|YES|y|Y)"
+export continue_question="Do you want to continue? [y/N] "
 
 
 
@@ -62,23 +64,37 @@ else
 				&&		echo "     --get-logs   	display systemd logs." \
 				&&		echo "     --when   		display systemd next service cycle." \
 				&&		echo "" \
+				&&		echo "$NAME $VERSION" \
+				&&		exit ;;
+			esac
+		;;
+		verify)
+			case "$2" in
+				--help) echo "$USAGE" \
 				&&		echo "" \
+				&&		echo "Verify current $NAME installation on your system." \
+				&&		echo "" \
+				&&		echo "Options:" \
+				&&		echo " -f, --files		verify that all files composing the CLI are presents." \
+				&&		echo " -d, --download		verify that download functions are working." \
+				&&		echo "" \
+				&&		echo "$NAME $VERSION" \
 				&&		exit ;;
 			esac
 		;;
 		--help) echo "$USAGE" \
 		&&		echo "" \
 		&&		echo "Options:" \
-		&&		echo " -i, --self-install		install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
-		&&		echo " -u, --self-update		update your current $NAME installation to the latest available version on the chosen publication." \
-		&&		echo "     --self-delete		delete $NAME from your system." \
-		&&		echo "     --help   			display this information." \
-		&&		echo " -p, --publication		display your current $NAME installation publication stage (main, unstable, dev)." \
-		&&		echo "     --version			display version." \
+		&&		echo " -i, --self-install	install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
+		&&		echo " -u, --self-update	update your current $NAME installation to the latest available version on the chosen publication." \
+		&&		echo "     --self-delete	delete $NAME from your system." \
+		&&		echo "     --help   		display this information." \
+		&&		echo " -p, --publication	display your current $NAME installation publication stage (main, unstable, dev)." \
+		&&		echo "     --version		display version." \
 		&&		echo "" \
 		&&		echo "Commands:" \
-		&&		echo " update [OPTION]	use '$NAME_ALIAS update --help' for the command options." \
-		&&		echo "" \
+		&&		echo " update [OPTION]	update everything on your system. '$NAME_ALIAS update --help' for options." \
+		&&		echo " verify [OPTION]	verify the current $NAME installation health. '$NAME_ALIAS verify --help' for options." \
 		&&		echo "" \
 		&&		echo "$NAME $VERSION" \
 		&&		exit ;;
@@ -112,7 +128,7 @@ loading() {
 
 	# Delete the loader character displayed after the loading has ended 
 	printf "\b%c" " "
-
+	
 	echo ""
 }
 export -f loading
@@ -139,33 +155,39 @@ export -f exists_command
 # Error function.
 # Usage: error_file_not_downloaded <file_url>
 error_file_not_downloaded() {
-	echo ""
-	echo "Error: ${1} not found."
-	echo "Are curl or wget able to reach it from your system?"
-	echo ""
+	echo "Error: ${1} not found. Are curl or wget able to reach it from your system?"
+}
+
+
+
+
+# Error function.
+# Usage: error_tarball_non_working <file_name>
+error_tarball_non_working() {
+	echo "Error: file '${1}' is a non-working .tar.gz tarball and cannot be used. Deleting it."
 }
 
 
 
 
 # Getting values stored in configuration files
-# Usage: read_config_value "<file>" "<parameter>"
+# Usage: read_config_value "<file>" "<option>"
 get_config_value() {
-
 	local file=${1}
-	local parameter=${2}
+	local option=${2}
 
 	while read -r line; do
-		if [[ $line =~ ^([^=]+)[[:space:]]([^=]+)$ ]]; then
-			# Test first word (= parameter name)...
-			if [[ $parameter = ${BASH_REMATCH[1]} ]]; then
-				# ... to get the second word (= value of the parameter)
-				echo "${BASH_REMATCH[2]}" # As this is a string, we use echo to return the value
-				break
+		# Avoid reading comments and empty lines
+		if [[ ${line:0:1} != "#" ]] && [[ ${line:0:1} != "" ]]; then
+			if [[ $line =~ ^([^=]+)[[:space:]]([^=]+)$ ]]; then
+				# Test first word (= option name)...
+				if [[ $option = ${BASH_REMATCH[1]} ]]; then
+					# ... to get the second word (= value of the option)
+					echo "${BASH_REMATCH[2]}" # As this is a string, we use echo to return the value
+					break
+				fi
 			fi
-		else 
-			break
-		fi
+		fi	
 	done < "$file"
 }
 export -f get_config_value
@@ -179,8 +201,8 @@ dir_src="/usr/local/src/$NAME_LOWERCASE"
 dir_systemd="/lib/systemd/system"
 dir_config="/etc/$NAME_LOWERCASE"
 
-archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
-archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
+export archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
+export archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
 
 file_main="$dir_bin/$NAME_LOWERCASE"
 file_main_alias="$dir_bin/$NAME_ALIAS"
@@ -215,32 +237,46 @@ else
 fi
 
 # Depending on the chosen publication, the repository will be different:
-# - Main (= stable) releases:	https://github.com/bashpack-project/bashpack
-# - Unstable releases:			https://github.com/bashpack-project/bashpack-unstable
-# - Dev releases:				https://github.com/bashpack-project/bashpack-dev
+# - Main (= stable) releases:	https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE
+# - Unstable releases:			https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-unstable
+# - Dev releases:				https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-dev
 if [[ $PUBLICATION = "main" ]]; then
-	URL="$BASE_URL/bashpack"
+	URL="$BASE_URL/$NAME_LOWERCASE"
 
 elif [[ $PUBLICATION = "unstable" ]]; then
-	URL="$BASE_URL/bashpack-unstable"
+	URL="$BASE_URL/$NAME_LOWERCASE-unstable"
 
 elif [[ $PUBLICATION = "dev" ]]; then
-	URL="$BASE_URL/bashpack-dev"
+	URL="$BASE_URL/$NAME_LOWERCASE-dev"
 else 
-	echo "Error: repository not found."
-	echo "Please ensure that the publication parameter is configured with 'main', 'unstable' or 'dev' in $dir_config/$file_config."
+	echo "Error: publication not found. Please ensure that the publication option is configured with 'main', 'unstable' or 'dev' in $dir_config/$file_config."
 	exit
 fi
+export URL # Export URL to be usable on tests
 
 
 
 
-COMMAND_UPDATE="$dir_src/update.sh"
-COMMAND_MAN="$dir_src/man.sh"
+
+# Testing if currently in the cloned repository or in the installed CLI to get the wanted files for each situation.
+# This permit to test the CLI from the scripts directly and avoid having to release it at each test.
+if [[ $0 = "./$NAME_LOWERCASE.sh" ]] && [[ -d "commands" ]]; then
+	echo "Warning: you are currently using '$0' which is located in $(pwd). This might be a cloned repository of $NAME."
+	echo ""
+	COMMAND_UPDATE="commands/update.sh"
+	COMMAND_MAN="commands/man.sh"
+	COMMAND_VERIFY="commands/tests.sh"
+	COMMAND_FIREWALL="commands/firewall.sh"
+else
+	COMMAND_UPDATE="$dir_src/update.sh"
+	COMMAND_MAN="$dir_src/man.sh"
+	COMMAND_VERIFY="$dir_src/tests.sh"
+	COMMAND_FIREWALL="$dir_src/firewall.sh"	
+fi
 COMMAND_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $file_systemd_update.service`"
 COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
-COMMAND_TEST_INTALLATION="$dir_src/tests.sh"	# The tests.sh file must be part of the release and cannot be called directly with ./bashpack.sh -t
-# COMMAND_TEST_INTALLATION="commands/tests.sh"
+
+
 
 
 # Delete the installed command from the system
@@ -335,7 +371,7 @@ delete_systemd() {
 			# Delete everything related to this script remaining in systemd directory
 			rm -f $dir_systemd/$NAME_LOWERCASE*
 
-			ls -al $dir_systemd | grep bashpack
+			ls -al $dir_systemd | grep $NAME_LOWERCASE
 
 			systemctl daemon-reload
 		fi
@@ -362,46 +398,94 @@ delete_all() {
 # Helper function to extract a .tar.gz archive
 # Usage: archive_extract <archive> <destination directory>
 archive_extract() {
-	# "tar --strip-components 1" permit to extract sources in /tmp/bashpack and don't create a new directory /tmp/bashpack/bashpack
-	tar -xf ${1} -C ${2} --strip-components 1 
+	# Testing if actually using a working tarball, and if not exiting script so we avoid breaking any installations.
+	if file ${1} | grep -q 'gzip compressed data'; then
+		# "tar --strip-components 1" permit to extract sources in /tmp/$NAME_LOWERCASE and don't create a new directory /tmp/$NAME_LOWERCASE/$NAME_LOWERCASE
+		tar -xf ${1} -C ${2} --strip-components 1
+	else
+		error_tarball_non_working ${1}
+		rm -f ${1}
+	fi
 }
+export -f archive_extract
+
+
+
+
+# Permit to verify if the remote repository is reachable with HTTP.
+# Usage: 
+# - check_repository_reachability
+# - check_repository_reachability | grep -q "Error: "
+check_repository_reachability() {
+
+	if [[ $(exists_command "curl") = "exists" ]]; then
+		http_code=$(curl -s -I $URL | awk '/^HTTP/{print $2}')
+	elif [[ $(exists_command "wget") = "exists" ]]; then
+		http_code=$(wget --server-response "$URL" 2>&1 | awk '/^  HTTP/{print $2}')
+	else
+		echo "Error: can't get HTTP status code with curl or wget."
+	fi
+
+
+	# Need to be improved to all 1**, 2** and 3** codes.
+	if [[ $http_code -eq 200 ]]; then
+		echo "Success! HTTP status code $http_code. Repository is reachable."
+	elif [ -z $http_code ]; then
+		echo "Error: HTTP status code not found. Repository is not reachable."
+		exit
+	else 
+		echo "Error: HTTP status code $http_code. Repository is not reachable."
+		exit
+	fi
+}
+export -f check_repository_reachability
 
 
 
 
 # Download releases archives from the repository
 # Usages:
-# - download_cli <url of latest>
-# - download_cli <url of n.n.n>
+# - download_cli <url of latest> <temp archive> <temp dir for extraction>
+# - download_cli <url of n.n.n> <temp archive> <temp dir for extraction>
 download_cli() {
-	
+
 	local archive_url=${1}
+	local archive_tmp=${2}
+	local archive_dir_tmp=${3}
 
 	# Prepare tmp directory
 	rm -rf $archive_dir_tmp
 	mkdir $archive_dir_tmp
 
-
+	
 	# Download source scripts
-	# Try to download with curl if exists
-	echo -n "Downloading sources from $archive_url "
-	if [[ $(exists_command "curl") = "exists" ]]; then
-		echo -n "with curl...   "
-		loading "curl -sL $archive_url -o $archive_tmp"
+	# Testing if repository is reachable with HTTP before doing anything.
+	if ! check_repository_reachability | grep -q 'Error:'; then
+		# Try to download with curl if exists
+		echo -n "Downloading sources from $archive_url "
+		if [[ $(exists_command "curl") = "exists" ]]; then
+			echo -n "with curl...   "
+			loading "curl -sL $archive_url -o $archive_tmp"
 
-		archive_extract $archive_tmp $archive_dir_tmp
-		
-	# Try to download with wget if exists
-	elif [[ $(exists_command "wget") = "exists" ]]; then
-		echo -n "with wget...  "
-		loading "wget -q $archive_url -O $archive_tmp"
-		
-		archive_extract $archive_tmp $archive_dir_tmp
+			archive_extract $archive_tmp $archive_dir_tmp
+			
+		# Try to download with wget if exists
+		elif [[ $(exists_command "wget") = "exists" ]]; then
+			echo -n "with wget...  "
+			loading "wget -q $archive_url -O $archive_tmp"
+			
+			archive_extract $archive_tmp $archive_dir_tmp
 
+		else
+			error_file_not_downloaded $archive_url
+		fi
 	else
-		error_file_not_downloaded $archive_url
+		# Just call again the same function to get its error message
+		check_repository_reachability
 	fi
+
 }
+export -f download_cli
 
 
 
@@ -427,6 +511,33 @@ detect_publication() {
 	fi
 }
 
+
+
+
+# This function will install the new config file given within new versions, while keeping user configured values
+# Usage : install_new_config_file
+install_new_config_file() {
+
+	local file_config_current="$dir_config/$file_config"
+	local file_config_temp="$archive_dir_tmp/config/$file_config"
+
+	while read -r line; do
+		# Avoid reading comments and empty lines
+		if [[ ${line:0:1} != "#" ]] && [[ ${line:0:1} != "" ]]; then
+
+			option=$(echo $line | cut -d " " -f 1)
+			value=$(echo $line | cut -d " " -f 2)
+
+			# Replacing options values in temp config file with current configured values
+			# /^#/! is to avoid commented lines
+			sed -i "/^#/! s/$option.*/$line/g" $file_config_temp
+
+		fi	
+	done < "$file_config_current"
+
+	cp $file_config_temp $file_config_current
+
+}
 
 
 
@@ -509,14 +620,15 @@ create_cli() {
 			echo "[install] "$dir_config/$file_config" not found. Creating it... "
 			cp "$archive_dir_tmp/config/$file_config" "$dir_config/$file_config"
 		else
-			echo "[install] "$dir_config/$file_config" already exists. Leaving current values."
+			echo "[install] "$dir_config/$file_config" already exists. Copy new file while leaving current configured options."
+			install_new_config_file
 		fi
+		
 
 		# Creating a file that permit to know what is the current installed publication
 		echo "$PUBLICATION" > $file_current_publication
 
 		chmod +rw -R $dir_config
-
 
 
 		# Success message
@@ -530,7 +642,6 @@ create_cli() {
 			echo "$NAME $VERSION has been installed, but auto-completion options could not be installed because $dir_autocompletion does not exists."
 			echo "Please ensure that bash-completion package is installed, and retry the installation of $NAME."
 		fi
-
 
 		# Clear temporary files & directories
 		rm -rf $dir_tmp/$NAME_LOWERCASE*		# Cleaning also temp files created during update process since create_cli is not called directly during update.
@@ -559,24 +670,42 @@ create_cli() {
 #			- Github latest tarball release is accessible from https://api.github.com/repos/<user>/<repository>/tarball
 update_cli() {
 	# Download a first time the latest version from the "main" branch to be able to launch the installation script from it to get latest modifications.
-	# The install function will download the well-named archive with the version name
-	# (so yes, it means that the CLI is downloaded twice)
+	# The install function will download the well-named archive with the version name.
+	# (so yes, it means that the CLI is downloaded multiple times)
 
 	local error_already_installed="Latest $NAME version is already installed ($VERSION $(detect_publication))."
 
+	# # Testing if publication has changed to get the latest available version from the chosen publication.
+	# # This permit to change the used repository.
+	# if [[ ! $(detect_publication) = $(get_config_value "$dir_config/$file_config" "publication") ]]; then
+	# 	download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
+	# fi
 
-	# Testing if a new version exists and if publication has changed to avoid reinstall if not.
+	# Testing if a new version exists on the current publication to avoid reinstall if not.
+	# This test requires curl, if not usable, then the CLI will be reinstalled at each update.
 	if [[ $(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4) = "$VERSION" ]] && [[ $(detect_publication) = $(get_config_value "$dir_config/$file_config" "publication") ]]; then
 		echo $error_already_installed
 	else
-		download_cli "$URL/tarball"
+
+		# download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
+
+		# # To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
+		# # (archive is deleted in create_cli, which is called after in the process)
+		# # if ! $NAME_LOWERCASE verify -d | grep -q 'Error:'; then
+		# if ! check_repository_reachability | grep -q 'Error:'; then
+
+			# Download latest available version
+			download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
+
+			# Delete current installed version to clean all old files
+			delete_all exclude_main
 		
-		# Delete current installed version to clean all old files
-		delete_all exclude_main
-
-		# Execute the install_cli function of the script downloaded in /tmp
-		exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
-
+			# Execute the install_cli function of the script downloaded in /tmp
+			exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
+		# else
+		# 	# error_tarball_non_working $archive_tmp
+		# 	check_repository_reachability
+		# fi
 	fi
 }
 
@@ -594,10 +723,11 @@ update_cli() {
 install_cli() {
 	detect_cli
 
-	download_cli "$URL/tarball/$VERSION"
+	download_cli "$URL/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
 	create_cli
 }
+
 
 
 
@@ -607,8 +737,29 @@ case "$1" in
 	-u|--self-update)		update_cli ;;		# Critical option, see the comments at function declaration for more info
 	--self-delete)			delete_all ;;
 	-p|--publication)		detect_publication ;;
-	-t|--test-installation)	$COMMAND_TEST_INTALLATION ;;
 	man)					$COMMAND_MAN ;;
+	verify)
+		if [[ -z "$2" ]]; then
+			export function_to_launch="check_all" && exec $COMMAND_VERIFY
+		else
+			case "$2" in
+				-f|--files)						export function_to_launch="check_files" && exec $COMMAND_VERIFY ;;
+				-d|--download)					export function_to_launch="check_download" && exec $COMMAND_VERIFY ;;
+				-r|--repository-reachability)	export function_to_launch="check_repository_reachability" && exec $COMMAND_VERIFY ;;
+				*)								echo "Error: unknown [$1] option '$2'."$'\n'"$USAGE" && exit ;;
+			esac
+		fi ;;
+	firewall)
+		if [[ -z "$2" ]]; then
+			exec $COMMAND_FIREWALL
+		else
+			case "$2" in
+				-o|--open-inbound-port)			exec $COMMAND_FIREWALL ;;
+				-e|--enable)					exec $COMMAND_FIREWALL ;;
+				--disable)						exec $COMMAND_FIREWALL ;;
+				*)								echo "Error: unknown [$1] option '$2'."$'\n'"$USAGE" && exit ;;
+			esac
+		fi ;;
 	update)
 		if [[ -z "$2" ]]; then
 			install_confirmation="no" && exec $COMMAND_UPDATE
@@ -619,7 +770,7 @@ case "$1" in
 					--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $COMMAND_UPDATE ;;
 					--when)				$COMMAND_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
 					--get-logs)			$COMMAND_SYSTEMD_LOGS ;;
-					*)					echo "Error: unknown [update] option '$2'."$'\n'"$USAGE" && exit ;;
+					*)					echo "Error: unknown [$1] option '$2'."$'\n'"$USAGE" && exit ;;
 				esac
 			# done
 		fi ;;

@@ -25,15 +25,34 @@
 
 
 
-# General information
+# General informations
 # This file permit to test if the current installation is working or not.
-# It must be used within the main CLI file since most of the variables used here are declared in the main CLI file.
-
+# It can be used in two ways:
+# - from the main installed CLI
+# - directly by calling the script from the cloned repository
 
 # To do :
 #	- Create a test that ensure "bp -i", "bp -u" and "bp --self-delete" is working as expected
-# 	- Create a test in case of "bp" or "bashpack" is not available and make this command useless
 
+
+
+# Testing if the exported variables from the main CLI are empty.
+# This permit to use the value from: 
+# - sudo bp -t					(= installed CLI)
+# - sudo /usr/local/sbin/bp -t	(= installed CLI)
+# - sudo ./bashpack.sh -t		(= cloned repository)
+# - sudo ./commands/tests.sh	(= cloned repository)
+if [[ $NAME = "" ]]; then
+	NAME="Bashpack"
+fi
+
+if [[ $NAME_LOWERCASE = "" ]]; then
+	NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
+fi
+
+if [[ $NAME_ALIAS = "" ]]; then
+	NAME_ALIAS="bp"
+fi
 
 
 
@@ -76,6 +95,9 @@ files_other=(
 
 
 # Permit to check if files exist or not
+# Usage:
+# - check_files
+# - check_files | grep -q "Error:"
 check_files() {
 
 	local number_core_found=0
@@ -84,6 +106,8 @@ check_files() {
 	local number_other_found=0
 	local number_other_notfound=0
 	
+	echo ">>> Verifying files"
+
 	# Core directories
 	for directory in "${directories_core[@]}"; do
 		if [ -d $directory ]; then
@@ -146,14 +170,111 @@ check_files() {
 		echo "Error: core file(s) are working, but some features are not working as expected. 'sudo bp -i' should solve the issue (if not, you can open an issue at https://github.com/bashpack-project/bashpack/issues)"
 	else
 		echo ""
-		echo "$NAME is working as expected !"
+		echo "Success! Current installation is working as expected."
 	fi
 }
 
 
 
 
-check_files
+# Permit to verify if downloading tarball works as expected.
+# Usage: 
+# - Latest version:		check_download
+# - Current version:	check_download <VERSION>
+check_download() {
+
+	local not_found=0
+	local defined_version=${1}
+
+
+	echo ">>> Attempting to download and extract archive from $URL/tarball/$defined_version"
+
+	download_cli "$URL/tarball/$defined_version" $archive_tmp $archive_dir_tmp
+	
+	if [[ -f $archive_tmp ]]; then
+		echo "Success! Verification passed. $archive_tmp found."
+	else
+		not_found=$((not_found+1))
+		echo "Error: verification failed. $archive_tmp not found."
+	fi
+	
+	if [[ -d $archive_dir_tmp ]]; then
+		echo "Success! Verification passed. $archive_dir_tmp found."
+	else
+		not_found=$((not_found+1))
+		echo "Error: verification failed. $archive_dir_tmp not found."
+	fi
+
+	# Cleaning downloaded temp files.
+	rm -rf $archive_tmp
+	rm -rf $archive_dir_tmp
+}
+
+
+
+
+# # Permit to verify if the remote repository is reachable with HTTP.
+# # Usage: 
+# # - check_repository_reachability
+# # - check_repository_reachability | grep -q "Error: "
+# check_repository_reachability() {
+
+# 	if [[ $(exists_command "curl") = "exists" ]]; then
+# 		http_code=$(curl -s -I $URL | awk '/^HTTP/{print $2}')
+# 	elif [[ $(exists_command "wget") = "exists" ]]; then
+# 		http_code=$(wget --server-response "$URL" 2>&1 | awk '/^  HTTP/{print $2}')
+# 	else
+# 		echo "Error: can't get HTTP status code with curl or wget."
+# 	fi
+
+
+# 	# Need to be improved to all 1**, 2** and 3** codes.
+# 	if [[ $http_code -eq 200 ]]; then
+# 		echo "Success! HTTP status code $http_code. Repository is reachable."
+# 	else 
+# 		echo "Error: HTTP status code $http_code. Repository is not reachable."
+# 	fi
+# }
+
+
+
+
+if [[ $function_to_launch = "check_all" ]]; then
+	check_files
+	
+	echo ""
+	check_download
+	
+	echo ""
+	check_download $VERSION
+
+
+	echo ""
+	loading "check_repository_reachability"
+fi
+
+
+
+if [[ $function_to_launch = "check_files" ]]; then
+	check_files
+fi
+
+
+
+if [[ $function_to_launch = "check_download" ]]; then
+	check_download
+
+	echo ""
+	check_download $VERSION
+fi
+
+
+
+if [[ $function_to_launch = "check_repository_reachability" ]]; then
+	loading "check_repository_reachability"
+fi
+
+
 
 
 
