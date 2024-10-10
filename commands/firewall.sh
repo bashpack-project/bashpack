@@ -25,6 +25,11 @@
 
 
 
+firewall_config="$dir_config/firewall.conf"
+firewall_allowed=$(get_config_value "$dir_config/$file_config" "firewall")
+
+
+
 disable_firewall() {
 	systemctl stop nftables.service
 }
@@ -144,10 +149,12 @@ create_firewall() {
 }
 
 
-
-install_firewall
-create_firewall
-
+if [[ $firewall_allowed == 1 || $firewall_allowed == 2 ]]; then
+	install_firewall
+	create_firewall
+else 
+	echo "Error: firewall management is disabled in $firewall_config"
+fi
 
 
 #EOF

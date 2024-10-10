@@ -25,7 +25,7 @@
 
 
 
-export VERSION="1.1.1"
+export VERSION="1.2.0"
 
 export NAME="Bashpack"
 export NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -199,7 +199,7 @@ dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
 dir_src="/usr/local/src/$NAME_LOWERCASE"
 dir_systemd="/lib/systemd/system"
-dir_config="/etc/$NAME_LOWERCASE"
+export dir_config="/etc/$NAME_LOWERCASE"
 
 export archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
 export archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
@@ -221,7 +221,7 @@ file_systemd_timers=(
 	"$file_systemd_update.timer"
 )
 
-file_config=$NAME_LOWERCASE"_config"
+export file_config=$NAME_LOWERCASE".conf"
 file_current_publication=$dir_config"/.current_publication"
 
 
@@ -754,9 +754,7 @@ case "$1" in
 			exec $COMMAND_FIREWALL
 		else
 			case "$2" in
-				-o|--open-inbound-port)			exec $COMMAND_FIREWALL ;;
-				-e|--enable)					exec $COMMAND_FIREWALL ;;
-				--disable)						exec $COMMAND_FIREWALL ;;
+				-r|--restart)					exec $COMMAND_FIREWALL ;;
 				*)								echo "Error: unknown [$1] option '$2'."$'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
