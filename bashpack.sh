@@ -221,7 +221,7 @@ file_systemd_timers=(
 	"$file_systemd_update.timer"
 )
 
-export file_config=$NAME_LOWERCASE".conf"
+export file_config=$NAME_LOWERCASE"_config"
 file_current_publication=$dir_config"/.current_publication"
 
 
@@ -689,10 +689,10 @@ update_cli() {
 
 		# download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
 
-		# To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
-		# (archive is deleted in create_cli, which is called after in the process)
-		# if ! $NAME_LOWERCASE verify -d | grep -q 'Error:'; then
-		if ! check_repository_reachability | grep -q 'Error:'; then
+		# # To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
+		# # (archive is deleted in create_cli, which is called after in the process)
+		# # if ! $NAME_LOWERCASE verify -d | grep -q 'Error:'; then
+		# if ! check_repository_reachability | grep -q 'Error:'; then
 
 			# Download latest available version
 			download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
@@ -702,10 +702,10 @@ update_cli() {
 		
 			# Execute the install_cli function of the script downloaded in /tmp
 			exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
-		else
-			# error_tarball_non_working $archive_tmp
-			check_repository_reachability
-		fi
+		# else
+		# 	# error_tarball_non_working $archive_tmp
+		# 	check_repository_reachability
+		# fi
 	fi
 }
 
