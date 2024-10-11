@@ -200,12 +200,12 @@ export -f get_config_value
 compare_version_age_with_current() {
 
 	local given_version=${1}
-	local given_major=$($given_version | cut -d "." -f 1)
-	local given_minor=$($given_version | cut -d "." -f 2)
+	local given_major=$(echo $given_version | cut -d "." -f 1)
+	local given_minor=$(echo $given_version | cut -d "." -f 2)
 
-	local current_major=$($VERSION | cut -d "." -f 1)
-	local current_minor=$($VERSION | cut -d "." -f 2)
-	# local current_patch=$($VERSION | cut -d "." -f 3) # Should not be used. If something is different between two version, so it's not a patch, it must be at least in a new minor version.
+	local current_major=$(echo $VERSION | cut -d "." -f 1)
+	local current_minor=$(echo $VERSION | cut -d "." -f 2)
+	# local current_patch=$(echo $VERSION | cut -d "." -f 3) # Should not be used. If something is different between two version, so it's not a patch, it must be at least in a new minor version.
 
 	if [[ $current_major -gt $given_major ]] || ([[ $current_major -ge $given_major ]] && [[ $current_minor -gt $given_minor ]]); then
 		echo "current_is_younger"
