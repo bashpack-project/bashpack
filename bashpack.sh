@@ -264,8 +264,7 @@ file_current_publication=$dir_config"/.current_publication"
 # - "manually" declare the current publication in case of new config file has been renamed and the publication can't be detected
 if [ ! -f "$dir_config/$file_config" ]; then
 	if [ -f $file_current_publication ]; then
-		current_publication=$(cat $file_current_publication)
-		echo "publication $current_publication" > "$dir_config/$file_config"
+		echo "publication "$(cat $file_current_publication) > "$dir_config/$file_config"
 	else
 		echo "publication main" > "$dir_config/$file_config"
 	fi
