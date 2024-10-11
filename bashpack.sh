@@ -259,12 +259,16 @@ file_current_publication=$dir_config"/.current_publication"
 
 # Workaround that permit to download the stable release in case of first installation or installation from a version that didn't had the config file
 # (If the config file doesn't exist, it cannot detect the publication where it's supposed to be written)
-# Create a temp config file also permit to get new config file names in case of rename in new versions
+# Also,
+# - create a temp config file also permit to get new config file names in case of rename in new versions
+# - "manually" declare the current publication in case of new config file has been renamed and the publication can't be detected
 if [ ! -f "$dir_config/$file_config" ]; then
-# 	PUBLICATION=$(get_config_value "$dir_config/$file_config" "publication")
-# else
-	# PUBLICATION="main"
-	echo "publication main" > "$dir_config/$file_config"
+	if [ -f $file_current_publication ]; then
+		$current_publication=$(cat $file_current_publication)
+		echo "publication  $current_publication" > "$dir_config/$file_config"
+	else
+		echo "publication main" > "$dir_config/$file_config"
+	fi
 fi
 PUBLICATION=$(get_config_value "$dir_config/$file_config" "publication")
 
