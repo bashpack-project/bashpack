@@ -195,6 +195,30 @@ export -f get_config_value
 
 
 
+# Compare given version with current version 
+# Permit to adapt some behaviors like file renamed in new versions
+compare_version_age_with_current() {
+
+	local given_version=${1}
+	local given_major=$($given_version | cut -d "." -f 1)
+	local given_minor=$($given_version | cut -d "." -f 2)
+
+	local current_major=$($VERSION | cut -d "." -f 1)
+	local current_minor=$($VERSION | cut -d "." -f 2)
+	# local current_patch=$($VERSION | cut -d "." -f 3) # Should not be used. If something is different between two version, so it's not a patch, it must be at least in a new minor version.
+
+	if [[ $current_major -gt $given_major ]] || ([[ $current_major -ge $given_major ]] && [[ $current_minor -gt $given_minor ]]); then
+		echo "current_is_younger"
+	elif [[ $current_major -eq $given_major ]] && [[ $current_minor -eq $given_minor ]]; then
+		echo "current_is_equal"
+	else
+		echo "current_is_older"
+	fi
+}
+
+
+
+
 dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
 dir_src="/usr/local/src/$NAME_LOWERCASE"
@@ -221,8 +245,13 @@ file_systemd_timers=(
 	"$file_systemd_update.timer"
 )
 
-# export file_config=$NAME_LOWERCASE"_config"
-export file_config=$NAME_LOWERCASE".conf"
+# On the 1.2.0 version, configuration file has been renamed from "$NAME_LOWERCASE_config" "$NAME_LOWERCASE.conf"
+if [[ $(compare_version_age_with_current "1.2.0") = "current_is_older" ]] || [[ $(compare_version_age_with_current "1.2.0") = "current_is_equal" ]]; then
+	export file_config=$NAME_LOWERCASE"_config"
+else
+	export file_config=$NAME_LOWERCASE".conf"
+fi
+
 file_current_publication=$dir_config"/.current_publication"
 
 
