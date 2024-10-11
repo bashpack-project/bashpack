@@ -245,22 +245,13 @@ file_systemd_timers=(
 	"$file_systemd_update.timer"
 )
 
-# # On the 1.2.0 version, configuration file has been renamed from "$NAME_LOWERCASE_config" "$NAME_LOWERCASE.conf"
-# if [[ $(compare_version_age_with_current "1.2.0") = "current_is_older" ]] || [[ $(compare_version_age_with_current "1.2.0") = "current_is_equal" ]]; then
-# 	export file_config=$NAME_LOWERCASE"_config"
-# else
-	export file_config=$NAME_LOWERCASE".conf"
-# fi
-
+export file_config=$NAME_LOWERCASE".conf"
 file_current_publication=$dir_config"/.current_publication"
-
-
-
 
 # Workaround that permit to download the stable release in case of first installation or installation from a version that didn't had the config file
 # (If the config file doesn't exist, it cannot detect the publication where it's supposed to be written)
-# Also,
-# - create a temp config file also permit to get new config file names in case of rename in new versions
+# Also:
+# - create a temp config file permit to get new config file names in case of rename in new versions
 # - "manually" declare the current publication in case of new config file has been renamed and the publication can't be detected
 if [ ! -f "$dir_config/$file_config" ]; then
 	if [ -f $file_current_publication ]; then
@@ -288,7 +279,6 @@ else
 	exit
 fi
 export URL # Export URL to be usable on tests
-
 
 
 
