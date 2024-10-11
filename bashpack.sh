@@ -245,12 +245,12 @@ file_systemd_timers=(
 	"$file_systemd_update.timer"
 )
 
-# On the 1.2.0 version, configuration file has been renamed from "$NAME_LOWERCASE_config" "$NAME_LOWERCASE.conf"
-if [[ $(compare_version_age_with_current "1.2.0") = "current_is_older" ]] || [[ $(compare_version_age_with_current "1.2.0") = "current_is_equal" ]]; then
-	export file_config=$NAME_LOWERCASE"_config"
-else
+# # On the 1.2.0 version, configuration file has been renamed from "$NAME_LOWERCASE_config" "$NAME_LOWERCASE.conf"
+# if [[ $(compare_version_age_with_current "1.2.0") = "current_is_older" ]] || [[ $(compare_version_age_with_current "1.2.0") = "current_is_equal" ]]; then
+# 	export file_config=$NAME_LOWERCASE"_config"
+# else
 	export file_config=$NAME_LOWERCASE".conf"
-fi
+# fi
 
 file_current_publication=$dir_config"/.current_publication"
 
@@ -645,14 +645,20 @@ create_cli() {
 			mkdir $dir_config
 		fi
 
-		# Must testing if config file exists to avoid overwrite user customizations 
-		if [ ! -f "$dir_config/$file_config" ]; then
-			echo "[install] "$dir_config/$file_config" not found. Creating it... "
-			cp "$archive_dir_tmp/config/$file_config" "$dir_config/$file_config"
-		else
-			echo "[install] "$dir_config/$file_config" already exists. Copy new file while leaving current configured options."
-			install_new_config_file
-		fi
+		# # Must testing if config file exists to avoid overwrite user customizations 
+		# if [ ! -f "$dir_config/$file_config" ]; then
+		# 	echo "[install] "$dir_config/$file_config" not found. Creating it... "
+		# 	cp "$archive_dir_tmp/config/$file_config" "$dir_config/$file_config"
+		# # elif [ -f "$dir_config/"$NAME_LOWERCASE"_config"]; then
+		# # 	# Rename config file from $NAME_LOWERCASE_config to its new name $NAME_LOWERCASE.conf
+		# # 	mv "$dir_config/"$NAME_LOWERCASE"_config" "$dir_config/$file_config" 
+		# else
+		# 	echo "[install] "$dir_config/$file_config" already exists. Copy new file while leaving current configured options."
+		# 	install_new_config_file
+		# fi
+
+
+		install_new_config_file
 		
 
 		# Creating a file that permit to know what is the current installed publication
