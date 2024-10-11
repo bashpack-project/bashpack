@@ -221,7 +221,8 @@ file_systemd_timers=(
 	"$file_systemd_update.timer"
 )
 
-export file_config=$NAME_LOWERCASE"_config"
+# export file_config=$NAME_LOWERCASE"_config"
+export file_config=$NAME_LOWERCASE".conf"
 file_current_publication=$dir_config"/.current_publication"
 
 
