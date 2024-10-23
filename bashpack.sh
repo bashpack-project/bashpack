@@ -25,7 +25,7 @@
 
 
 
-export VERSION="1.1.1"
+export VERSION="1.2.0"
 
 export NAME="Bashpack"
 export NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
@@ -195,11 +195,35 @@ export -f get_config_value
 
 
 
+# # Compare given version with current version 
+# # Permit to adapt some behaviors like file renamed in new versions
+# compare_version_age_with_current() {
+
+# 	local given_version=${1}
+# 	local given_major=$(echo $given_version | cut -d "." -f 1)
+# 	local given_minor=$(echo $given_version | cut -d "." -f 2)
+
+# 	local current_major=$(echo $VERSION | cut -d "." -f 1)
+# 	local current_minor=$(echo $VERSION | cut -d "." -f 2)
+# 	# local current_patch=$(echo $VERSION | cut -d "." -f 3) # Should not be used. If something is different between two version, so it's not a patch, it must be at least in a new minor version.
+
+# 	if [[ $current_major -gt $given_major ]] || ([[ $current_major -ge $given_major ]] && [[ $current_minor -gt $given_minor ]]); then
+# 		echo "current_is_younger"
+# 	elif [[ $current_major -eq $given_major ]] && [[ $current_minor -eq $given_minor ]]; then
+# 		echo "current_is_equal"
+# 	else
+# 		echo "current_is_older"
+# 	fi
+# }
+
+
+
+
 dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
 dir_src="/usr/local/src/$NAME_LOWERCASE"
 dir_systemd="/lib/systemd/system"
-dir_config="/etc/$NAME_LOWERCASE"
+export dir_config="/etc/$NAME_LOWERCASE"
 
 export archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
 export archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
@@ -221,20 +245,28 @@ file_systemd_timers=(
 	"$file_systemd_update.timer"
 )
 
-file_config=$NAME_LOWERCASE"_config"
+export file_config=$NAME_LOWERCASE".conf"
+# Since 1.2.0 the main config file has been renamed from $NAME_LOWERCASE_config to $NAME_LOWERCASE.conf
+# The old file is not needed anymore and must be removed
+if [ -f "$dir_config/"$NAME_LOWERCASE"_config" ]; then
+	rm -f "$dir_config/"$NAME_LOWERCASE"_config"
+fi
+
 file_current_publication=$dir_config"/.current_publication"
 
-
-
-
-# Workaround that permit to download the stable release in case of first installation from a version that didn't had the config file
-# - detect if the config file exists (unless it cannot detect the config file where the publication is supposed to be written)
-# - detect if the new function exists
-if [ -f "$dir_config/$file_config" ]; then
-	PUBLICATION=$(get_config_value "$dir_config/$file_config" "publication")
-else
-	PUBLICATION="main"
+# Workaround that permit to download the stable release in case of first installation or installation from a version that didn't had the config file
+# (If the config file doesn't exist, it cannot detect the publication where it's supposed to be written)
+# Also:
+# - create a temp config file that permit to get new config file names in case of rename in new versions
+# - "manually" declare the current publication in case of new config file has been renamed and the publication can't be detected
+if [ ! -f "$dir_config/$file_config" ]; then
+	if [ -f $file_current_publication ]; then
+		echo "publication "$(cat $file_current_publication) > "$dir_config/$file_config"
+	else
+		echo "publication main" > "$dir_config/$file_config"
+	fi
 fi
+PUBLICATION=$(get_config_value "$dir_config/$file_config" "publication")
 
 # Depending on the chosen publication, the repository will be different:
 # - Main (= stable) releases:	https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE
@@ -253,7 +285,6 @@ else
 	exit
 fi
 export URL # Export URL to be usable on tests
-
 
 
 
@@ -619,6 +650,17 @@ create_cli() {
 		if [ ! -f "$dir_config/$file_config" ]; then
 			echo "[install] "$dir_config/$file_config" not found. Creating it... "
 			cp "$archive_dir_tmp/config/$file_config" "$dir_config/$file_config"
+		# elif [ -f "$dir_config/"$NAME_LOWERCASE"_config"]
+		# # elif [ -f "$dir_config/"$NAME_LOWERCASE"_config"]; then
+		# # 	# Rename config file from $NAME_LOWERCASE_config to its new name $NAME_LOWERCASE.conf
+		# # 	mv "$dir_config/"$NAME_LOWERCASE"_config" "$dir_config/$file_config" 
+
+		# 	# On the 1.2.0 version, configuration file has been renamed from "$NAME_LOWERCASE_config" "$NAME_LOWERCASE.conf"
+		# 	if [[ $(compare_version_age_with_current "1.2.0") = "current_is_older" ]] || [[ $(compare_version_age_with_current "1.2.0") = "current_is_equal" ]]; then
+		# 		export file_config=$NAME_LOWERCASE"_config"
+		# 	else
+		# 		export file_config=$NAME_LOWERCASE".conf"
+		# 	fi
 		else
 			echo "[install] "$dir_config/$file_config" already exists. Copy new file while leaving current configured options."
 			install_new_config_file
@@ -754,9 +796,7 @@ case "$1" in
 			exec $COMMAND_FIREWALL
 		else
 			case "$2" in
-				-o|--open-inbound-port)			exec $COMMAND_FIREWALL ;;
-				-e|--enable)					exec $COMMAND_FIREWALL ;;
-				--disable)						exec $COMMAND_FIREWALL ;;
+				-r|--restart)					exec $COMMAND_FIREWALL ;;
 				*)								echo "Error: unknown [$1] option '$2'."$'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
