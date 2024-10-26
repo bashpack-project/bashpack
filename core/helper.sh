@@ -107,22 +107,12 @@ get_config_value() {
 	local option=${2}
 
 	while read -r line; do
-
 		local first_char=`echo $line | cut -c1-1`
 
 		# Avoid reading comments and empty lines
 		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
-
 			echo $line | cut -d " " -f 2
-			
-			# if [ $line =~ ^([^=]+)[:space:]([^=]+)$ ]; then
-			# 	# Test first word (= option name)...
-			# 	if [ $option = ${BASH_REMATCH[1]} ]; then
-			# 		# ... to get the second word (= value of the option)
-			# 		echo "${BASH_REMATCH[2]}" # As this is a string, we use echo to return the value
-			# 		break
-			# 	fi
-			# fi
+			break
 		fi	
 	done < "$file"
 }

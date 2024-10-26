@@ -23,7 +23,21 @@
 # SOFTWARE.
 
 
+
+
+# Uncomment for debug
 # set -x
+
+
+
+
+# Display a warning in case of using the script and not a command installed on the system
+if [ $0 = "./$file_main" ]; then
+	echo "Warning: you are currently using '$0' which is located in $(pwd)."
+fi
+
+
+
 
 export VERSION="2.0.0"
 
@@ -113,149 +127,47 @@ fi
 
 
 
-# Display a warning in case of using the script and not a command installed on the system
-if [ $0 = "./$NAME_LOWERCASE.sh" ]; then
-	echo "Warning: you are currently using '$0' which is located in $(pwd). This might be a cloned repository of $NAME."
-fi
-
-
-
-
-# # Loading animation so we know the process has not crashed
-# # Usage: loading "<command that takes time>"
-# loading() {
-# 	${1} & local pid=$!
-# 	local loader="\|/-"
-# 	local i=1
-
-# 	while ps -p $pid > /dev/null; do
-# 		printf "\b%c" "${loader:i++%4:1}"
-# 		sleep 0.12
-# 	done
-
-# 	# Delete the loader character displayed after the loading has ended 
-# 	printf "\b%c" " "
-	
-# 	echo ""
-# }
-# # export -f loading
-
-
-
-
-# # Function to search for commands on the system.
-# # Usage: exists_command <command>
-# exists_command() {
-# 	local command=${1}
-
-# 	if ! which $command > /dev/null; then
-# 		display_error "'$command' command not found"
-# 	else
-# 		echo "exists"
-# 	fi
-# }
-# # export -f exists_command
-
-
-
-
-# # Error function.
-# # Usage: error_file_not_downloaded <file_url>
-# error_file_not_downloaded() {
-# 	display_error "${1} not found. Are curl or wget able to reach it from your system?"
-# }
-
-
-
-
-# # Error function.
-# # Usage: error_tarball_non_working <file_name>
-# error_tarball_non_working() {
-# 	display_error "file '${1}' is a non-working .tar.gz tarball and cannot be used. Deleting it."
-# }
-
-
-
-
-# # Getting values stored in configuration files
-# # Usage: read_config_value "<file>" "<option>"
-# get_config_value() {
-# 	local file=${1}
-# 	local option=${2}
-
-# 	while read -r line; do
-
-# 		local first_char=`echo $line | cut -c1-1`
-
-# 		# Avoid reading comments and empty lines
-# 		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
-
-# 			echo $line | cut -d " " -f 2
-			
-# 			# if [ $line =~ ^([^=]+)[:space:]([^=]+)$ ]; then
-# 			# 	# Test first word (= option name)...
-# 			# 	if [ $option = ${BASH_REMATCH[1]} ]; then
-# 			# 		# ... to get the second word (= value of the option)
-# 			# 		echo "${BASH_REMATCH[2]}" # As this is a string, we use echo to return the value
-# 			# 		break
-# 			# 	fi
-# 			# fi
-# 		fi	
-# 	done < "$file"
-# }
-# # export -f get_config_value
-
-
-
-
-# # # Compare given version with current version 
-# # # Permit to adapt some behaviors like file renamed in new versions
-# # compare_version_age_with_current() {
-
-# # 	local given_version=${1}
-# # 	local given_major=$(echo $given_version | cut -d "." -f 1)
-# # 	local given_minor=$(echo $given_version | cut -d "." -f 2)
-
-# # 	local current_major=$(echo $VERSION | cut -d "." -f 1)
-# # 	local current_minor=$(echo $VERSION | cut -d "." -f 2)
-# # 	# local current_patch=$(echo $VERSION | cut -d "." -f 3) # Should not be used. If something is different between two version, so it's not a patch, it must be at least in a new minor version.
-
-# # 	if [ $current_major -gt $given_major ] || ([ $current_major -ge $given_major ] && [ $current_minor -gt $given_minor ]); then
-# # 		echo "current_is_younger"
-# # 	elif [ $current_major -eq $given_major ] && [ $current_minor -eq $given_minor ]; then
-# # 		echo "current_is_equal"
-# # 	else
-# # 		echo "current_is_older"
-# # 	fi
-# # }
-
-
-
 . "core/helper.sh"
+
+
 
 dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
-dir_src="/usr/local/src/$NAME_LOWERCASE"
-export dir_config="/etc/$NAME_LOWERCASE"
 dir_systemd="/lib/systemd/system"
+
+
+
+dir_src_cli="/usr/local/src/$NAME_LOWERCASE"
+export dir_config="/etc/$NAME_LOWERCASE"
+
+
 
 export archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
 export archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
 
-# file_main="$dir_src/$NAME_LOWERCASE.sh"
-file_main_alias="$dir_bin/$NAME_ALIAS"
+
+
+file_main="$dir_src_cli/$NAME_LOWERCASE.sh"
+file_main_alias_1="$dir_bin/$NAME_LOWERCASE"
+file_main_alias_2="$dir_bin/$NAME_ALIAS"
+
+
 
 # bash-completion doc: https://github.com/scop/bash-completion/tree/master?tab=readme-ov-file#faq
 # Force using /etc/bash_completion.d/ in case of can't automatically detect it on the system
-if [ $(exists_command "pkg-config") = "exists" ]; then
+if [ "$(exists_command "pkg-config")" = "exists" ]; then
 	dir_autocompletion="$(pkg-config --variable=compatdir bash-completion)"
 else
 	dir_autocompletion="/etc/bash_completion.d"
 fi
 file_autocompletion="$dir_autocompletion/$NAME_LOWERCASE"
 
+
+
 file_systemd_update="$NAME_LOWERCASE-updates"
 file_systemd_timers="$file_systemd_update.timer"
+
+
 
 export file_config=$NAME_LOWERCASE".conf"
 # Since 1.2.0 the main config file has been renamed from $NAME_LOWERCASE_config to $NAME_LOWERCASE.conf
@@ -264,7 +176,11 @@ if [ -f "$dir_config/"$NAME_LOWERCASE"_config" ]; then
 	rm -f "$dir_config/"$NAME_LOWERCASE"_config"
 fi
 
+
+
 file_current_publication=$dir_config"/.current_publication"
+
+
 
 # Workaround that permit to download the stable release in case of first installation or installation from a version that didn't had the config file
 # (If the config file doesn't exist, it cannot detect the publication where it's supposed to be written)
@@ -275,47 +191,26 @@ if [ ! -f "$dir_config/$file_config" ]; then
 	if [ -f $file_current_publication ]; then
 		echo "publication "$(cat $file_current_publication) > "$dir_config/$file_config"
 	else
+		mkdir -p "$dir_config"
 		echo "publication main" > "$dir_config/$file_config"
 	fi
 fi
-PUBLICATION=$(get_config_value "$dir_config/$file_config" "publication")
 
 # Depending on the chosen publication, the repository will be different:
 # - Main (= stable) releases:	https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE
 # - Unstable releases:			https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-unstable
 # - Dev releases:				https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-dev
-if [ "$PUBLICATION" = "main" ]; then
-	URL="$BASE_URL/$NAME_LOWERCASE"
-
-elif [ "$PUBLICATION" = "unstable" ]; then
-	URL="$BASE_URL/$NAME_LOWERCASE-unstable"
-
-elif [ "$PUBLICATION" = "dev" ]; then
-	URL="$BASE_URL/$NAME_LOWERCASE-dev"
-else 
-	display_error "publication not found. Please ensure that the publication option is configured with 'main', 'unstable' or 'dev' in $dir_config/$file_config."
-	exit
-fi
+PUBLICATION="$(get_config_value "$dir_config/$file_config" "publication")"
+case $PUBLICATION in
+	unstable)	URL="$BASE_URL/$NAME_LOWERCASE-unstable" ;;
+	dev)		URL="$BASE_URL/$NAME_LOWERCASE-dev" ;;
+	main)		URL="$BASE_URL/$NAME_LOWERCASE" ;;
+	*)			display_error "publication $PUBLICATION not found in [main|unstable|dev] at $dir_config/$file_config. Using default 'main' publication." && URL="$BASE_URL/$NAME_LOWERCASE" ;;
+esac
 export URL # Export URL to be usable on tests
 
 
 
-
-# # Testing if currently in the cloned repository or in the installed CLI to get the wanted files for each situation.
-# # This permit to test the CLI from the scripts directly and avoid having to release it at each test.
-# if [ $0 = "./$NAME_LOWERCASE.sh" ] && [ -d "commands" ]; then
-# 	echo "Warning: you are currently using '$0' which is located in $(pwd). This might be a cloned repository of $NAME."
-# 	echo ""
-# 	COMMAND_UPDATE="commands/update.sh"
-# 	COMMAND_MAN="commands/man.sh"
-# 	COMMAND_VERIFY="commands/tests.sh"
-# 	COMMAND_FIREWALL="commands/firewall.sh"
-# else
-# 	COMMAND_UPDATE="$dir_src/update.sh"
-# 	COMMAND_MAN="$dir_src/man.sh"
-# 	COMMAND_VERIFY="$dir_src/tests.sh"
-# 	COMMAND_FIREWALL="$dir_src/firewall.sh"	
-# fi
 
 COMMAND_UPDATE="commands/update.sh"
 COMMAND_MAN="commands/man.sh"
@@ -340,30 +235,88 @@ delete_cli() {
 	#	(i) It's preferable to delete all others files since updates can remove files from olders releases 
 	local exclude_main=${1}
 
-	if [ "$exclude_main" = "exclude_main" ]; then
-		local files="$dir_src" "$file_autocompletion"
-	else
-		local files="$dir_src" "$dir_config" "$file_autocompletion" "$file_main_alias" "$file_main"
-	fi
+	# if [ "$exclude_main" = "exclude_main" ]; then
+	# 	local files="$dir_src_cli" "$file_autocompletion"
+	# else
+	# 	local files="$dir_src_cli" "$file_autocompletion" "$dir_config" "$file_main_alias_1" "$file_main_alias_2"
+	# fi
 	
 
-	if [ $(exists_command "$NAME_ALIAS") != "exists" ]; then
-		echo "$NAME $VERSION is not installed on your system."
+
+
+	# if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
+	# 	display_error "$NAME $VERSION is not installed on your system."
+	# else
+	# 	# Delete all files listed in $files 
+	# 	for file in "${files[@]}"; do
+		
+		
+	# 		rm -rf $file
+
+
+	# 		if [ -f "$file" ]; then
+	# 			display_error "$file has not been deleted."
+	# 		else
+	# 			display_success "$file deleted"
+	# 		fi
+	# 	done
+	# fi
+
+
+
+	# if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
+	# 	display_error "$NAME $VERSION is not installed on your system."
+	# else
+	# 	# Delete all files listed in $files 
+	# 	for file in "${files[@]}"; do
+	# 		rm -rf $file
+	# 		if [ -f $file ]; then
+	# 			display_error "$file has not been removed."
+	# 		else
+	# 			display_success "deleted: $file"
+	# 		fi
+	# 	done
+	# fi
+
+
+	if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
+		display_error "$NAME $VERSION is not installed on your system."
 	else
-		# Delete all files listed in $files 
-		for file in "${files[@]}"; do
-			rm -rf $file
-			if [ -f $file ]; then
-				display_error "$file has not been removed."
-			else
-				echo "Deleted: $file"
-			fi
-		done
+		if [ "$exclude_main" = "exclude_main" ]; then
+			# Delete everything except main files and directories
+			
+			# The "find" command below permit to delete everything in $dir_src_cli except:
+			# - main CLI file
+			# - "core" directory (because some functions needed for main CLI file are stored in it)
+			#
+			# Notes: 
+			# - "exec rm -rv {} +" is the part that permit to remove the files and directory
+			# - "mindepth 1" permit to avoid the $dir_src_cli directory to be itself deleted
+			#
+			# This command can be used to list concerned files and directories : 
+			# find $dir_src_cli -mindepth 1 -maxdepth 1 ! -name "$NAME_LOWERCASE.sh" ! -name "core" -print
+			find $dir_src_cli -mindepth 1 -maxdepth 1 ! -name "$NAME_LOWERCASE.sh" ! -name "core" -exec rm -rv {} + 2&> /dev/null
+			
+		else
+			# Delete everything
+
+			rm -rf $dir_config
+			rm -rf $file_autocompletion
+			rm -rf $file_main_alias_1
+			rm -rf $file_main_alias_2
+			rm -rf $dir_src_cli
+		fi
 	fi
 
-	if [ -f $file_main ]; then
-		if [ $exclude_main = "exclude_main" ]; then
-			echo "$NAME $VERSION has been uninstalled ($file_main has been kept)."
+
+
+
+
+
+
+	if [ -f "$file_main" ]; then
+		if [ "$exclude_main" = "exclude_main" ]; then
+			display_success "$NAME $VERSION has been uninstalled ($file_main has been kept)."
 		else
 			display_error "$NAME $VERSION located at $(which $NAME_ALIAS) has not been uninstalled." && exit
 		fi
@@ -378,7 +331,7 @@ delete_cli() {
 # Delete the installed systemd units from the system
 delete_systemd() {
 
-	if [ $(exists_command "$NAME_ALIAS") != "exists" ]; then
+	if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
 		echo "$NAME $VERSION is not installed on your system."
 	else
 		# Delete systemd units
@@ -428,115 +381,20 @@ delete_all() {
 	
 	local exclude_main=${1}
 
-	delete_systemd && delete_cli ${1}
+	# delete_systemd && delete_cli ${1}
+	 delete_cli ${1}
 }
 
 
 
-
-# # Helper function to extract a .tar.gz archive
-# # Usage: archive_extract <archive> <destination directory>
-# archive_extract() {
-# 	# Testing if actually using a working tarball, and if not exiting script so we avoid breaking any installations.
-# 	if file ${1} | grep -q 'gzip compressed data'; then
-# 		# "tar --strip-components 1" permit to extract sources in /tmp/$NAME_LOWERCASE and don't create a new directory /tmp/$NAME_LOWERCASE/$NAME_LOWERCASE
-# 		tar -xf ${1} -C ${2} --strip-components 1
-# 	else
-# 		error_tarball_non_working ${1}
-# 		rm -f ${1}
-# 	fi
-# }
-# # export -f archive_extract
-
-
-
-
-# # Permit to verify if the remote repository is reachable with HTTP.
-# # Usage: 
-# # - check_repository_reachability
-# # - check_repository_reachability | grep -q "$NAME failure: "
-# check_repository_reachability() {
-
-# 	if [ $(exists_command "curl") = "exists" ]; then
-# 		http_code=$(curl -s -I $URL | awk '/^HTTP/{print $2}')
-# 	elif [ $(exists_command "wget") = "exists" ]; then
-# 		http_code=$(wget --server-response "$URL" 2>&1 | awk '/^  HTTP/{print $2}')
-# 	else
-# 		display_error "can't get HTTP status code with curl or wget."
-# 	fi
-
-
-# 	# Need to be improved to all 1**, 2** and 3** codes.
-# 	if [ $http_code -eq 200 ]; then
-# 		display_success "HTTP status code $http_code. Repository is reachable."
-# 	elif [ -z $http_code ]; then
-# 		display_error "HTTP status code not found. Repository is not reachable."
-# 		exit
-# 	else 
-# 		display_error "HTTP status code $http_code. Repository is not reachable."
-# 		exit
-# 	fi
-# }
-# # export -f check_repository_reachability
-
-
-
-
-# # Download releases archives from the repository
-# # Usages:
-# # - download_cli <url of latest> <temp archive> <temp dir for extraction>
-# # - download_cli <url of n.n.n> <temp archive> <temp dir for extraction>
-# download_cli() {
-
-# 	local archive_url=${1}
-# 	local archive_tmp=${2}
-# 	local archive_dir_tmp=${3}
-
-# 	# Prepare tmp directory
-# 	rm -rf $archive_dir_tmp
-# 	mkdir $archive_dir_tmp
-
-	
-# 	# Download source scripts
-# 	# Testing if repository is reachable with HTTP before doing anything.
-# 	if ! check_repository_reachability | grep -q '$NAME failure:'; then
-# 		# Try to download with curl if exists
-# 		echo -n "Downloading sources from $archive_url "
-# 		if [ $(exists_command "curl") = "exists" ]; then
-# 			echo -n "with curl...   "
-# 			loading "curl -sL $archive_url -o $archive_tmp"
-
-# 			archive_extract $archive_tmp $archive_dir_tmp
-			
-# 		# Try to download with wget if exists
-# 		elif [ $(exists_command "wget") = "exists" ]; then
-# 			echo -n "with wget...  "
-# 			loading "wget -q $archive_url -O $archive_tmp"
-			
-# 			archive_extract $archive_tmp $archive_dir_tmp
-
-# 		else
-# 			error_file_not_downloaded $archive_url
+# # Detect if the command has been installed on the system
+# detect_cli() {
+# 	if [ "$(exists_command "$NAME_LOWERCASE")" = "exists" ]; then
+# 		if [ ! -z "$($NAME_LOWERCASE --version)" ]; then
+# 			echo "$NAME $($NAME_ALIAS --version) detected at $(which $NAME_LOWERCASE)"
 # 		fi
-# 	else
-# 		# Just call again the same function to get its error message
-# 		check_repository_reachability
 # 	fi
-
 # }
-# # export -f download_cli
-
-
-
-
-# Detect if the command has been installed on the system
-detect_cli() {
-	if [ $(exists_command "$NAME_LOWERCASE") = "exists" ]; then
-		if [ ! -z $($NAME_LOWERCASE --version) ]; then
-			echo "$NAME $($NAME_ALIAS --version) detected at $(which $NAME_LOWERCASE)"
-		fi
-	fi
-}
 
 
 
@@ -561,8 +419,10 @@ install_new_config_file() {
 	local file_config_temp="$archive_dir_tmp/config/$file_config"
 
 	while read -r line; do
+		local first_char=`echo $line | cut -c1-1`
+
 		# Avoid reading comments and empty lines
-		if [ ${line:0:1} != "#" ] && [ ${line:0:1} != "" ]; then
+		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
 
 			option=$(echo $line | cut -d " " -f 1)
 			value=$(echo $line | cut -d " " -f 2)
@@ -586,35 +446,30 @@ install_new_config_file() {
 create_cli() {
 
 	# Cannot display "Installing $NAME $VERSION..." until the new version is not there.
-	echo "Installing $NAME...  "
+	# echo "Installing $NAME...  "
 
 
 	# Process to the installation
 	if [ -d "$archive_dir_tmp" ]; then
 
-		# # Make this script a command installed on the system (copy this script to a PATH directory)
-		# echo "Installing $file_main..."
-		# cp "$archive_dir_tmp/$NAME_LOWERCASE.sh" $file_main
-		# chmod +x $file_main
-		
 		
 		# Sources files installation
 		echo "Installing sources..."
-		# cp -R "$archive_dir_tmp/commands" $dir_src
-		cp -R $archive_dir_tmp $dir_src
-		chmod +x -R $dir_src
+		# cp -R "$archive_dir_tmp/commands" $dir_src_cli
+		cp -RT $archive_dir_tmp $dir_src_cli # -T used to overwrite the source dir and not creating a new inside
+		chmod +x -R $dir_src_cli
 
 
 		# Create an alias so the listed package are clear on the system (-f to force overwrite existing)
-		echo "Installing alias..."
-		ln -sf "$dir_src/$NAME_LOWERCASE.sh" $file_main_alias
-		# ln -sf $file_main $file_main_alias
+		echo "Installing aliases..."
+		ln -sf $file_main $file_main_alias_1
+		ln -sf $file_main $file_main_alias_2
 
 
 		# Autocompletion installation
 		# Checking if the autocompletion directory exists and create it if doesn't exists
 		echo "Installing autocompletion..."
-		if [ ! -d $dir_autocompletion ]; then
+		if [ ! -d "$dir_autocompletion" ]; then
 			display_error "$dir_autocompletion not found. Creating it..."
 			mkdir $dir_autocompletion
 		fi
@@ -632,7 +487,7 @@ create_cli() {
 			systemctl daemon-reload
 
 			# Start & enable systemd timers (don't need to start systemd services because timers are made for this)
-			for unit in "${file_systemd_timers[@]}"; do
+			for unit in "${file_systemd_timers}"; do
 
 				local file="$dir_systemd/$unit"
 
@@ -658,11 +513,11 @@ create_cli() {
 
 		# Must testing if config file exists to avoid overwrite user customizations 
 		if [ ! -f "$dir_config/$file_config" ]; then
-			echo ""$dir_config/$file_config" not found. Creating it... "
+			echo "$dir_config/$file_config not found. Creating it... "
 			cp "$archive_dir_tmp/config/$file_config" "$dir_config/$file_config"
 
 		else
-			echo ""$dir_config/$file_config" already exists. Copy new file while leaving current configured options."
+			echo "$dir_config/$file_config already exists. Copy new file while leaving current configured options."
 			install_new_config_file
 		fi
 		
@@ -674,11 +529,11 @@ create_cli() {
 
 
 		# Success message
-		if [ $(exists_command "$NAME_ALIAS") = "exists" ] && [ -f "$file_autocompletion" ]; then
+		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ] && [ -f "$file_autocompletion" ]; then
 			echo ""
 			display_success "$NAME $($NAME_ALIAS --version) ($(detect_publication)) has been installed."
 			# echo "Info: autocompletion options might not be ready on your current session, you should open a new tab or manually launch the command: source ~/.bashrc"
-		elif [ $(exists_command "$NAME_ALIAS") = "exists" ] && [ ! -f "$file_autocompletion" ]; then
+		elif [ "$(exists_command "$NAME_ALIAS")" = "exists" ] && [ ! -f "$file_autocompletion" ]; then
 			echo ""
 			echo "Partial success:"
 			echo "$NAME $VERSION has been installed, but auto-completion options could not be installed because $dir_autocompletion does not exists."
@@ -725,7 +580,7 @@ update_cli() {
 
 	# Testing if a new version exists on the current publication to avoid reinstall if not.
 	# This test requires curl, if not usable, then the CLI will be reinstalled at each update.
-	if [ $(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4) = "$VERSION" ] && [ $(detect_publication) = $(get_config_value "$dir_config/$file_config" "publication") ]; then
+	if [ "$(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$dir_config/$file_config" "publication")" ]; then
 		echo $error_already_installed
 	else
 
@@ -763,7 +618,7 @@ update_cli() {
 # /!\	This function must work everytime a modification is made in the code. 
 #		Because it's called by the update function.
 install_cli() {
-	detect_cli
+	# detect_cli
 
 	# if [ ! -d ".git/"]; then
 		download_cli "$URL/tarball/$VERSION" $archive_tmp $archive_dir_tmp
@@ -773,23 +628,6 @@ install_cli() {
 }
 
 
-
-
-
-# # Export current CLI to get all helpers functions in the commands
-# # Testing if currently in the cloned repository or in the installed CLI to get the wanted files for each situation.
-# # This permit to test the CLI from the scripts directly and avoid having to release it at each test.
-# if [ "$0" = "./$NAME_LOWERCASE.sh" ]; then
-# 	echo "Warning: you are currently using '$0' which is located in $(pwd). This might be a cloned repository of $NAME."
-# 	echo ""
-# 	# export current_cli="../$NAME_LOWERCASE.sh"
-# 	export current_cli="$NAME_LOWERCASE.sh"
-
-
-# 	# echo $0
-# else
-# 	export current_cli=$file_main
-# fi
 
 
 # The options (except --help) must be called with root
