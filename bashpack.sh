@@ -549,7 +549,7 @@ create_cli() {
 		fi
 
 		# Clear temporary files & directories
-		# rm -rf $dir_tmp/$NAME_LOWERCASE*		# Cleaning also temp files created during update process since create_cli is not called directly during update.
+		rm -rf $dir_tmp/$NAME_LOWERCASE*		# Cleaning also temp files created during update process since create_cli is not called directly during update.
 
 
 	else
