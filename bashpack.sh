@@ -128,22 +128,21 @@ fi
 
 
 
-# Checking if helper.sh exists. If not, it should mean that the current execution is an installation
-if [ -f "core/helper.sh" ]; then
-	. "core/helper.sh"
-fi
-
-
-
-
 dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
 dir_systemd="/lib/systemd/system"
 
 
 
-dir_src_cli="/usr/local/src/$NAME_LOWERCASE"
 export dir_config="/etc/$NAME_LOWERCASE"
+dir_src_cli="/usr/local/src/$NAME_LOWERCASE"
+
+
+
+# Checking if helper.sh exists. If not, it should mean that the current execution is an installation
+if [ -f "$dir_src_cli/core/helper.sh" ]; then
+	. "$dir_src_cli/core/helper.sh"
+fi
 
 
 
