@@ -127,7 +127,12 @@ fi
 
 
 
-. "core/helper.sh"
+
+# Checking if helper.sh exists. If not, it should mean that the current execution is an installation
+if [ -f "core/helper.sh" ]; then
+	. "core/helper.sh"
+fi
+
 
 
 
@@ -544,7 +549,7 @@ create_cli() {
 		fi
 
 		# Clear temporary files & directories
-		rm -rf $dir_tmp/$NAME_LOWERCASE*		# Cleaning also temp files created during update process since create_cli is not called directly during update.
+		# rm -rf $dir_tmp/$NAME_LOWERCASE*		# Cleaning also temp files created during update process since create_cli is not called directly during update.
 
 
 	else
