@@ -463,11 +463,18 @@ create_cli() {
 	# Process to the installation
 	if [ -d "$archive_dir_tmp" ]; then
 
+	
+		# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
+		# Remove them to allow installation of the CLI
+		echo "Removing old aliases..."
+		rm -rf $file_main_alias_1
+		rm -rf $file_main_alias_2
+
 		
 		# Sources files installation
 		echo "Installing sources..."
 		# cp -R "$archive_dir_tmp/commands" $dir_src_cli
-		cp -fRT $archive_dir_tmp $dir_src_cli # -T used to overwrite the source dir and not creating a new inside
+		cp -RT $archive_dir_tmp $dir_src_cli # -T used to overwrite the source dir and not creating a new inside
 		chmod +x -R $dir_src_cli
 
 
