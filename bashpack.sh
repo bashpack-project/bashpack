@@ -467,7 +467,7 @@ create_cli() {
 		# Sources files installation
 		echo "Installing sources..."
 		# cp -R "$archive_dir_tmp/commands" $dir_src_cli
-		cp -RT $archive_dir_tmp $dir_src_cli # -T used to overwrite the source dir and not creating a new inside
+		cp -fRT $archive_dir_tmp $dir_src_cli # -T used to overwrite the source dir and not creating a new inside
 		chmod +x -R $dir_src_cli
 
 
