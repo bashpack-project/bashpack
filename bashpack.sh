@@ -139,15 +139,19 @@ dir_src_cli="/usr/local/src/$NAME_LOWERCASE"
 
 
 
-# Checking if helper.sh exists. If not, it should mean that the current execution is an installation
-if [ -f "$dir_src_cli/core/helper.sh" ]; then
-	. "$dir_src_cli/core/helper.sh"
-fi
-
-
-
 export archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
 export archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
+
+
+
+# Checking if helper.sh exists. 
+# If not, using the temp file.
+# This should be useful only during an installation
+if [ -f "$dir_src_cli/core/helper.sh" ]; then
+	. "$dir_src_cli/core/helper.sh"
+elif [ -f "$archive_dir_tmp/core/helper.sh" ]; then
+	. "$archive_dir_tmp/core/helper.sh"
+fi
 
 
 
