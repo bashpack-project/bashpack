@@ -30,15 +30,6 @@
 
 
 
-
-# Display a warning in case of using the script and not a command installed on the system
-if [ $0 = "./$file_main" ]; then
-	echo "Warning: you are currently using '$0' which is located in $(pwd)."
-fi
-
-
-
-
 export VERSION="2.0.0"
 
 export NAME="Bashpack"
@@ -49,6 +40,16 @@ export NAME_ALIAS="bp"
 BASE_URL="https://api.github.com/repos/$NAME_LOWERCASE-project"
 
 USAGE="Usage: sudo $NAME_ALIAS [COMMAND] [OPTION]..."'\n'"$NAME_ALIAS --help"
+
+
+
+
+# Display a warning in case of using the script and not a command installed on the system
+if [ $0 = "./$file_main" ]; then
+	echo "Warning: you are currently using '$0' which is located in $(pwd)."
+	# current_cli="script"
+fi
+
 
 
 
@@ -144,13 +145,54 @@ export archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp 
 
 
 
-# Checking if helper.sh exists. 
-# If not, using the temp file.
+
+# Copy/paste commands from helper.sh because they are needed during installation, but the helper file doesn't exist.
 # This should be useful only during an installation
-if [ -f "$dir_src_cli/core/helper.sh" ]; then
-	. "$dir_src_cli/core/helper.sh"
-elif [ -f "$archive_dir_tmp/core/helper.sh" ]; then
-	. "$archive_dir_tmp/core/helper.sh"
+if [ ! -f "core/helper.sh" ]; then
+	posix_which() {
+
+		# Useful in case of spaces in path
+		# Spaces are creating new lines in for loop, so the trick here is to replacing it with a special char assuming it should not be much used in $PATH directories
+		# TL;DR: translate spaces -> special char -> spaces = keep single line for each directory
+		local special_char="|"
+		
+		for directory_raw in $(echo "$PATH" | tr ":" "\n" | tr " " "$special_char"); do
+			local directory="$(echo $directory_raw | tr "$special_char" " ")"
+			local command="$directory/${1}"
+
+			if [ -f "$command" ]; then
+				echo "$command"
+			fi
+		done
+	}
+
+	exists_command() {
+		local command="${1}"
+
+		if [ ! -z "$(posix_which "$command")" ]; then
+			echo "exists"
+		else
+			display_error "'$command' command not found"
+		fi
+	}
+
+
+	get_config_value() {
+		local file=${1}
+		local option=${2}
+
+		while read -r line; do
+			local first_char=`echo $line | cut -c1-1`
+
+			# Avoid reading comments and empty lines
+			if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
+				echo $line | cut -d " " -f 2
+				break
+			fi	
+		done < "$file"
+	}
+else
+	. "core/helper.sh"
 fi
 
 
@@ -177,32 +219,31 @@ file_systemd_timers="$file_systemd_update.timer"
 
 
 
-export file_config=$NAME_LOWERCASE".conf"
+file_current_publication="$dir_config/.current_publication"
+
+
+
+export file_config="$NAME_LOWERCASE.conf"
 # Since 1.2.0 the main config file has been renamed from $NAME_LOWERCASE_config to $NAME_LOWERCASE.conf
-# The old file is not needed anymore and must be removed
+# The old file is not needed anymore and must be removed (here it's automatically renamed)
 if [ -f "$dir_config/"$NAME_LOWERCASE"_config" ]; then
-	rm -f "$dir_config/"$NAME_LOWERCASE"_config"
+	# rm -f "$dir_config/"$NAME_LOWERCASE"_config"
+	mv "$dir_config/"$NAME_LOWERCASE"_config" "$dir_config/$file_config"
 fi
 
-
-
-file_current_publication=$dir_config"/.current_publication"
-
-
-
-# Workaround that permit to download the stable release in case of first installation or installation from a version that didn't had the config file
-# (If the config file doesn't exist, it cannot detect the publication where it's supposed to be written)
-# Also:
-# - create a temp config file that permit to get new config file names in case of rename in new versions
-# - "manually" declare the current publication in case of new config file has been renamed and the publication can't be detected
-if [ ! -f "$dir_config/$file_config" ]; then
-	if [ -f $file_current_publication ]; then
-		echo "publication "$(cat $file_current_publication) > "$dir_config/$file_config"
-	else
-		mkdir -p "$dir_config"
-		echo "publication main" > "$dir_config/$file_config"
-	fi
-fi
+# # Workaround that permit to download the stable release in case of first installation or installation from a version that didn't had the config file
+# # (If the config file doesn't exist, it cannot detect the publication where it's supposed to be written)
+# # Also:
+# # - create a temp config file that permit to get new config file names in case of rename in new versions
+# # - "manually" declare the current publication in case of new config file has been renamed and the publication can't be detected
+# if [ ! -f "$dir_config/$file_config" ]; then
+# 	if [ -f $file_current_publication ]; then
+# 		echo "publication "$(cat $file_current_publication) > "$dir_config/$file_config"
+# 	else
+# 		mkdir -p "$dir_config"
+# 		echo "publication main" > "$dir_config/$file_config"
+# 	fi
+# fi
 
 # Depending on the chosen publication, the repository will be different:
 # - Main (= stable) releases:	https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE
@@ -213,7 +254,11 @@ case $PUBLICATION in
 	unstable)	URL="$BASE_URL/$NAME_LOWERCASE-unstable" ;;
 	dev)		URL="$BASE_URL/$NAME_LOWERCASE-dev" ;;
 	main)		URL="$BASE_URL/$NAME_LOWERCASE" ;;
-	*)			display_error "publication $PUBLICATION not found in [main|unstable|dev] at $dir_config/$file_config. Using default 'main' publication." && URL="$BASE_URL/$NAME_LOWERCASE" ;;
+	# *)			display_error "publication $PUBLICATION not found in [main|unstable|dev] at $dir_config/$file_config. Using default 'main' publication." && URL="$BASE_URL/$NAME_LOWERCASE" ;;
+	*)
+		display_error "publication $PUBLICATION not found in [main|unstable|dev] at $dir_config/$file_config. Using default 'main' publication."
+		URL="$BASE_URL/$NAME_LOWERCASE"
+		;;
 esac
 export URL # Export URL to be usable on tests
 
@@ -326,14 +371,6 @@ delete_cli() {
 		fi
 		
 	fi
-
-
-
-
-
-
-
-
 }
 
 
@@ -464,11 +501,11 @@ create_cli() {
 	if [ -d "$archive_dir_tmp" ]; then
 
 	
-		# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
-		# Remove them to allow installation of the CLI
-		echo "Removing old aliases..."
-		rm -rf $file_main_alias_1
-		rm -rf $file_main_alias_2
+		# # Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
+		# # Remove them to allow installation of the CLI
+		# echo "Removing old aliases..."
+		# rm -rf $file_main_alias_1
+		# rm -rf $file_main_alias_2
 
 		
 		# Sources files installation
@@ -589,12 +626,6 @@ update_cli() {
 	# (so yes, it means that the CLI is downloaded multiple times)
 
 	local error_already_installed="Latest $NAME version is already installed ($VERSION $(detect_publication))."
-
-	# # Testing if publication has changed to get the latest available version from the chosen publication.
-	# # This permit to change the used repository.
-	# if [ ! $(detect_publication) = $(get_config_value "$dir_config/$file_config" "publication") ]; then
-	# 	download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
-	# fi
 
 	# Testing if a new version exists on the current publication to avoid reinstall if not.
 	# This test requires curl, if not usable, then the CLI will be reinstalled at each update.

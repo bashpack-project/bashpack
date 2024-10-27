@@ -115,24 +115,6 @@ exists_command() {
 
 
 
-# Error function.
-# Usage: error_file_not_downloaded <file_url>
-error_file_not_downloaded() {
-	display_error "${1} not found. Are curl or wget able to reach it from your system?"
-}
-
-
-
-
-# Error function.
-# Usage: error_tarball_non_working <file_name>
-error_tarball_non_working() {
-	display_error "file '${1}' is a non-working .tar.gz tarball and cannot be used. Deleting it."
-}
-
-
-
-
 # Getting values stored in configuration files.
 # Usage: read_config_value "<file>" "<option>"
 get_config_value() {
@@ -148,6 +130,24 @@ get_config_value() {
 			break
 		fi	
 	done < "$file"
+}
+
+
+
+
+# Error function.
+# Usage: error_file_not_downloaded <file_url>
+error_file_not_downloaded() {
+	display_error "${1} not found. Are curl or wget able to reach it from your system?"
+}
+
+
+
+
+# Error function.
+# Usage: error_tarball_non_working <file_name>
+error_tarball_non_working() {
+	display_error "file '${1}' is a non-working .tar.gz tarball and cannot be used. Deleting it."
 }
 
 
