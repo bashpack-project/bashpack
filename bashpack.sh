@@ -42,22 +42,21 @@ fi
 export VERSION="2.0.0"
 
 export NAME="Bashpack"
-export NAME_LOWERCASE=$(echo "$NAME" | tr A-Z a-z)
-export NAME_UPPERCASE=$(echo "$NAME" | tr a-z A-Z)
+export NAME_LOWERCASE="$(echo "$NAME" | tr A-Z a-z)"
+export NAME_UPPERCASE="$(echo "$NAME" | tr a-z A-Z)"
 export NAME_ALIAS="bp"
 
 BASE_URL="https://api.github.com/repos/$NAME_LOWERCASE-project"
 
 USAGE="Usage: sudo $NAME_ALIAS [COMMAND] [OPTION]..."'\n'"$NAME_ALIAS --help"
 
-export yes="@(yes|Yes|yEs|yeS|YEs|YeS|yES|YES|y|Y)"
-export continue_question="Do you want to continue? [y/N] "
 
 
 
 # Options that can be called without root
 # Display usage in case of empty option
-if [ -z "$@" ]; then
+# if [ -z "$@" ]; then
+if [ -z "$1" ]; then
 	echo "$USAGE"
 	exit
 else
@@ -75,7 +74,7 @@ else
 				&&		echo "Options:" \
 				&&		echo " -y, --assume-yes 	enable automatic installations without asking during the execution." \
 				&&		echo "     --ask    		ask to manually write your choice about updates installations confirmations." \
-				&&		echo "     --get-logs   	display systemd logs." \
+				&&		echo "     --get-logs		display systemd logs." \
 				&&		echo "     --when   		display systemd next service cycle." \
 				&&		echo "" \
 				&&		echo "$NAME $VERSION" \
@@ -89,8 +88,9 @@ else
 				&&		echo "Verify current $NAME installation on your system." \
 				&&		echo "" \
 				&&		echo "Options:" \
-				&&		echo " -f, --files		verify that all files composing the CLI are presents." \
-				&&		echo " -d, --download		verify that download functions are working." \
+				&&		echo " -f, --files				verify that all files composing the CLI are presents." \
+				&&		echo " -d, --download				test to download archive from remote repository." \
+				&&		echo " -r, --repository-reachability		check if remote repository is reachable." \
 				&&		echo "" \
 				&&		echo "$NAME $VERSION" \
 				&&		exit ;;
@@ -280,7 +280,7 @@ delete_cli() {
 
 
 	if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
-		display_error "$NAME $VERSION is not installed on your system."
+		display_error "$NAME is not installed on your system."
 	else
 		if [ "$exclude_main" = "exclude_main" ]; then
 			# Delete everything except main files and directories
@@ -306,23 +306,26 @@ delete_cli() {
 			rm -rf $file_main_alias_2
 			rm -rf $dir_src_cli
 		fi
-	fi
 
-
-
-
-
-
-
-	if [ -f "$file_main" ]; then
-		if [ "$exclude_main" = "exclude_main" ]; then
-			display_success "$NAME $VERSION has been uninstalled ($file_main has been kept)."
+		if [ -f "$file_main" ]; then
+			if [ "$exclude_main" = "exclude_main" ]; then
+				display_success "$NAME $VERSION has been uninstalled ($file_main has been kept)."
+			else
+				display_error "$NAME $VERSION located at $(posix_which $NAME_ALIAS) has not been uninstalled." && exit
+			fi
 		else
-			display_error "$NAME $VERSION located at $(which $NAME_ALIAS) has not been uninstalled." && exit
+			display_success "$NAME $VERSION has been uninstalled."
 		fi
-	else
-		display_success "$NAME $VERSION has been uninstalled."
+		
 	fi
+
+
+
+
+
+
+
+
 }
 
 
@@ -391,7 +394,7 @@ delete_all() {
 # detect_cli() {
 # 	if [ "$(exists_command "$NAME_LOWERCASE")" = "exists" ]; then
 # 		if [ ! -z "$($NAME_LOWERCASE --version)" ]; then
-# 			echo "$NAME $($NAME_ALIAS --version) detected at $(which $NAME_LOWERCASE)"
+# 			echo "$NAME $($NAME_ALIAS --version) detected at $(posix_which $NAME_LOWERCASE)"
 # 		fi
 # 	fi
 # }
@@ -645,7 +648,7 @@ case "$1" in
 				-f|--files)						export function_to_launch="check_files" && exec $COMMAND_VERIFY ;;
 				-d|--download)					export function_to_launch="check_download" && exec $COMMAND_VERIFY ;;
 				-r|--repository-reachability)	export function_to_launch="check_repository_reachability" && exec $COMMAND_VERIFY ;;
-				*)								display_error "unknown [$1] option '$2'."$'\n'"$USAGE" && exit ;;
+				*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
 	firewall)
@@ -653,23 +656,21 @@ case "$1" in
 			exec $COMMAND_FIREWALL
 		else
 			case "$2" in
-				-r|--restart)					exec $COMMAND_FIREWALL ;;
-				*)								display_error "unknown [$1] option '$2'."$'\n'"$USAGE" && exit ;;
+				-r|--restart)	exec $COMMAND_FIREWALL ;;
+				*)				display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
 	update)
 		if [ -z "$2" ]; then
-			install_confirmation="no" && exec $COMMAND_UPDATE
+			exec $COMMAND_UPDATE
 		else
-			# for arg_update in "$@"; do
-				case "$2" in
-					-y|--assume-yes)	export install_confirmation="yes" && exec $COMMAND_UPDATE ;;
-					--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $COMMAND_UPDATE ;;
-					--when)				$COMMAND_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
-					--get-logs)			$COMMAND_SYSTEMD_LOGS ;;
-					*)					display_error "unknown [$1] option '$2'."$'\n'"$USAGE" && exit ;;
-				esac
-			# done
+			case "$2" in
+				-y|--assume-yes)	export install_confirmation="yes" && exec $COMMAND_UPDATE ;;
+				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $COMMAND_UPDATE ;;
+				--when)				$COMMAND_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
+				--get-logs)			$COMMAND_SYSTEMD_LOGS ;;
+				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
+			esac
 		fi ;;
 	*) display_error "unknown option '$1'."'\n'"$USAGE" && exit ;;
 esac

@@ -27,7 +27,6 @@
 . "core/helper.sh"
 
 
-echo $NAME
 
 echo -n "Have you ever seen a P carrying a B ?  "
 loading "sleep 2"

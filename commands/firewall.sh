@@ -77,7 +77,7 @@ install_firewall() {
 # Configure the firewall
 create_firewall() {
 	
-	now=$(date +%y-%m-%d_%H-%M-%S)
+	# now=$(date +%y-%m-%d_%H-%M-%S)
 	nftables_file="/etc/nftables.conf"
 	nftables_dir="/etc/bashpack/firewall/"
 	nftables_file_backup=$nftables_dir"nftables.conf_backup_$now"

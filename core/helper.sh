@@ -24,23 +24,31 @@
 
 
 
+
+export now=$(date +%y-%m-%d_%H-%M-%S)
+
+
+
+
 # Display always the same message in error messages.
 # Usage: display_error <message>
 display_error() {
-	echo "[failure] ${1}"
+	echo "$now error: ${1}"
 }
+
 
 
 
 # Display always the same message in success messages.
 # Usage: display_success <message> 
 display_success() {
-	echo "[success] ${1}"
+	echo "$now success: ${1}"
 }
 
 
 
-# Loading animation so we know the process has not crashed
+
+# Loading animation so we know the process has not crashed.
 # Usage: loading "<command that takes time>"
 loading() {
 	${1} & local pid=$!
@@ -63,23 +71,48 @@ loading() {
 	
 	echo ""
 }
-# export -f loading
 
 
 
 
-# Function to search for commands on the system.
+# Find if and where the command exists on the system (like 'which' but compatible with POSIX systems).
+# (could use "command -v" but was more fun creating it)
+# Usage: posix_which <command>
+posix_which() {
+
+	# Useful in case of spaces in path
+	# Spaces are creating new lines in for loop, so the trick here is to replacing it with a special char assuming it should not be much used in $PATH directories
+	# TL;DR: translate spaces -> special char -> spaces = keep single line for each directory
+	local special_char="|"
+	
+	for directory_raw in $(echo "$PATH" | tr ":" "\n" | tr " " "$special_char"); do
+		local directory="$(echo $directory_raw | tr "$special_char" " ")"
+		local command="$directory/${1}"
+
+		if [ -f "$command" ]; then
+			echo "$command"
+			# break
+		fi
+	done
+}
+
+
+
+
+# Function to know if commands exist on the system.
 # Usage: exists_command <command>
 exists_command() {
-	local command=${1}
+	local command="${1}"
 
-	if ! which $command > /dev/null; then
-		display_error "'$command' command not found"
-	else
+	# if ! which $command > /dev/null; then
+	if [ ! -z "$(posix_which "$command")" ]; then
 		echo "exists"
+	else
+		display_error "'$command' command not found"
 	fi
 }
-# export -f exists_command
+
+
 
 
 # Error function.
@@ -100,7 +133,7 @@ error_tarball_non_working() {
 
 
 
-# Getting values stored in configuration files
+# Getting values stored in configuration files.
 # Usage: read_config_value "<file>" "<option>"
 get_config_value() {
 	local file=${1}
@@ -116,7 +149,17 @@ get_config_value() {
 		fi	
 	done < "$file"
 }
-# export -f get_config_value
+
+
+
+
+# Get user a confirmation that accepts differents answers and returns always the same value
+# Usage: get_confirmation <yes|Yes|yEs|yeS|YEs|YeS|yES|YES|y|Y>
+sanitize_confirmation() {
+	if [ "$1" = "yes" ] || [ "$1" = "Yes" ] || [ "$1" = "yEs" ] || [ "$1" = "yeS" ] || [ "$1" = "YEs" ] || [ "$1" = "YeS" ] || [ "$1" = "yES" ] || [ "$1" = "YES" ] || [ "$1" = "y" ] || [ "$1" = "Y" ]; then
+		echo "yes"
+	fi
+}
 
 
 
@@ -149,14 +192,15 @@ get_config_value() {
 archive_extract() {
 	# Testing if actually using a working tarball, and if not exiting script so we avoid breaking any installations.
 	if file ${1} | grep -q 'gzip compressed data'; then
-		# "tar --strip-components 1" permit to extract sources in /tmp/$NAME_LOWERCASE and don't create a new directory /tmp/$NAME_LOWERCASE/$NAME_LOWERCASE
-		tar -xf ${1} -C ${2} --strip-components 1
+		if [ "$(exists_command "tar")" = "exists" ]; then
+			# "tar --strip-components 1" permit to extract sources in /tmp/$NAME_LOWERCASE and don't create a new directory /tmp/$NAME_LOWERCASE/$NAME_LOWERCASE
+			tar -xf ${1} -C ${2} --strip-components 1
+		fi
 	else
 		error_tarball_non_working ${1}
 		rm -f ${1}
 	fi
 }
-# export -f archive_extract
 
 
 
@@ -178,16 +222,15 @@ check_repository_reachability() {
 
 	# Need to be improved to all 1**, 2** and 3** codes.
 	if [ $http_code -eq 200 ]; then
-		display_success "HTTP status code $http_code. Repository is reachable."
-	elif [ -z $http_code ]; then
-		display_error "HTTP status code not found. Repository is not reachable."
-		exit
+		display_success "[HTTP $http_code] $URL is reachable."
+	# elif [ -z $http_code ]; then
+	# 	display_error "[HTTP $http_code] $URL is not reachable."
+	# 	exit
 	else 
-		display_error "HTTP status code $http_code. Repository is not reachable."
+		display_error "[HTTP $http_code] $URL is not reachable."
 		exit
 	fi
 }
-# export -f check_repository_reachability
 
 
 
@@ -234,8 +277,6 @@ download_cli() {
 	fi
 
 }
-# export -f download_cli
-
 
 
 #EOF

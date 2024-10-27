@@ -74,10 +74,10 @@
 # "Core"	-> means that the CLI can't be installed, uninstalled or updated without it.
 # "Other"	-> means that the CLI can be installed, uninstalled or updated without it.
 # (the update process must handle a clean installation by deleting or creating right files at right places).
-directories_core="$dir_bin"
-directories_other="$dir_src" "$dir_systemd" "$dir_config" "$dir_autocompletion"
-files_core="$dir_bin/$NAME_LOWERCASE" "$dir_bin/bp"
-files_other="$dir_autocompletion/$NAME_LOWERCASE" "$dir_systemd/$NAME_LOWERCASE-updates.service" "$dir_systemd/$NAME_LOWERCASE-updates.timer" "$dir_config/.current_publication" "$dir_config/"$NAME_LOWERCASE"_config"
+directories_core=""$dir_bin""
+directories_other=""$dir_src" "$dir_systemd" "$dir_config" "$dir_autocompletion""
+files_core=""$dir_bin/$NAME_LOWERCASE" "$dir_bin/bp""
+files_other=""$dir_autocompletion/$NAME_LOWERCASE" "$dir_systemd/$NAME_LOWERCASE-updates.service" "$dir_systemd/$NAME_LOWERCASE-updates.timer" "$dir_config/.current_publication" "$dir_config/"$NAME_LOWERCASE"_config""
 
 
 
@@ -180,17 +180,17 @@ check_download() {
 	download_cli "$URL/tarball/$defined_version" $archive_tmp $archive_dir_tmp
 	
 	if [ -f "$archive_tmp" ]; then
-		display_success "verification passed. $archive_tmp found."
+		display_success "verification passed: $archive_tmp found."
 	else
 		not_found=$((not_found+1))
-		display_error "verification failed. $archive_tmp not found."
+		display_error "verification failed: $archive_tmp not found."
 	fi
 	
 	if [ -d "$archive_dir_tmp" ]; then
-		display_success "verification passed. $archive_dir_tmp found."
+		display_success "verification passed: $archive_dir_tmp found."
 	else
 		not_found=$((not_found+1))
-		display_error "verification failed. $archive_dir_tmp not found."
+		display_error "verification failed: $archive_dir_tmp not found."
 	fi
 
 	# Cleaning downloaded temp files.
