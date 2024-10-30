@@ -926,6 +926,7 @@ case "$1" in
 	# Since "export -f" is not available in Shell, the helper command below permit to use commands from this file in sub scripts
 	helper)
 		# The $allow_helper_functions variable must be exported as "true" in sub scripts that needs the helper functions
+		# This permit to avoid these commands to be used directly from the command line by the users
 		if [ "$allow_helper_functions" != "true" ];then
 			display_error "reserved operation."
 		else
