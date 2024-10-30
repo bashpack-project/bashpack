@@ -469,11 +469,18 @@ export URL # Export URL to be usable on tests
 
 
 
+if [ $0 = "./$file_main" ]; then
+	COMMAND_UPDATE="commands/update.sh"
+	COMMAND_MAN="commands/man.sh"
+	COMMAND_VERIFY="commands/tests.sh"
+	COMMAND_FIREWALL="commands/firewall.sh"
+else
+	COMMAND_UPDATE="$dir_src_cli/commands/update.sh"
+	COMMAND_MAN="$dir_src_cli/commands/man.sh"
+	COMMAND_VERIFY="$dir_src_cli/commands/tests.sh"
+	COMMAND_FIREWALL="$dir_src_cli/commands/firewall.sh"	
+fi
 
-COMMAND_UPDATE="commands/update.sh"
-COMMAND_MAN="commands/man.sh"
-COMMAND_VERIFY="commands/tests.sh"
-COMMAND_FIREWALL="commands/firewall.sh"	
 COMMAND_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $file_systemd_update.service`"
 COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
 
