@@ -24,12 +24,12 @@
 
 
 
-. "core/helper.sh"
+# . "core/helper.sh"
 
 
 
 firewall_config="$dir_config/firewall.conf"
-firewall_allowed=$(get_config_value "$dir_config/$file_config" "firewall")
+firewall_allowed="$($current_cli helper get_config_value "$dir_config/$file_config" "firewall")"
 
 
 
@@ -43,16 +43,17 @@ disable_firewall() {
 # This script is based on nftables, it can't work without it.
 # Testing if nftables is installed on the system, try to install it if not, or exit.
 install_firewall() {
-	if [[ $(exists_command "nft") != "exists" ]]; then
-		echo "Error: nftables not found on the system but is required to configure your firewall with $NAME."
+	if [ "$($current_cli helper exists_command "nft")" != "exists" ]; then
+		display_error "nftables not found on the system but is required to configure your firewall with $NAME."
 		
-		if [[ $(exists_command "apt") = "exists" ]]; then
+		if [ "$($current_cli helper exists_command "apt")" = "exists" ]; then
 			echo "Installing nftables with APT..."
 			echo "Warning: if iptables is installed, nftables will replace it. "
 			echo "Warning: be sure to keep a copy of your currents firewall rulesets."
 			read -p "$continue_question" install_confirmation_nftables
 
-			if [[ $install_confirmation_nftables = $yes ]]; then
+			if [ "$($current_cli helper sanitize_confirmation $install_confirmation_nftables)" = "yes" ]; then
+			# if [ "$install_confirmation_nftables" = $yes ]; then
 				apt install -y nftables
 				systemctl enable nftables.service
 				systemctl restart nftables.service
@@ -62,7 +63,7 @@ install_firewall() {
 			fi
 			
 		else
-			echo "Error: nftables could not been installed with APT."
+			display_error "nftables could not been installed with APT."
 
 			# Exit to avoid doing anything else with this script without nftables installed
 			exit
@@ -141,22 +142,22 @@ create_firewall() {
 	systemctl restart nftables.service
 
 	# Restarting Docker (if Docker is installed) to force it using nftables instead of iptables
-	if [[ $(exists_command "docker") = "exists" ]]; then
+	if [ "$($current_cli helper exists_command "docker")" = "exists" ]; then
 		systemctl restart docker.service
 	fi
 
 
-	echo "Success! New firewall configured."
+	display_success "new firewall configured."
 
 
 }
 
 
-if [[ $firewall_allowed == 1 || $firewall_allowed == 2 ]]; then
+if [ "$firewall_allowed" == 1 || "$firewall_allowed" == 2 ]; then
 	install_firewall
 	create_firewall
 else 
-	echo "Error: firewall management is disabled in $firewall_config"
+	display_error "firewall management is disabled in $firewall_config"
 fi
 
 
