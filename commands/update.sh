@@ -25,6 +25,7 @@
 
 
 # . "core/helper.sh"
+export allow_helper_functions="true"
 
 
 

@@ -249,8 +249,10 @@ get_config_value() {
 
 		# Avoid reading comments and empty lines
 		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
-			echo $line | cut -d " " -f 2
-			break
+			if [ "$(echo $line | cut -d " " -f 1)" = "$option" ]; then
+				echo $line | cut -d " " -f 2
+				break
+			fi
 		fi	
 	done < "$file"
 }
@@ -921,17 +923,28 @@ case "$1" in
 				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
-	# Since "export -f" is not available in shell, the helper command below permit to use commands from this file in sub scripts  
+	# Since "export -f" is not available in Shell, the helper command below permit to use commands from this file in sub scripts
 	helper)
-		if [ -z "$2" ]; then
-			display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit
+		# The $allow_helper_functions variable must be exported as "true" in sub scripts that needs the helper functions
+		if [ "$allow_helper_functions" != "true" ];then
+			display_error "reserved operation."
 		else
-			case "$2" in
-				exists_command)				exists_command "$3" ;;
-				get_config_value)			get_config_value "$3" "$4" ;;
-				sanitize_confirmation)		sanitize_confirmation "$3" ;;
-				*)							display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
-			esac
+			if [ -z "$2" ]; then
+				display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit
+			else
+				case "$2" in
+					check_repository_reachability)		check_repository_reachability ;;
+					loading)							loading "$3" ;;
+					display_success)					display_success "$3" ;;
+					display_error)						display_error "$3" ;;
+					exists_command)						exists_command "$3" ;;
+					sanitize_confirmation)				sanitize_confirmation "$3" ;;
+					get_config_value)					get_config_value "$3" "$4" ;;
+					archive_extract)					archive_extract "$3" "$4" ;;
+					download_cli)						download_cli "$3" "$4" "$5" ;;
+					*)									display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
+				esac
+			fi
 		fi ;;
 	*) display_error "unknown option '$1'."'\n'"$USAGE" && exit ;;
 esac

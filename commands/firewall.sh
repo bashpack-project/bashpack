@@ -25,6 +25,7 @@
 
 
 # . "core/helper.sh"
+export allow_helper_functions="true"
 
 
 
@@ -44,7 +45,7 @@ disable_firewall() {
 # Testing if nftables is installed on the system, try to install it if not, or exit.
 install_firewall() {
 	if [ "$($current_cli helper exists_command "nft")" != "exists" ]; then
-		display_error "nftables not found on the system but is required to configure your firewall with $NAME."
+		$current_cli helper display_error "nftables not found on the system but is required to configure your firewall with $NAME."
 		
 		if [ "$($current_cli helper exists_command "apt")" = "exists" ]; then
 			echo "Installing nftables with APT..."
@@ -63,7 +64,7 @@ install_firewall() {
 			fi
 			
 		else
-			display_error "nftables could not been installed with APT."
+			$current_cli helper display_error "nftables could not been installed with APT."
 
 			# Exit to avoid doing anything else with this script without nftables installed
 			exit
@@ -147,17 +148,17 @@ create_firewall() {
 	fi
 
 
-	display_success "new firewall configured."
+	$current_cli helper display_success "new firewall configured."
 
 
 }
 
 
-if [ "$firewall_allowed" == 1 || "$firewall_allowed" == 2 ]; then
+if [ "$firewall_allowed" = "1" ] || [ "$firewall_allowed" = "2" ]; then
 	install_firewall
 	create_firewall
 else 
-	display_error "firewall management is disabled in $firewall_config"
+	$current_cli helper display_error "firewall management is disabled or misconfigured in $dir_config/$file_config"
 fi
 
 

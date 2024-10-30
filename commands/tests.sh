@@ -25,6 +25,7 @@
 
 
 # . "core/helper.sh"
+export allow_helper_functions="true"
 
 
 
@@ -152,20 +153,20 @@ check_files() {
 
 	if [ $number_core_notfound -gt 0 ]; then
 		echo ""
-		display_error "missing core file(s). A reinstallation is required (https://github.com/bashpack-project/bashpack?tab=readme-ov-file#quick-start)"
+		$current_cli helper display_error "missing core file(s). A reinstallation is required (https://github.com/bashpack-project/bashpack?tab=readme-ov-file#quick-start)"
 	elif [ $number_other_notfound -gt 0 ]; then
 		echo ""
-		display_error "core file(s) are working, but some features are not working as expected. 'sudo bp -i' should solve the issue (if not, you can open an issue at https://github.com/bashpack-project/bashpack/issues)"
+		$current_cli helper display_error "core file(s) are working, but some features are not working as expected. 'sudo bp -i' should solve the issue (if not, you can open an issue at https://github.com/bashpack-project/bashpack/issues)"
 	else
 		echo ""
-		display_success "Current installation is working as expected."
+		$current_cli helper display_success "Current installation is working as expected."
 	fi
 }
 
 
 
 
-# Permit to verify if downloading tarball works as expected.
+# Permit to verify if down$current_cli helper loading tarball works as expected.
 # Usage: 
 # - Latest version:		check_download
 # - Current version:	check_download <VERSION>
@@ -177,20 +178,20 @@ check_download() {
 
 	echo ">>> Attempting to download and extract archive from $URL/tarball/$defined_version"
 
-	download_cli "$URL/tarball/$defined_version" $archive_tmp $archive_dir_tmp
+	$current_cli helper download_cli "$URL/tarball/$defined_version" $archive_tmp $archive_dir_tmp
 	
 	if [ -f "$archive_tmp" ]; then
-		display_success "verification passed: $archive_tmp found."
+		$current_cli helper display_success "verification passed: $archive_tmp found."
 	else
 		not_found=$((not_found+1))
-		display_error "verification failed: $archive_tmp not found."
+		$current_cli helper display_error "verification failed: $archive_tmp not found."
 	fi
 	
 	if [ -d "$archive_dir_tmp" ]; then
-		display_success "verification passed: $archive_dir_tmp found."
+		$current_cli helper display_success "verification passed: $archive_dir_tmp found."
 	else
 		not_found=$((not_found+1))
-		display_error "verification failed: $archive_dir_tmp not found."
+		$current_cli helper display_error "verification failed: $archive_dir_tmp not found."
 	fi
 
 	# Cleaning downloaded temp files.
@@ -212,15 +213,15 @@ check_download() {
 # 	elif [ $(exists_command "wget") = "exists" ]; then
 # 		http_code=$(wget --server-response "$URL" 2>&1 | awk '/^  HTTP/{print $2}')
 # 	else
-# 		display_error "can't get HTTP status code with curl or wget."
+# 		$current_cli helper display_error "can't get HTTP status code with curl or wget."
 # 	fi
 
 
 # 	# Need to be improved to all 1**, 2** and 3** codes.
 # 	if [ $http_code -eq 200 ]; then
-# 		display_success "HTTP status code $http_code. Repository is reachable."
+# 		$current_cli helper display_success "HTTP status code $http_code. Repository is reachable."
 # 	else 
-# 		display_error "HTTP status code $http_code. Repository is not reachable."
+# 		$current_cli helper display_error "HTTP status code $http_code. Repository is not reachable."
 # 	fi
 # }
 
@@ -238,7 +239,7 @@ if [ "$function_to_launch" = "check_all" ]; then
 
 
 	echo ""
-	loading "check_repository_reachability"
+	$current_cli helper loading "check_repository_reachability"
 fi
 
 
@@ -259,7 +260,7 @@ fi
 
 
 if [ "$function_to_launch" = "check_repository_reachability" ]; then
-	loading "check_repository_reachability"
+	$current_cli helper loading "check_repository_reachability"
 fi
 
 
