@@ -339,17 +339,17 @@ archive_extract() {
 # - check_repository_reachability | grep -q "$NAME failure: "
 check_repository_reachability() {
 
-	if [ $(exists_command "curl") = "exists" ]; then
+	if [ "$(exists_command "curl")" = "exists" ]; then
 		http_code=$(curl -s -I $URL | awk '/^HTTP/{print $2}')
-	elif [ $(exists_command "wget") = "exists" ]; then
-		http_code=$(wget --server-response "$URL" 2>&1 | awk '/^  HTTP/{print $2}')
+	elif [ "$(exists_command "wget")" = "exists" ]; then
+		http_code="$(wget --server-response "$URL" 2>&1 | awk '/^  HTTP/{print $2}')"
 	else
 		display_error "can't get HTTP status code with curl or wget."
 	fi
 
 
 	# Need to be improved to all 1**, 2** and 3** codes.
-	if [ $http_code -eq 200 ]; then
+	if [ "$http_code" = "200" ]; then
 		repository_reachable="true"
 		display_success "[HTTP $http_code] $URL is reachable."
 	# elif [ -z $http_code ]; then
