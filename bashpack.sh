@@ -488,25 +488,31 @@ if [ -f "$dir_config/"$NAME_LOWERCASE"_config" ]; then
 	mv "$dir_config/"$NAME_LOWERCASE"_config" "$dir_config/$file_config"
 fi
 
-# Workaround that permit to download the stable release in case of first installation or installation from a version that didn't had the config file
-# (If the config file doesn't exist, it cannot detect the publication where it's supposed to be written)
-# Also:
-# - create a temp config file that permit to get new config file names in case of rename in new versions
-# - "manually" declare the current publication in case of new config file has been renamed and the publication can't be detected
-if [ ! -f "$dir_config/$file_config" ]; then
-	if [ -f $file_current_publication ]; then
-		echo "publication "$(cat $file_current_publication) > "$dir_config/$file_config"
-	else
-		mkdir -p "$dir_config"
-		echo "publication main" > "$dir_config/$file_config"
-	fi
-fi
+# # Workaround that permit to download the stable release in case of first installation or installation from a version that didn't had the config file
+# # (If the config file doesn't exist, it cannot detect the publication where it's supposed to be written)
+# # Also:
+# # - create a temp config file that permit to get new config file names in case of rename in new versions
+# # - "manually" declare the current publication in case of new config file has been renamed and the publication can't be detected
+# if [ ! -f "$dir_config/$file_config" ]; then
+# 	if [ -f $file_current_publication ]; then
+# 		echo "publication "$(cat $file_current_publication) > "$dir_config/$file_config"
+# 	else
+# 		mkdir -p "$dir_config"
+# 		echo "publication main" > "$dir_config/$file_config"
+# 	fi
+# fi
 
 # Depending on the chosen publication, the repository will be different:
 # - Main (= stable) releases:	https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE
 # - Unstable releases:			https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-unstable
 # - Dev releases:				https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-dev
-PUBLICATION="$(get_config_value "$dir_config/$file_config" "publication")"
+# PUBLICATION="$(get_config_value "$dir_config/$file_config" "publication")"
+if [ -f "$dir_config/$file_config" ]; then
+	PUBLICATION="$(get_config_value "$dir_config/$file_config" "publication")"
+else
+	PUBLICATION="main"
+fi
+
 case $PUBLICATION in
 	unstable|dev)
 		URL_ARCH="$HOST_URL_ARCH/$NAME_LOWERCASE-$PUBLICATION"
