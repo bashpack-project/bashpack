@@ -338,8 +338,7 @@ sanitize_confirmation() {
 
 
 # Permit to verify if the remote repository is reachable with HTTP.
-# Usage: 
-# - check_repository_reachability <URL>
+# Usage: check_repository_reachability <URL>
 check_repository_reachability() {
 
 	local url="${1}"
@@ -354,12 +353,10 @@ check_repository_reachability() {
 
 
 	# Need to be improved to all 1**, 2** and 3** codes.
-	if [ "$http_code" = "200" ]; then
+	http_family="$(echo $http_code | cut -c 1)"
+	if [ "$http_family" = "1" ] || [ "$http_family" = "2" ] || [ "$http_family" = "3" ]; then
 		repository_reachable="true"
 		display_success "[HTTP $http_code] $url is reachable."
-	# elif [ -z $http_code ]; then
-	# 	display_error "[HTTP $http_code] $URL is not reachable."
-	# 	exit
 	else 
 		repository_reachable="false"
 		display_error "[HTTP $http_code] $url is not reachable."
