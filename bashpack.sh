@@ -211,15 +211,19 @@ posix_which() {
 	# TL;DR: translate spaces -> special char -> spaces = keep single line for each directory
 	local special_char="|"
 	
-	for directory_raw in "$(echo "$PATH" | tr ":" "\n" | tr " " "$special_char")"; do
-		local directory="$(echo $directory_raw | tr "$special_char" " ")"
-		local command="$directory/${1}"
+	if [ "$SHELL" = "/bin/bash" ]; then
+		which "${1}"
+	else 
+		for directory_raw in "$(echo "$PATH" | tr ":" "\n" | tr " " "$special_char")"; do
+			local directory="$(echo $directory_raw | tr "$special_char" " ")"
+			local command="$directory/${1}"
 
-		if [ -f "$command" ]; then
-			echo "$command"
-			# break
-		fi
-	done
+			if [ -f "$command" ]; then
+				echo "$command"
+				# break
+			fi
+		done
+	fi
 }
 
 
@@ -315,34 +319,35 @@ sanitize_confirmation() {
 
 
 
-# Helper function to extract a .tar.gz archive
-# Usage: archive_extract <archive> <destination directory>
-archive_extract() {
-	# Testing if actually using a working tarball, and if not exiting script so we avoid breaking any installations.
-	if file ${1} | grep -q 'gzip compressed data'; then
-		if [ "$(exists_command "tar")" = "exists" ]; then
-			# "tar --strip-components 1" permit to extract sources in /tmp/$NAME_LOWERCASE and don't create a new directory /tmp/$NAME_LOWERCASE/$NAME_LOWERCASE
-			tar -xf ${1} -C ${2} --strip-components 1
-		fi
-	else
-		error_tarball_non_working ${1}
-		rm -f ${1}
-	fi
-}
+# # Helper function to extract a .tar.gz archive
+# # Usage: archive_extract <archive> <destination directory>
+# archive_extract() {
+# 	# Testing if actually using a working tarball, and if not exiting script so we avoid breaking any installations.
+# 	if file "${1}" | grep -q 'gzip compressed data'; then
+# 		if [ "$(exists_command "tar")" = "exists" ]; then
+# 			# "tar --strip-components 1" permit to extract sources in /tmp/$NAME_LOWERCASE and don't create a new directory /tmp/$NAME_LOWERCASE/$NAME_LOWERCASE
+# 			tar -xf "${1}" -C "${2}" --strip-components 1
+# 		fi
+# 	else
+# 		error_tarball_non_working "${1}"
+# 		rm -f "${1}"
+# 	fi
+# }
 
 
 
 
 # Permit to verify if the remote repository is reachable with HTTP.
 # Usage: 
-# - check_repository_reachability
-# - check_repository_reachability | grep -q "$NAME failure: "
+# - check_repository_reachability <URL>
 check_repository_reachability() {
 
+	local url="${1}"
+
 	if [ "$(exists_command "curl")" = "exists" ]; then
-		http_code=$(curl -s -I $URL | awk '/^HTTP/{print $2}')
+		http_code="$(curl -s -I "$url" | awk '/^HTTP/{print $2}')"
 	elif [ "$(exists_command "wget")" = "exists" ]; then
-		http_code="$(wget --server-response "$URL" 2>&1 | awk '/^  HTTP/{print $2}')"
+		http_code="$(wget --server-response "$url" 2>&1 | awk '/^  HTTP/{print $2}')"
 	else
 		display_error "can't get HTTP status code with curl or wget."
 	fi
@@ -351,13 +356,13 @@ check_repository_reachability() {
 	# Need to be improved to all 1**, 2** and 3** codes.
 	if [ "$http_code" = "200" ]; then
 		repository_reachable="true"
-		display_success "[HTTP $http_code] $URL is reachable."
+		display_success "[HTTP $http_code] $url is reachable."
 	# elif [ -z $http_code ]; then
 	# 	display_error "[HTTP $http_code] $URL is not reachable."
 	# 	exit
 	else 
 		repository_reachable="false"
-		display_error "[HTTP $http_code] $URL is not reachable."
+		display_error "[HTTP $http_code] $url is not reachable."
 		exit
 	fi
 }
@@ -407,23 +412,22 @@ download_cli() {
 
 
 	local file_url="${1}"
-	local file_tmp="$dir_tmp/${2}"
-	local dir_extract_tmp="$dir_tmp/$NAME_LOWERCASE-extracted/${3}"
-
+	local file_tmp="${2}"
+	local dir_extract_tmp="${3}"
 
 
 
 	# Testing if repository is reachable with HTTP before doing anything.
-	check_repository_reachability
+	check_repository_reachability "$file_url"
 	if [ "$repository_reachable" = "true" ]; then
 		# Try to download with curl if exists
 		echo -n "Downloading sources from $file_url "
-		if [ $(exists_command "curl") = "exists" ]; then
+		if [ "$(exists_command "curl")" = "exists" ]; then
 			echo -n "with curl...   "
 			loading "curl -sL $file_url -o $file_tmp"
 			
 		# Try to download with wget if exists
-		elif [ $(exists_command "wget") = "exists" ]; then
+		elif [ "$(exists_command "wget")" = "exists" ]; then
 			echo -n "with wget...  "
 			loading "wget -q $file_url -O $file_tmp"
 
@@ -894,7 +898,7 @@ update_cli() {
 
 	# Testing if a new version exists on the current publication to avoid reinstall if not.
 	# This test requires curl, if not usable, then the CLI will be reinstalled at each update.
-	if [ "$(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$dir_config/$file_config" "publication")" ]; then
+	if [ "$(curl -s "$URL_ARCH/releases/latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$dir_config/$file_config" "publication")" ]; then
 		display_error "Latest $NAME version is already installed ($VERSION $(detect_publication))."
 	else
 
@@ -1002,7 +1006,7 @@ case "$1" in
 				display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit
 			else
 				case "$2" in
-					check_repository_reachability)		check_repository_reachability ;;
+					check_repository_reachability)		check_repository_reachability "$3" ;;
 					loading)							loading "$3" ;;
 					display_success)					display_success "$3" ;;
 					display_error)						display_error "$3" ;;
