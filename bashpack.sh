@@ -49,16 +49,16 @@ dir_bin="/usr/local/sbin"
 dir_systemd="/lib/systemd/system"
 
 export dir_config="/etc/$NAME_LOWERCASE"
-dir_src_cli="/usr/local/src/$NAME_LOWERCASE"
+export dir_src_cli="/usr/local/src/$NAME_LOWERCASE"
 
 export archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
 export archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
 
 export now=export now=$(date +%y-%m-%d_%H-%M-%S)
 
-file_main="$dir_src_cli/$NAME_LOWERCASE.sh"
-file_main_alias_1="$dir_bin/$NAME_LOWERCASE"
-file_main_alias_2="$dir_bin/$NAME_ALIAS"
+export file_main="$dir_src_cli/$NAME_LOWERCASE.sh"
+export file_main_alias_1="$dir_bin/$NAME_LOWERCASE"
+export file_main_alias_2="$dir_bin/$NAME_ALIAS"
 
 export current_cli="$0"
 
@@ -237,7 +237,7 @@ exists_command() {
 
 
 # Getting values stored in configuration files.
-# Usage: read_config_value "<file>" "<option>"
+# Usage: get_config_value "<file>" "<option>"
 get_config_value() {
 	local file=${1}
 	local option=${2}
@@ -277,7 +277,7 @@ error_tarball_non_working() {
 
 
 # Get user a confirmation that accepts differents answers and returns always the same value
-# Usage: get_confirmation <yes|Yes|yEs|yeS|YEs|YeS|yES|YES|y|Y>
+# Usage: sanitize_confirmation <yes|Yes|yEs|yeS|YEs|YeS|yES|YES|y|Y>
 sanitize_confirmation() {
 	if [ "$1" = "yes" ] || [ "$1" = "Yes" ] || [ "$1" = "yEs" ] || [ "$1" = "yeS" ] || [ "$1" = "YEs" ] || [ "$1" = "YeS" ] || [ "$1" = "yES" ] || [ "$1" = "YES" ] || [ "$1" = "y" ] || [ "$1" = "Y" ]; then
 		echo "yes"
@@ -364,46 +364,9 @@ check_repository_reachability() {
 # - download_cli <url of n.n.n> <temp archive> <temp dir for extraction>
 download_cli() {
 
-	# local archive_url="${1}"
-	# local archive_tmp="${2}"
-	# local archive_dir_tmp="${3}"
-	
-	# # Download source scripts
-	# # Testing if repository is reachable with HTTP before doing anything.
-	# if ! check_repository_reachability | grep -q 'error'; then
-	# 	# Try to download with curl if exists
-	# 	echo -n "Downloading sources from $archive_url "
-	# 	if [ $(exists_command "curl") = "exists" ]; then
-	# 		echo -n "with curl...   "
-	# 		loading "curl -sL $archive_url -o $archive_tmp"
-
-	# 		# archive_extract $archive_tmp $archive_dir_tmp
-			
-	# 	# Try to download with wget if exists
-	# 	elif [ $(exists_command "wget") = "exists" ]; then
-	# 		echo -n "with wget...  "
-	# 		loading "wget -q $archive_url -O $archive_tmp"
-			
-	# 		# archive_extract $archive_tmp $archive_dir_tmp
-
-	# 	else
-	# 		error_file_not_downloaded $archive_url
-	# 	fi
-
-	# 	archive_extract $archive_tmp $archive_dir_tmp
-
-	# else
-	# 	# Just call again the same function to get its error message
-	# 	check_repository_reachability
-	# fi
-
-
-
 	local file_url="${1}"
 	local file_tmp="${2}"
 	local dir_extract_tmp="${3}"
-
-
 
 	# Testing if repository is reachable with HTTP before doing anything.
 	check_repository_reachability "$file_url"
@@ -422,7 +385,6 @@ download_cli() {
 		else
 			error_file_not_downloaded $file_url
 		fi
-
 
 
 		# Test if the "$dir_extract_tmp" variable is empty to know if we downloaded an archive that we need to extract
@@ -479,25 +441,10 @@ if [ -f "$dir_config/"$NAME_LOWERCASE"_config" ]; then
 	mv "$dir_config/"$NAME_LOWERCASE"_config" "$dir_config/$file_config"
 fi
 
-# # Workaround that permit to download the stable release in case of first installation or installation from a version that didn't had the config file
-# # (If the config file doesn't exist, it cannot detect the publication where it's supposed to be written)
-# # Also:
-# # - create a temp config file that permit to get new config file names in case of rename in new versions
-# # - "manually" declare the current publication in case of new config file has been renamed and the publication can't be detected
-# if [ ! -f "$dir_config/$file_config" ]; then
-# 	if [ -f $file_current_publication ]; then
-# 		echo "publication "$(cat $file_current_publication) > "$dir_config/$file_config"
-# 	else
-# 		mkdir -p "$dir_config"
-# 		echo "publication main" > "$dir_config/$file_config"
-# 	fi
-# fi
-
 # Depending on the chosen publication, the repository will be different:
 # - Main (= stable) releases:	https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE
 # - Unstable releases:			https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-unstable
 # - Dev releases:				https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-dev
-# PUBLICATION="$(get_config_value "$dir_config/$file_config" "publication")"
 if [ -f "$dir_config/$file_config" ]; then
 	PUBLICATION="$(get_config_value "$dir_config/$file_config" "publication")"
 else
@@ -699,14 +646,14 @@ delete_all() {
 
 
 
-# # Detect if the command has been installed on the system
-# detect_cli() {
-# 	if [ "$(exists_command "$NAME_LOWERCASE")" = "exists" ]; then
-# 		if [ ! -z "$($NAME_LOWERCASE --version)" ]; then
-# 			echo "$NAME $($NAME_ALIAS --version) detected at $(posix_which $NAME_LOWERCASE)"
-# 		fi
-# 	fi
-# }
+# Detect if the command has been installed on the system
+detect_cli() {
+	if [ "$(exists_command "$NAME_LOWERCASE")" = "exists" ]; then
+		if [ -n "$($NAME_LOWERCASE --version)" ]; then
+			echo "$NAME $($NAME_ALIAS --version) detected at $(posix_which $NAME_LOWERCASE)"
+		fi
+	fi
+}
 
 
 
@@ -879,52 +826,25 @@ create_cli() {
 #
 # /!\	This function must work everytime a modification is made in the code. 
 # 		Unless, we risk to not being able to update it on the endpoints where it has been installed.
-#
-# /!\	This function can only works if a generic name like "bashpack-main.tar.gz" exists and can be used as an URL.
-#		By default, 
-#			- Github main branch archive is accessible from https://github.com/<user>/<repository>/archive/refs/heads/main.tar.gz
-#			- Github latest tarball release is accessible from https://api.github.com/repos/<user>/<repository>/tarball
 update_cli() {
-	# Download a first time the latest version from the "main" branch to be able to launch the installation script from it to get latest modifications.
-	# The install function will download the well-named archive with the version name.
-	# (so yes, it means that the CLI is downloaded multiple times)
 
+	local downloaded_cli="$dir_tmp/$NAME_LOWERCASE.sh"
 
 	# Testing if a new version exists on the current publication to avoid reinstall if not.
 	# This test requires curl, if not usable, then the CLI will be reinstalled at each update.
 	if [ "$(curl -s "$URL_ARCH/releases/latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$dir_config/$file_config" "publication")" ]; then
-		display_error "Latest $NAME version is already installed ($VERSION $(detect_publication))."
+		display_error "latest $NAME version is already installed ($VERSION $(detect_publication))."
 	else
 
-		download_cli "$URL_FILE/main/$NAME_LOWERCASE.sh" "$dir_tmp/$NAME_LOWERCASE.sh"
+		# Download only the main file 
+		download_cli "$URL_FILE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
 		
-		chmod +x "$dir_tmp/$NAME_LOWERCASE.sh"
-		sudo $dir_tmp/$NAME_LOWERCASE.sh -i
+		# Execute the installation from the downloaded file 
+		chmod +x "$downloaded_cli"
+		sudo "$downloaded_cli" -i
 
 		# rm -rf "$dir_tmp/$NAME_LOWERCASE.sh"
 
-
-
-
-		# # download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
-
-		# # # To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
-		# # # (archive is deleted in create_cli, which is called after in the process)
-		# # # if ! $NAME_LOWERCASE verify -d | grep -q '$NAME failure:'; then
-		# # if ! check_repository_reachability | grep -q '$NAME failure:'; then
-
-		# 	# Download latest available version
-		# 	download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
-
-		# 	# Delete current installed version to clean all old files
-		# 	delete_all exclude_main
-		
-		# 	# Execute the install_cli function of the script downloaded in /tmp
-		# 	exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
-		# # else
-		# # 	# error_tarball_non_working $archive_tmp
-		# # 	check_repository_reachability
-		# # fi
 	fi
 }
 
@@ -940,8 +860,9 @@ update_cli() {
 # /!\	This function must work everytime a modification is made in the code. 
 #		Because it's called by the update function.
 install_cli() {
-	# detect_cli
+	detect_cli
 
+	# Download tarball archive
 	download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
 	create_cli
