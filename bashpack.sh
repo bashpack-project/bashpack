@@ -37,7 +37,10 @@ export NAME_LOWERCASE="$(echo "$NAME" | tr A-Z a-z)"
 export NAME_UPPERCASE="$(echo "$NAME" | tr a-z A-Z)"
 export NAME_ALIAS="bp"
 
-BASE_URL="https://api.github.com/repos/$NAME_LOWERCASE-project"
+# BASE_URL="https://api.github.com/repos/$NAME_LOWERCASE-project"
+REPO_URL="$NAME_LOWERCASE-project"
+HOST_URL_ARCH="https://api.github.com/repos/$REPO_URL"
+HOST_URL_FILE="https://raw.githubusercontent.com/$REPO_URL"
 
 USAGE="Usage: sudo $NAME_ALIAS [COMMAND] [OPTION]..."'\n'"$NAME_ALIAS --help"
 
@@ -208,7 +211,7 @@ posix_which() {
 	# TL;DR: translate spaces -> special char -> spaces = keep single line for each directory
 	local special_char="|"
 	
-	for directory_raw in $(echo "$PATH" | tr ":" "\n" | tr " " "$special_char"); do
+	for directory_raw in "$(echo "$PATH" | tr ":" "\n" | tr " " "$special_char")"; do
 		local directory="$(echo $directory_raw | tr "$special_char" " ")"
 		local command="$directory/${1}"
 
@@ -347,11 +350,13 @@ check_repository_reachability() {
 
 	# Need to be improved to all 1**, 2** and 3** codes.
 	if [ $http_code -eq 200 ]; then
+		repository_reachable="true"
 		display_success "[HTTP $http_code] $URL is reachable."
 	# elif [ -z $http_code ]; then
 	# 	display_error "[HTTP $http_code] $URL is not reachable."
 	# 	exit
 	else 
+		repository_reachable="false"
 		display_error "[HTTP $http_code] $URL is not reachable."
 		exit
 	fi
@@ -362,43 +367,89 @@ check_repository_reachability() {
 
 # Download releases archives from the repository
 # Usages:
-# - download_cli <url of latest> <temp archive> <temp dir for extraction>
+# - download_cli <url of single file> <temp file>
 # - download_cli <url of n.n.n> <temp archive> <temp dir for extraction>
 download_cli() {
 
-	local archive_url=${1}
-	local archive_tmp=${2}
-	local archive_dir_tmp=${3}
-
-	# Prepare tmp directory
-	rm -rf $archive_dir_tmp
-	mkdir $archive_dir_tmp
-
+	# local archive_url="${1}"
+	# local archive_tmp="${2}"
+	# local archive_dir_tmp="${3}"
 	
-	# Download source scripts
+	# # Download source scripts
+	# # Testing if repository is reachable with HTTP before doing anything.
+	# if ! check_repository_reachability | grep -q 'error'; then
+	# 	# Try to download with curl if exists
+	# 	echo -n "Downloading sources from $archive_url "
+	# 	if [ $(exists_command "curl") = "exists" ]; then
+	# 		echo -n "with curl...   "
+	# 		loading "curl -sL $archive_url -o $archive_tmp"
+
+	# 		# archive_extract $archive_tmp $archive_dir_tmp
+			
+	# 	# Try to download with wget if exists
+	# 	elif [ $(exists_command "wget") = "exists" ]; then
+	# 		echo -n "with wget...  "
+	# 		loading "wget -q $archive_url -O $archive_tmp"
+			
+	# 		# archive_extract $archive_tmp $archive_dir_tmp
+
+	# 	else
+	# 		error_file_not_downloaded $archive_url
+	# 	fi
+
+	# 	archive_extract $archive_tmp $archive_dir_tmp
+
+	# else
+	# 	# Just call again the same function to get its error message
+	# 	check_repository_reachability
+	# fi
+
+
+
+	local file_url="${1}"
+	local file_tmp="$dir_tmp/${2}"
+	local dir_extract_tmp="$dir_tmp/$NAME_LOWERCASE-extracted/${3}"
+
+
+
+
 	# Testing if repository is reachable with HTTP before doing anything.
-	if ! check_repository_reachability | grep -q '$NAME failure:'; then
+	check_repository_reachability
+	if [ "$repository_reachable" = "true" ]; then
 		# Try to download with curl if exists
-		echo -n "Downloading sources from $archive_url "
+		echo -n "Downloading sources from $file_url "
 		if [ $(exists_command "curl") = "exists" ]; then
 			echo -n "with curl...   "
-			loading "curl -sL $archive_url -o $archive_tmp"
-
-			archive_extract $archive_tmp $archive_dir_tmp
+			loading "curl -sL $file_url -o $file_tmp"
 			
 		# Try to download with wget if exists
 		elif [ $(exists_command "wget") = "exists" ]; then
 			echo -n "with wget...  "
-			loading "wget -q $archive_url -O $archive_tmp"
-			
-			archive_extract $archive_tmp $archive_dir_tmp
+			loading "wget -q $file_url -O $file_tmp"
 
 		else
-			error_file_not_downloaded $archive_url
+			error_file_not_downloaded $file_url
 		fi
-	else
-		# Just call again the same function to get its error message
-		check_repository_reachability
+
+
+
+		# Test if the "$dir_extract_tmp" variable is empty to know if we downloaded an archive that we need to extract
+		if [ -n "$dir_extract_tmp" ]; then
+			# Test if the downloaded file is a tarball
+			if file "$file_tmp" | grep -q "gzip compressed data"; then
+				if [ "$(exists_command "tar")" = "exists" ]; then
+				
+					# Prepare tmp directory
+					rm -rf $dir_extract_tmp
+					mkdir -p $dir_extract_tmp
+
+					# "tar --strip-components 1" permit to extract sources in /tmp/$NAME_LOWERCASE and don't create a new directory /tmp/$NAME_LOWERCASE/$NAME_LOWERCASE
+					tar -xf "$file_tmp" -C "$dir_extract_tmp" --strip-components 1
+				fi
+			else
+				display_error "file '$file_url' is a non-working .tar.gz tarball and cannot be used. Deleting it."
+			fi
+		fi
 	fi
 
 }
@@ -456,16 +507,19 @@ fi
 # - Dev releases:				https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-dev
 PUBLICATION="$(get_config_value "$dir_config/$file_config" "publication")"
 case $PUBLICATION in
-	unstable)	URL="$BASE_URL/$NAME_LOWERCASE-unstable" ;;
-	dev)		URL="$BASE_URL/$NAME_LOWERCASE-dev" ;;
-	main)		URL="$BASE_URL/$NAME_LOWERCASE" ;;
-	# *)			display_error "publication $PUBLICATION not found in [main|unstable|dev] at $dir_config/$file_config. Using default 'main' publication." && URL="$BASE_URL/$NAME_LOWERCASE" ;;
+	unstable|dev)
+		URL_ARCH="$HOST_URL_ARCH/$NAME_LOWERCASE-$PUBLICATION"
+		URL_FILE="$HOST_URL_FILE/$NAME_LOWERCASE-$PUBLICATION"
+		;;
 	*)
-		display_error "publication $PUBLICATION not found in [main|unstable|dev] at $dir_config/$file_config. Using default 'main' publication."
-		URL="$BASE_URL/$NAME_LOWERCASE"
+		URL_ARCH="$HOST_URL_ARCH/$NAME_LOWERCASE"
+		URL_FILE="$HOST_URL_FILE/$NAME_LOWERCASE"
 		;;
 esac
-export URL # Export URL to be usable on tests
+
+# Export URLs to be usable on tests
+export URL_ARCH 
+export URL_FILE
 
 
 
@@ -672,11 +726,11 @@ detect_publication() {
 
 
 # This function will install the new config file given within new versions, while keeping user configured values
-# Usage : install_new_config_file
+# Usage: install_new_config_file
 install_new_config_file() {
 
 	local file_config_current="$dir_config/$file_config"
-	local file_config_temp="$archive_dir_tmp/config/$file_config"
+	local file_config_tmp="$archive_dir_tmp/config/$file_config"
 
 	while read -r line; do
 		local first_char=`echo $line | cut -c1-1`
@@ -689,12 +743,12 @@ install_new_config_file() {
 
 			# Replacing options values in temp config file with current configured values
 			# /^#/! is to avoid commented lines
-			sed -i "/^#/! s/$option.*/$line/g" $file_config_temp
+			sed -i "/^#/! s/$option.*/$line/g" $file_config_tmp
 
 		fi	
 	done < "$file_config_current"
 
-	cp $file_config_temp $file_config_current
+	cp $file_config_tmp $file_config_current
 
 }
 
@@ -837,33 +891,42 @@ update_cli() {
 	# The install function will download the well-named archive with the version name.
 	# (so yes, it means that the CLI is downloaded multiple times)
 
-	local error_already_installed="Latest $NAME version is already installed ($VERSION $(detect_publication))."
 
 	# Testing if a new version exists on the current publication to avoid reinstall if not.
 	# This test requires curl, if not usable, then the CLI will be reinstalled at each update.
 	if [ "$(curl -s "$URL/releases/latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$dir_config/$file_config" "publication")" ]; then
-		echo $error_already_installed
+		display_error "Latest $NAME version is already installed ($VERSION $(detect_publication))."
 	else
 
-		# download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
-
-		# # To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
-		# # (archive is deleted in create_cli, which is called after in the process)
-		# # if ! $NAME_LOWERCASE verify -d | grep -q '$NAME failure:'; then
-		# if ! check_repository_reachability | grep -q '$NAME failure:'; then
-
-			# Download latest available version
-			download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
-
-			# Delete current installed version to clean all old files
-			delete_all exclude_main
+		download_cli "$URL_FILE/main/$NAME_LOWERCASE.sh" "$dir_tmp/$NAME_LOWERCASE.sh"
 		
-			# Execute the install_cli function of the script downloaded in /tmp
-			exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
-		# else
-		# 	# error_tarball_non_working $archive_tmp
-		# 	check_repository_reachability
-		# fi
+		chmod +x "$dir_tmp/$NAME_LOWERCASE.sh"
+		sudo $dir_tmp/$NAME_LOWERCASE.sh -i
+
+		# rm -rf "$dir_tmp/$NAME_LOWERCASE.sh"
+
+
+
+
+		# # download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
+
+		# # # To avoid broken installations, before deleting anything, testing if downloaded archive is a working tarball.
+		# # # (archive is deleted in create_cli, which is called after in the process)
+		# # # if ! $NAME_LOWERCASE verify -d | grep -q '$NAME failure:'; then
+		# # if ! check_repository_reachability | grep -q '$NAME failure:'; then
+
+		# 	# Download latest available version
+		# 	download_cli "$URL/tarball" $archive_tmp $archive_dir_tmp
+
+		# 	# Delete current installed version to clean all old files
+		# 	delete_all exclude_main
+		
+		# 	# Execute the install_cli function of the script downloaded in /tmp
+		# 	exec "$archive_dir_tmp/$NAME_LOWERCASE.sh" -i
+		# # else
+		# # 	# error_tarball_non_working $archive_tmp
+		# # 	check_repository_reachability
+		# # fi
 	fi
 }
 
@@ -881,9 +944,7 @@ update_cli() {
 install_cli() {
 	# detect_cli
 
-	# if [ ! -d ".git/"]; then
-		download_cli "$URL/tarball/$VERSION" $archive_tmp $archive_dir_tmp
-	# fi
+	download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
 	create_cli
 }
