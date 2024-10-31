@@ -44,6 +44,18 @@ HOST_URL_FILE="https://raw.githubusercontent.com/$REPO_URL"
 
 USAGE="Usage: sudo $NAME_ALIAS [COMMAND] [OPTION]..."'\n'"$NAME_ALIAS --help"
 
+dir_tmp="/tmp"
+dir_bin="/usr/local/sbin"
+dir_systemd="/lib/systemd/system"
+
+export dir_config="/etc/$NAME_LOWERCASE"
+dir_src_cli="/usr/local/src/$NAME_LOWERCASE"
+
+export archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
+export archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
+
+export now=export now=$(date +%y-%m-%d_%H-%M-%S)
+
 file_main="$dir_src_cli/$NAME_LOWERCASE.sh"
 file_main_alias_1="$dir_bin/$NAME_LOWERCASE"
 file_main_alias_2="$dir_bin/$NAME_ALIAS"
@@ -129,27 +141,6 @@ if [ "$(id -u)" != "0" ]; then
 	display_error "must be runned as root." 1>&2
 	exit 1
 fi
-
-
-
-
-dir_tmp="/tmp"
-dir_bin="/usr/local/sbin"
-dir_systemd="/lib/systemd/system"
-
-
-
-export dir_config="/etc/$NAME_LOWERCASE"
-dir_src_cli="/usr/local/src/$NAME_LOWERCASE"
-
-
-
-export archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
-export archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
-
-
-
-export now=export now=$(date +%y-%m-%d_%H-%M-%S)
 
 
 # --- --- --- --- --- --- ---
@@ -774,11 +765,11 @@ create_cli() {
 	if [ -d "$archive_dir_tmp" ]; then
 
 	
-		# # Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
-		# # Remove them to allow installation of the CLI
-		# echo "Removing old aliases..."
-		# rm -rf $file_main_alias_1
-		# rm -rf $file_main_alias_2
+		# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
+		# Remove them to allow installation of the CLI
+		echo "Removing old aliases..."
+		rm -f $file_main_alias_1
+		rm -f $file_main_alias_2
 
 		
 		# Sources files installation
