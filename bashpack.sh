@@ -358,8 +358,6 @@ check_repository_reachability() {
 		display_error "can't get HTTP status code with curl or wget."
 	fi
 
-
-	# Need to be improved to all 1**, 2** and 3** codes.
 	http_family="$(echo $http_code | cut -c 1)"
 	if [ "$http_family" = "1" ] || [ "$http_family" = "2" ] || [ "$http_family" = "3" ]; then
 		repository_reachable="true"
@@ -883,6 +881,71 @@ install_cli() {
 }
 
 
+verify_cli() {
+
+	# set -x
+
+
+
+	local filters_wanted="=" 
+	local filters_unwanted="local\|tmp" 
+	# Automatically detect every files and directories used in the CLI (every paths that we want to test here must be used through variables from this file)
+
+	# local $files = $(cat "$current_cli" | grep "=" | grep -v "local" | grep "file_" | grep -v "\$file")
+	# local $directories = $(cat "$current_cli" | grep "=" | grep -v "local" | grep "dir_" | grep -v "\$dir")
+	# cat "$current_cli" | grep "=" | grep -v "local" | grep "file_" | grep -v "\$file"
+	# cat "$current_cli" | grep "=" | grep -v "local" | grep "dir_" | grep -v "\$dir"
+
+
+	# cat "$current_cli" | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "file_" | grep -v "\$file"
+	# cat "$current_cli" | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "dir_" | grep -v "\$dir"
+
+
+	local number_found=0
+	local number_notfound=0
+
+	while read -r line; do
+
+
+
+		if [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "file_" | grep -v "\$file")" ]; then
+			local tested_file=$(echo $line | cut -d "=" -f 1 | sed s/"export "//)
+			# echo $tested_file
+
+			ls $tested_file
+			# if [ -f $tested_file ]; then
+			# 	if [ -f $tested_file ]; then
+			# 		echo "[file]  Found		-> $tested_file"
+			# 		number_found=$((number_found+1))
+			# 	else
+			# 		echo "[file]  Not found	-> $tested_file"
+			# 		number_notfound=$((number_notfound+1))
+			# 	fi
+			# fi
+		fi
+		
+		if [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "dir_" | grep -v "\$dir")" ]; then
+			local tested_dir=$(echo $line | cut -d "=" -f 1 | sed s/"export "//)
+			
+			# echo $tested_dir
+
+			# if [ -d $tested_dir ]; then
+			# 	if [ -d $tested_dir ]; then
+			# 		echo "[dir]  Found		-> $tested_dir"
+			# 		number_found=$((number_found+1))
+			# 	else
+			# 		echo "[dir]  Not found	-> $tested_dir"
+			# 		number_notfound=$((number_notfound+1))
+			# 	fi
+			# fi
+		fi	
+
+	
+
+	done < "$current_cli"
+}
+
+
 
 
 # The options (except --help) must be called with root
@@ -900,6 +963,7 @@ case "$1" in
 				-f|--files)						export function_to_launch="check_files" && exec $COMMAND_VERIFY ;;
 				-d|--download)					export function_to_launch="check_download" && exec $COMMAND_VERIFY ;;
 				-r|--repository-reachability)	export function_to_launch="check_repository_reachability" && exec $COMMAND_VERIFY ;;
+				-c)								verify_cli ;;
 				*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
