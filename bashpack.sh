@@ -165,6 +165,15 @@ display_success() {
 
 
 
+# Display always the same message in info messages.
+# Usage: display_info <message> 
+display_info() {
+	echo "$now info: ${1}"
+}
+
+
+
+
 # Loading animation so we know the process has not crashed.
 # Usage: loading "<command that takes time>"
 loading() {
@@ -203,7 +212,15 @@ posix_which() {
 	local special_char="|"
 	
 	if [ "$SHELL" = "/bin/bash" ]; then
-		which "${1}"
+		# Bash isn't creating new lines if command is used in "$(quotes)"
+		for directory_raw in $(echo "$PATH" | tr ":" "\n" | tr " " "$special_char"); do
+			local directory="$(echo $directory_raw | tr "$special_char" " ")"
+			local command="$directory/${1}"
+
+			if [ -f "$command" ]; then
+				echo "$command"
+			fi
+		done
 	else 
 		for directory_raw in "$(echo "$PATH" | tr ":" "\n" | tr " " "$special_char")"; do
 			local directory="$(echo $directory_raw | tr "$special_char" " ")"
@@ -211,7 +228,6 @@ posix_which() {
 
 			if [ -f "$command" ]; then
 				echo "$command"
-				# break
 			fi
 		done
 	fi
@@ -746,7 +762,7 @@ create_cli() {
 		# Checking if systemd is installed (and do nothing if not installed because it means the OS doesn't work with it)
 		if [ $(exists_command "systemctl") = "exists" ]; then
 		
-			echo "Installing systemd services..."
+			display_info "installing systemd services..."
 		
 			# Copy systemd services & timers to systemd directory
 			cp -R $archive_dir_tmp/systemd/* $dir_systemd
@@ -759,7 +775,7 @@ create_cli() {
 
 				# Testing if systemd files exists to ensure systemctl will work as expected
 				if [ -f "$file" ]; then
-					echo "- Starting & enabling $unit..." 
+					display_info "- Starting & enabling $unit..." 
 					systemctl restart $unit # Call "restart" and not "start" to be sure to run the unit provided in this current version (unless the old unit will be kept as the running one)
 					systemctl enable $unit
 				else
@@ -771,19 +787,19 @@ create_cli() {
 
 		# Config installation
 		# Checking if the config directory exists and create it if doesn't exists
-		echo "Installing configuration..."
+		display_info "Installing configuration..."
 		if [ ! -d "$dir_config" ]; then
-			echo "$dir_config not found. Creating it..."
+			display_info "$dir_config not found. Creating it..."
 			mkdir $dir_config
 		fi
 
 		# Must testing if config file exists to avoid overwrite user customizations 
 		if [ ! -f "$dir_config/$file_config" ]; then
-			echo "$dir_config/$file_config not found. Creating it... "
+			display_info "$dir_config/$file_config not found. Creating it... "
 			cp "$archive_dir_tmp/config/$file_config" "$dir_config/$file_config"
 
 		else
-			echo "$dir_config/$file_config already exists. Copy new file while leaving current configured options."
+			display_info "$dir_config/$file_config already exists. Copy new file while leaving current configured options."
 			install_new_config_file
 		fi
 		
@@ -796,11 +812,9 @@ create_cli() {
 
 		# Success message
 		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ] && [ -f "$file_autocompletion" ]; then
-			echo ""
 			display_success "$NAME $($NAME_ALIAS --version) ($(detect_publication)) has been installed."
 			# echo "Info: autocompletion options might not be ready on your current session, you should open a new tab or manually launch the command: source ~/.bashrc"
 		elif [ "$(exists_command "$NAME_ALIAS")" = "exists" ] && [ ! -f "$file_autocompletion" ]; then
-			echo ""
 			echo "Partial success:"
 			echo "$NAME $VERSION has been installed, but auto-completion options could not be installed because $dir_autocompletion does not exists."
 			echo "Please ensure that bash-completion package is installed, and retry the installation of $NAME."
@@ -833,7 +847,7 @@ update_cli() {
 	# Testing if a new version exists on the current publication to avoid reinstall if not.
 	# This test requires curl, if not usable, then the CLI will be reinstalled at each update.
 	if [ "$(curl -s "$URL_ARCH/releases/latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$dir_config/$file_config" "publication")" ]; then
-		display_error "latest $NAME version is already installed ($VERSION $(detect_publication))."
+		display_info "latest $NAME version is already installed ($VERSION $(detect_publication))."
 	else
 
 		# Download only the main file 
