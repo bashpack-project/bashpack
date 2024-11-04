@@ -37,12 +37,14 @@ export NAME_LOWERCASE="$(echo "$NAME" | tr A-Z a-z)"
 export NAME_UPPERCASE="$(echo "$NAME" | tr a-z A-Z)"
 export NAME_ALIAS="bp"
 
+export current_cli="$0"
+
 # BASE_URL="https://api.github.com/repos/$NAME_LOWERCASE-project"
 REPO_URL="$NAME_LOWERCASE-project"
 HOST_URL_ARCH="https://api.github.com/repos/$REPO_URL"
 HOST_URL_FILE="https://raw.githubusercontent.com/$REPO_URL"
 
-USAGE="Usage: sudo $NAME_ALIAS [COMMAND] [OPTION]..."'\n'"$NAME_ALIAS --help"
+USAGE="Usage: $current_cli [COMMAND] [OPTION]..."'\n'"$current_cli --help"
 
 dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
@@ -54,17 +56,17 @@ export dir_src_cli="/usr/local/src/$NAME_LOWERCASE"
 export archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
 export archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
 
-export now=export now=$(date +%y-%m-%d_%H-%M-%S)
+export now="$(date +%y-%m-%d_%H-%M-%S)"
 
 export file_main="$dir_src_cli/$NAME_LOWERCASE.sh"
 export file_main_alias_1="$dir_bin/$NAME_LOWERCASE"
 export file_main_alias_2="$dir_bin/$NAME_ALIAS"
 
-export current_cli="$0"
 
 # Display a warning in case of using the script and not a command installed on the system
-if [ $0 = "./$file_main" ]; then
-	echo "Warning: you are currently using '$0' which is located in $(pwd)."
+if [ "$current_cli" = "./$NAME_LOWERCASE.sh" ]; then
+	echo "Warning: you are currently using '$current_cli' which is located in $(pwd)."
+	echo ""
 fi
 
 
@@ -482,7 +484,7 @@ export URL_FILE
 
 
 
-if [ $0 = "./$file_main" ]; then
+if [ "$current_cli" = "./$NAME_LOWERCASE.sh" ]; then
 	COMMAND_UPDATE="commands/update.sh"
 	COMMAND_MAN="commands/man.sh"
 	COMMAND_VERIFY="commands/tests.sh"
@@ -881,68 +883,54 @@ install_cli() {
 }
 
 
+
+
+# Check if files and directories exist 
+# Usage: verify_cli
 verify_cli() {
-
-	# set -x
-
-
 
 	local filters_wanted="=" 
 	local filters_unwanted="local\|tmp" 
-	# Automatically detect every files and directories used in the CLI (every paths that we want to test here must be used through variables from this file)
-
-	# local $files = $(cat "$current_cli" | grep "=" | grep -v "local" | grep "file_" | grep -v "\$file")
-	# local $directories = $(cat "$current_cli" | grep "=" | grep -v "local" | grep "dir_" | grep -v "\$dir")
-	# cat "$current_cli" | grep "=" | grep -v "local" | grep "file_" | grep -v "\$file"
-	# cat "$current_cli" | grep "=" | grep -v "local" | grep "dir_" | grep -v "\$dir"
-
-
-	# cat "$current_cli" | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "file_" | grep -v "\$file"
-	# cat "$current_cli" | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "dir_" | grep -v "\$dir"
-
-
 	local number_found=0
 	local number_notfound=0
 
-	while read -r line; do
+
+	# if [ "$(exists_command "eval")" = "exists" ]; then
+
+		# Automatically detect every files and directories used in the CLI (every paths that we want to test here must be used through variables from this file)
+		while read -r line; do
+			if [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "file_" | grep -v "\$file")" ] || [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "dir_" | grep -v "\$dir")" ]; then
+
+				local path_tested="$(echo $line | cut -d "=" -f 1 | sed s/"export "//)"
+				local path_value=""
+				
+				eval path_value=\$$path_tested
+
+				if [ -f $path_value ]; then
+					echo "Found		[file] -> $path_tested -> $path_value"
+					number_found=$((number_found+1))
+				elif [ -d $path_value ]; then
+					echo "Found		[dir]  -> $path_tested -> $path_value"
+					number_found=$((number_found+1))
+				else
+					echo "Not found	       -> $path_tested -> $path_value"
+					number_notfound=$((number_notfound+1))
+				fi
+			fi
+		done < "$current_cli"
 
 
+		number_total=$((number_found+number_notfound))
 
-		if [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "file_" | grep -v "\$file")" ]; then
-			local tested_file=$(echo $line | cut -d "=" -f 1 | sed s/"export "//)
-			# echo $tested_file
+		echo ""
+		display_info "found: $number_found/$number_total | not found: $number_notfound"
 
-			# ls $tested_file
-			# if [ -f $tested_file ]; then
-			# 	if [ -f $tested_file ]; then
-			# 		echo "[file]  Found		-> $tested_file"
-			# 		number_found=$((number_found+1))
-			# 	else
-			# 		echo "[file]  Not found	-> $tested_file"
-			# 		number_notfound=$((number_notfound+1))
-			# 	fi
-			# fi
+		if [ "$number_notfound" != "0" ]; then
+			display_error "at least one file or directory is missing."
 		fi
-		
-		if [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "dir_" | grep -v "\$dir")" ]; then
-			local tested_dir=$(echo $line | cut -d "=" -f 1 | sed s/"export "//)
-			
-			# echo $tested_dir
 
-			# if [ -d $tested_dir ]; then
-			# 	if [ -d $tested_dir ]; then
-			# 		echo "[dir]  Found		-> $tested_dir"
-			# 		number_found=$((number_found+1))
-			# 	else
-			# 		echo "[dir]  Not found	-> $tested_dir"
-			# 		number_notfound=$((number_notfound+1))
-			# 	fi
-			# fi
-		fi	
-
+	# fi
 	
-
-	done < "$current_cli"
 }
 
 
