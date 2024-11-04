@@ -353,7 +353,7 @@ check_repository_reachability() {
 	if [ "$(exists_command "curl")" = "exists" ]; then
 		http_code="$(curl -s -I "$url" | awk '/^HTTP/{print $2}')"
 	elif [ "$(exists_command "wget")" = "exists" ]; then
-		http_code="$(wget --server-response "$url" 2>&1 | awk '/^  HTTP/{print $2}')"
+		http_code="$(wget --server-response "$url" 2>&1 | awk '/^  HTTP/{print $2}' | head -n 1)"
 	else
 		display_error "can't get HTTP status code with curl or wget."
 	fi
@@ -912,7 +912,7 @@ verify_cli() {
 			local tested_file=$(echo $line | cut -d "=" -f 1 | sed s/"export "//)
 			# echo $tested_file
 
-			ls $tested_file
+			# ls $tested_file
 			# if [ -f $tested_file ]; then
 			# 	if [ -f $tested_file ]; then
 			# 		echo "[file]  Found		-> $tested_file"
