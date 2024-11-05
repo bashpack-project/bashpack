@@ -50,8 +50,8 @@ dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
 dir_systemd="/lib/systemd/system"
 
-export dir_config="/etc/$NAME_LOWERCASE"
-export dir_src_cli="/usr/local/src/$NAME_LOWERCASE"
+dir_config="/etc/$NAME_LOWERCASE"
+dir_src_cli="/usr/local/src/$NAME_LOWERCASE"
 
 export archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
 export archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
@@ -152,7 +152,7 @@ fi
 # Display always the same message in error messages.
 # Usage: display_error <message>
 display_error() {
-	echo "$now error: ${1}"
+	echo "$now error:	${1}"
 }
 
 
@@ -161,7 +161,7 @@ display_error() {
 # Display always the same message in success messages.
 # Usage: display_success <message> 
 display_success() {
-	echo "$now success: ${1}"
+	echo "$now success:	${1}"
 }
 
 
@@ -170,7 +170,7 @@ display_success() {
 # Display always the same message in info messages.
 # Usage: display_info <message> 
 display_info() {
-	echo "$now info: ${1}"
+	echo "$now info:		${1}"
 }
 
 
@@ -204,35 +204,39 @@ loading() {
 
 
 # Find if and where the command exists on the system (like 'which' but compatible with POSIX systems).
-# (could use "command -v" but was more fun creating it)
 # Usage: posix_which <command>
 posix_which() {
 
-	# Useful in case of spaces in path
-	# Spaces are creating new lines in for loop, so the trick here is to replacing it with a special char assuming it should not be much used in $PATH directories
-	# TL;DR: translate spaces -> special char -> spaces = keep single line for each directory
-	local special_char="|"
-	
-	if [ "$SHELL" = "/bin/bash" ]; then
-		# Bash isn't creating new lines if command is used in "$(quotes)"
-		for directory_raw in $(echo "$PATH" | tr ":" "\n" | tr " " "$special_char"); do
-			local directory="$(echo $directory_raw | tr "$special_char" " ")"
-			local command="$directory/${1}"
-
-			if [ -f "$command" ]; then
-				echo "$command"
-			fi
-		done
-	else 
-		for directory_raw in "$(echo "$PATH" | tr ":" "\n" | tr " " "$special_char")"; do
-			local directory="$(echo $directory_raw | tr "$special_char" " ")"
-			local command="$directory/${1}"
-
-			if [ -f "$command" ]; then
-				echo "$command"
-			fi
-		done
+	if [ -n "$(command -v "${1}")" ]; then
+		echo ${1}
 	fi
+
+
+	# # Useful in case of spaces in path
+	# # Spaces are creating new lines in for loop, so the trick here is to replacing it with a special char assuming it should not be much used in $PATH directories
+	# # TL;DR: translate spaces -> special char -> spaces = keep single line for each directory
+	# local special_char="|"
+	
+	# if [ "$SHELL" = "/bin/bash" ]; then
+	# 	# Bash isn't creating new lines if command is used in "$(quotes)"
+	# 	for directory_raw in $(echo "$PATH" | tr ":" "\n" | tr " " "$special_char"); do
+	# 		local directory="$(echo $directory_raw | tr "$special_char" " ")"
+	# 		local command="$directory/${1}"
+
+	# 		if [ -f "$command" ]; then
+	# 			echo "$command"
+	# 		fi
+	# 	done
+	# else 
+	# 	for directory_raw in "$(echo "$PATH" | tr ":" "\n" | tr " " "$special_char")"; do
+	# 		local directory="$(echo $directory_raw | tr "$special_char" " ")"
+	# 		local command="$directory/${1}"
+
+	# 		if [ -f "$command" ]; then
+	# 			echo "$command"
+	# 		fi
+	# 	done
+	# fi
 }
 
 
@@ -261,7 +265,8 @@ get_config_value() {
 	local option=${2}
 
 	while read -r line; do
-		local first_char=`echo $line | cut -c1-1`
+		# local first_char=`echo $line | cut -c1-1`
+		local first_char=$(echo $line | cut -c1-1)
 
 		# Avoid reading comments and empty lines
 		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
@@ -449,20 +454,20 @@ file_current_publication="$dir_config/.current_publication"
 
 
 
-export file_config="$NAME_LOWERCASE.conf"
+export file_config="$dir_config/$NAME_LOWERCASE.conf"
 # Since 1.2.0 the main config file has been renamed from $NAME_LOWERCASE_config to $NAME_LOWERCASE.conf
 # The old file is not needed anymore and must be removed (here it's automatically renamed)
 if [ -f "$dir_config/"$NAME_LOWERCASE"_config" ]; then
 	# rm -f "$dir_config/"$NAME_LOWERCASE"_config"
-	mv "$dir_config/"$NAME_LOWERCASE"_config" "$dir_config/$file_config"
+	mv "$dir_config/"$NAME_LOWERCASE"_config" "$file_config"
 fi
 
 # Depending on the chosen publication, the repository will be different:
 # - Main (= stable) releases:	https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE
 # - Unstable releases:			https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-unstable
 # - Dev releases:				https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-dev
-if [ -f "$dir_config/$file_config" ]; then
-	PUBLICATION="$(get_config_value "$dir_config/$file_config" "publication")"
+if [ -f "$file_config" ]; then
+	PUBLICATION="$(get_config_value "$file_config" "publication")"
 else
 	PUBLICATION="main"
 fi
@@ -484,17 +489,17 @@ export URL_FILE
 
 
 
+
 if [ "$current_cli" = "./$NAME_LOWERCASE.sh" ]; then
-	COMMAND_UPDATE="commands/update.sh"
-	COMMAND_MAN="commands/man.sh"
-	COMMAND_VERIFY="commands/tests.sh"
-	COMMAND_FIREWALL="commands/firewall.sh"
+	dir_commands="/usr/local/src/$NAME_LOWERCASE/commands"
 else
-	COMMAND_UPDATE="$dir_src_cli/commands/update.sh"
-	COMMAND_MAN="$dir_src_cli/commands/man.sh"
-	COMMAND_VERIFY="$dir_src_cli/commands/tests.sh"
-	COMMAND_FIREWALL="$dir_src_cli/commands/firewall.sh"	
+	dir_commands="commands"
 fi
+
+file_COMMAND_UPDATE="$dir_commands/update.sh"
+file_COMMAND_MAN="$dir_commands/man.sh"
+file_COMMAND_VERIFY="$dir_commands/tests.sh"
+file_COMMAND_FIREWALL="$dir_commands/firewall.sh"	
 
 COMMAND_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $file_systemd_update.service`"
 COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
@@ -690,8 +695,9 @@ detect_publication() {
 # Usage: install_new_config_file
 install_new_config_file() {
 
-	local file_config_current="$dir_config/$file_config"
-	local file_config_tmp="$archive_dir_tmp/config/$file_config"
+	local file_config_current="$file_config"
+	# local file_config_tmp="$archive_dir_tmp/config/$file_config"
+	local file_config_tmp="$archive_dir_tmp/config/$NAME_LOWERCASE.conf"
 
 	while read -r line; do
 		local first_char=`echo $line | cut -c1-1`
@@ -794,12 +800,12 @@ create_cli() {
 		fi
 
 		# Must testing if config file exists to avoid overwrite user customizations 
-		if [ ! -f "$dir_config/$file_config" ]; then
-			display_info "$dir_config/$file_config not found. Creating it... "
-			cp "$archive_dir_tmp/config/$file_config" "$dir_config/$file_config"
+		if [ ! -f "$file_config" ]; then
+			display_info "$file_config not found. Creating it... "
+			cp "$archive_dir_tmp/config/$file_config" "$file_config"
 
 		else
-			display_info "$dir_config/$file_config already exists. Copy new file while leaving current configured options."
+			display_info "$file_config already exists. Copy new file while leaving current configured options."
 			install_new_config_file
 		fi
 		
@@ -846,7 +852,7 @@ update_cli() {
 
 	# Testing if a new version exists on the current publication to avoid reinstall if not.
 	# This test requires curl, if not usable, then the CLI will be reinstalled at each update.
-	if [ "$(curl -s "$URL_ARCH/releases/latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$dir_config/$file_config" "publication")" ]; then
+	if [ "$(curl -s "$URL_ARCH/releases/latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
 		display_info "latest $NAME version is already installed ($VERSION $(detect_publication))."
 	else
 
@@ -855,7 +861,7 @@ update_cli() {
 		
 		# Execute the installation from the downloaded file 
 		chmod +x "$downloaded_cli"
-		sudo "$downloaded_cli" -i
+		"$downloaded_cli" -i
 
 		# rm -rf "$dir_tmp/$NAME_LOWERCASE.sh"
 
@@ -885,17 +891,23 @@ install_cli() {
 
 
 
-# Check if files and directories exist 
-# Usage: verify_cli
-verify_cli() {
+# Check if all the files and directories that compose the CLI exist 
+# Usage: verify_cli_files
+verify_cli_files() {
 
+	display_info  "checking if required files are available on the system."
+
+	# local filters_example="text1\|text2\|text3\|text4" 
 	local filters_wanted="=" 
-	local filters_unwanted="local\|tmp" 
-	local number_found=0
-	local number_notfound=0
+	local filters_unwanted="local " # the space is important for "local " otherwise it can hide some /usr/local/ paths, but the goal is just to avoid local functions variables declarations
 
+	local found=0
+	local missing=0
+	local total=0
 
-	# if [ "$(exists_command "eval")" = "exists" ]; then
+	local previous_path
+
+	if [ "$(exists_command "eval")" = "exists" ]; then
 
 		# Automatically detect every files and directories used in the CLI (every paths that we want to test here must be used through variables from this file)
 		while read -r line; do
@@ -904,33 +916,124 @@ verify_cli() {
 				local path_tested="$(echo $line | cut -d "=" -f 1 | sed s/"export "//)"
 				local path_value=""
 				
-				eval path_value=\$$path_tested
+				if [ "$previous_path" != "$path_tested" ]; then
+					eval path_value=\$$path_tested
 
-				if [ -f $path_value ]; then
-					echo "Found		[file] -> $path_tested -> $path_value"
-					number_found=$((number_found+1))
-				elif [ -d $path_value ]; then
-					echo "Found		[dir]  -> $path_tested -> $path_value"
-					number_found=$((number_found+1))
-				else
-					echo "Not found	       -> $path_tested -> $path_value"
-					number_notfound=$((number_notfound+1))
+					if [ -f "$path_value" ]; then
+						display_success "found file -> $path_tested -> $path_value"
+						found=$((found+1))
+					elif [ -d "$path_value" ]; then
+						display_success "found dir  -> $path_tested -> $path_value"
+						found=$((found+1))
+					else
+						display_error "missing    -> $path_tested -> $path_value"
+						missing=$((missing+1))
+					fi
+			
+					total=$((total+1))
+
 				fi
+
+				# Store current path as the next previous path to be able to avoid tests duplication
+				previous_path="$path_tested"
+
 			fi
 		done < "$current_cli"
 
 
-		number_total=$((number_found+number_notfound))
-
 		echo ""
-		display_info "found: $number_found/$number_total | not found: $number_notfound"
+		display_info "$found/$total found."
 
-		if [ "$number_notfound" != "0" ]; then
+		if [ "$missing" != "0" ]; then
 			display_error "at least one file or directory is missing."
 		fi
+	fi
 
-	# fi
-	
+
+	echo ""
+}
+
+
+
+
+# Check if all the required commands are available on the system
+# Usage: verify_cli_commands
+verify_cli_commands() {
+
+	display_info "checking if required commands are available on the system."
+
+	local file_tmp="$dir_tmp/$NAME_LOWERCASE-commands" # Must store the commands in a file to be able to use the counters
+	local found=0
+	local missing=0
+	local total=0
+
+	local commands=" \
+		tr
+		ls
+		echo
+		printf
+		cat
+		cut
+		sed
+		awk
+		find
+		grep
+		sudo
+		chmod
+		mkdir
+		mv
+		rm
+		cp
+		pwd
+		id
+		date
+		sleep
+		ps
+		tar
+		curl
+		wget
+		systemctl
+		pkg-config
+		command
+		exec
+		set
+		read
+		cd
+		eval
+		exit
+		export
+		case
+		if
+		while
+		for 
+		$SHELL \
+	"
+
+	echo "$commands" > $file_tmp
+
+	while read -r command; do
+		if [ "$(exists_command "$command")" = "exists" ]; then
+			display_success "found $command"
+			found=$((found+1))
+		else 
+			display_error "missing $command"
+			missing=$((missing+1))
+		fi
+
+		total=$((total+1))
+
+	done < "$file_tmp"
+
+	echo ""
+	display_info "$found/$total found."	
+
+	if [ "$missing" != "0" ]; then
+		display_error "at least one command is missing."
+	fi
+
+	rm $file_tmp
+
+	echo ""
 }
 
 
@@ -942,35 +1045,35 @@ case "$1" in
 	-u|--self-update)		update_cli ;;		# Critical option, see the comments at function declaration for more info
 	--self-delete)			delete_all ;;
 	-p|--publication)		detect_publication ;;
-	man)					$COMMAND_MAN ;;
+	man)					$file_COMMAND_MAN ;;
 	verify)
 		if [ -z "$2" ]; then
-			export function_to_launch="check_all" && exec $COMMAND_VERIFY
+			verify_cli_commands && verify_cli_files
 		else
 			case "$2" in
-				-f|--files)						export function_to_launch="check_files" && exec $COMMAND_VERIFY ;;
-				-d|--download)					export function_to_launch="check_download" && exec $COMMAND_VERIFY ;;
-				-r|--repository-reachability)	export function_to_launch="check_repository_reachability" && exec $COMMAND_VERIFY ;;
-				-c)								verify_cli ;;
+				-f|--files)						verify_cli_files ;;
+				-c|--builtin-commands)			verify_cli_commands ;;
+				-d|--download)					export function_to_launch="check_download" && exec $file_COMMAND_VERIFY ;;
+				-r|--repository-reachability)	export function_to_launch="check_repository_reachability" && exec $file_COMMAND_VERIFY ;;
 				*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
 	firewall)
 		if [ -z "$2" ]; then
-			exec $COMMAND_FIREWALL
+			exec $file_COMMAND_FIREWALL
 		else
 			case "$2" in
-				-r|--restart)	exec $COMMAND_FIREWALL ;;
+				-r|--restart)	exec $file_COMMAND_FIREWALL ;;
 				*)				display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
 	update)
 		if [ -z "$2" ]; then
-			exec $COMMAND_UPDATE
+			exec $file_COMMAND_UPDATE
 		else
 			case "$2" in
-				-y|--assume-yes)	export install_confirmation="yes" && exec $COMMAND_UPDATE ;;
-				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $COMMAND_UPDATE ;;
+				-y|--assume-yes)	export install_confirmation="yes" && exec $file_COMMAND_UPDATE ;;
+				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $file_COMMAND_UPDATE ;;
 				--when)				$COMMAND_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
 				--get-logs)			$COMMAND_SYSTEMD_LOGS ;;
 				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;

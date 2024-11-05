@@ -30,7 +30,7 @@ export allow_helper_functions="true"
 
 
 firewall_config="$dir_config/firewall.conf"
-firewall_allowed="$($current_cli helper get_config_value "$dir_config/$file_config" "firewall")"
+firewall_allowed="$($current_cli helper get_config_value "$file_config" "firewall")"
 
 
 
@@ -158,7 +158,7 @@ if [ "$firewall_allowed" = "1" ] || [ "$firewall_allowed" = "2" ]; then
 	install_firewall
 	create_firewall
 else 
-	$current_cli helper display_error "firewall management is disabled or misconfigured in $dir_config/$file_config"
+	$current_cli helper display_error "firewall management is disabled or misconfigured in $file_config"
 fi
 
 
