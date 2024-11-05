@@ -310,47 +310,6 @@ sanitize_confirmation() {
 
 
 
-# # Compare given version with current version 
-# # Permit to adapt some behaviors like file renamed in new versions
-# compare_version_age_with_current() {
-
-# 	local given_version=${1}
-# 	local given_major=$(echo $given_version | cut -d "." -f 1)
-# 	local given_minor=$(echo $given_version | cut -d "." -f 2)
-
-# 	local current_major=$(echo $VERSION | cut -d "." -f 1)
-# 	local current_minor=$(echo $VERSION | cut -d "." -f 2)
-# 	# local current_patch=$(echo $VERSION | cut -d "." -f 3) # Should not be used. If something is different between two version, so it's not a patch, it must be at least in a new minor version.
-
-# 	if [ $current_major -gt $given_major ] || ([ $current_major -ge $given_major ] && [ $current_minor -gt $given_minor ]); then
-# 		echo "current_is_younger"
-# 	elif [ $current_major -eq $given_major ] && [ $current_minor -eq $given_minor ]; then
-# 		echo "current_is_equal"
-# 	else
-# 		echo "current_is_older"
-# 	fi
-# }
-
-
-
-# # Helper function to extract a .tar.gz archive
-# # Usage: archive_extract <archive> <destination directory>
-# archive_extract() {
-# 	# Testing if actually using a working tarball, and if not exiting script so we avoid breaking any installations.
-# 	if file "${1}" | grep -q 'gzip compressed data'; then
-# 		if [ "$(exists_command "tar")" = "exists" ]; then
-# 			# "tar --strip-components 1" permit to extract sources in /tmp/$NAME_LOWERCASE and don't create a new directory /tmp/$NAME_LOWERCASE/$NAME_LOWERCASE
-# 			tar -xf "${1}" -C "${2}" --strip-components 1
-# 		fi
-# 	else
-# 		error_tarball_non_working "${1}"
-# 		rm -f "${1}"
-# 	fi
-# }
-
-
-
-
 # Permit to verify if the remote repository is reachable with HTTP.
 # Usage: check_repository_reachability <URL>
 check_repository_reachability() {
@@ -382,7 +341,7 @@ check_repository_reachability() {
 # Download releases archives from the repository
 # Usages:
 # - download_cli <url of single file> <temp file>
-# - download_cli <url of n.n.n> <temp archive> <temp dir for extraction>
+# - download_cli <url of n.n.n archive> <temp archive> <temp dir for extraction>
 download_cli() {
 
 	local file_url="${1}"
@@ -431,6 +390,7 @@ download_cli() {
 
 # Helper functions - end
 # --- --- --- --- --- --- ---
+
 
 
 
@@ -956,6 +916,7 @@ verify_cli_files() {
 
 
 
+
 # Check if all the required commands are available on the system
 # Usage: verify_cli_commands
 verify_cli_commands() {
@@ -1048,13 +1009,12 @@ case "$1" in
 	man)					$file_COMMAND_MAN ;;
 	verify)
 		if [ -z "$2" ]; then
-			verify_cli_commands && verify_cli_files
+			verify_cli_commands && verify_cli_files && check_repository_reachability
 		else
 			case "$2" in
 				-f|--files)						verify_cli_files ;;
-				-c|--builtin-commands)			verify_cli_commands ;;
-				-d|--download)					export function_to_launch="check_download" && exec $file_COMMAND_VERIFY ;;
-				-r|--repository-reachability)	export function_to_launch="check_repository_reachability" && exec $file_COMMAND_VERIFY ;;
+				-c|--commands)					verify_cli_commands ;;
+				-r|--repository-reachability)	check_repository_reachability ;;
 				*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
@@ -1090,15 +1050,13 @@ case "$1" in
 				display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit
 			else
 				case "$2" in
-					check_repository_reachability)		check_repository_reachability "$3" ;;
 					loading)							loading "$3" ;;
 					display_success)					display_success "$3" ;;
 					display_error)						display_error "$3" ;;
+					display_info)						display_info "$3" ;;
 					exists_command)						exists_command "$3" ;;
 					sanitize_confirmation)				sanitize_confirmation "$3" ;;
 					get_config_value)					get_config_value "$3" "$4" ;;
-					archive_extract)					archive_extract "$3" "$4" ;;
-					download_cli)						download_cli "$3" "$4" "$5" ;;
 					*)									display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 				esac
 			fi
