@@ -441,7 +441,6 @@ fi
 
 file_COMMAND_UPDATE="$dir_commands/update.sh"
 file_COMMAND_MAN="$dir_commands/man.sh"
-file_COMMAND_VERIFY="$dir_commands/tests.sh"
 file_COMMAND_FIREWALL="$dir_commands/firewall.sh"	
 
 # COMMAND_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $file_systemd_update.service`"
@@ -940,7 +939,7 @@ case "$1" in
 	man)					$file_COMMAND_MAN ;;
 	verify)
 		if [ -z "$2" ]; then
-			verify_cli_commands && verify_cli_files && check_repository_reachability
+			verify_cli_commands && verify_cli_files && check_repository_reachability "$URL_FILE" && check_repository_reachability "$URL_ARCH"
 		else
 			case "$2" in
 				-f|--files)						verify_cli_files ;;
