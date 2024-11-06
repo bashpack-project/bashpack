@@ -460,8 +460,8 @@ file_COMMAND_FIREWALL="$dir_commands/firewall.sh"
 # COMMAND_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $file_systemd_update.service`"
 # COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
 
-COMMAND_SYSTEMD_LOGS="echo "command out of service""
-COMMAND_SYSTEMD_STATUS="echo "command out of service""
+COMMAND_SYSTEMD_LOGS="echo 'command out of service'"
+COMMAND_SYSTEMD_STATUS="echo 'command out of service'"
 
 
 
