@@ -65,6 +65,7 @@ export file_main_alias_2="$dir_bin/$NAME_ALIAS"
 
 file_current_publication="$dir_config/.current_publication"
 
+file_log="$dir_log/$NAME_LOWERCASE.log"
 
 
 
@@ -158,7 +159,7 @@ fi
 # Display always the same message in error messages.
 # Usage: display_error <message>
 display_error() {
-	echo "$now error:   ${1}" | tee "$dir_log/$NAME_LOWERCASE-$now.log"
+	echo "$now error:   ${1}" | tee -a "$file_log"
 }
 
 
@@ -167,7 +168,7 @@ display_error() {
 # Display always the same message in success messages.
 # Usage: display_success <message> 
 display_success() {
-	echo "$now success: ${1}" | tee "$dir_log/$NAME_LOWERCASE-$now.log"
+	echo "$now success: ${1}" | tee -a "$file_log"
 }
 
 
@@ -176,7 +177,7 @@ display_success() {
 # Display always the same message in info messages.
 # Usage: display_info <message> 
 display_info() {
-	echo "$now info:    ${1}" | tee "$dir_log/$NAME_LOWERCASE-$now.log"
+	echo "$now info:    ${1}" | tee -a "$file_log"
 }
 
 
@@ -491,6 +492,7 @@ delete_cli() {
 			rm -rf $file_main_alias_1
 			rm -rf $file_main_alias_2
 			rm -rf $dir_src_cli
+			rm -rf $dir_log
 		fi
 
 		if [ -f "$file_main" ]; then
