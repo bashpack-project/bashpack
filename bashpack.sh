@@ -827,6 +827,7 @@ create_cli() {
 		# Log creations
 		if [ ! -d "$dir_log" ]; then
 			mkdir -p "$dir_log"
+			echo "" >> "$file_log"
 			display_info "$dir_log created."
 		fi
 	
