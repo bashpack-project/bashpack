@@ -285,24 +285,6 @@ get_config_value() {
 
 
 
-# Error function.
-# Usage: error_file_not_downloaded <file_url>
-error_file_not_downloaded() {
-	display_error "${1} not found. Are curl or wget able to reach it from your system?"
-}
-
-
-
-
-# Error function.
-# Usage: error_tarball_non_working <file_name>
-error_tarball_non_working() {
-	display_error "file '${1}' is a non-working .tar.gz tarball and cannot be used. Deleting it."
-}
-
-
-
-
 # Get user a confirmation that accepts differents answers and returns always the same value
 # Usage: sanitize_confirmation <yes|Yes|yEs|yeS|YEs|YeS|yES|YES|y|Y>
 sanitize_confirmation() {
@@ -367,7 +349,7 @@ download_cli() {
 			loading "wget -q $file_url -O $file_tmp"
 
 		else
-			error_file_not_downloaded $file_url
+			display_error "could not download $file_url with curl or wget."
 		fi
 
 
@@ -808,9 +790,6 @@ create_cli() {
 		# Clear temporary files & directories
 		rm -rf $dir_tmp/$NAME_LOWERCASE*		# Cleaning also temp files created during update process since create_cli is not called directly during update.
 
-
-	else
-		error_file_not_downloaded $archive_url
 	fi
 }
 
