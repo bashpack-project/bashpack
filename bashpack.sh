@@ -211,42 +211,56 @@ loading() {
 # Usage: posix_which <command>
 posix_which() {
 
+	# Get the path of a given command
+	# Usage: find_path <command>
+	find_path() {
+		# Useful in case of spaces in path
+		# Spaces are creating new lines in for loop, so the trick here is to replacing it with a special char assuming it should not be much used in $PATH directories
+		# TL;DR: translate spaces -> special char -> spaces = keep single line for each directory
+		local special_char="|"
+		
+		if [ "$SHELL" = "/bin/bash" ]; then
+			# Bash isn't creating new lines if command is used in "$(quotes)"
+			for directory_raw in $(echo "$PATH" | tr ":" "\n" | tr " " "$special_char"); do
+				local directory="$(echo $directory_raw | tr "$special_char" " ")"
+				local command="$directory/${1}"
+
+				if [ -f "$command" ]; then
+					echo "$command"
+				fi
+			done
+		else 
+			for directory_raw in "$(echo "$PATH" | tr ":" "\n" | tr " " "$special_char")"; do
+				local directory="$(echo $directory_raw | tr "$special_char" " ")"
+				local command="$directory/${1}"
+
+				if [ -f "$command" ]; then
+					echo "$command"
+				fi
+			done
+		fi
+	}
+
+	# Some commands are builtin and doesn't have path on the system.
+	# This permit to 
+	# - test if any command exists
+	# - get the path of the command if it has one
+	# - still display an output in case of no path but the command exist
+	# - don't display anything if the command doesn't exist at all
 	if [ -n "$(command -v "${1}")" ]; then
-		echo ${1}
+		if [ -n "$(find_path "${1}")" ]; then
+			find_path "${1}"
+		else
+			echo "${1}"
+		fi
 	fi
-
-
-	# # Useful in case of spaces in path
-	# # Spaces are creating new lines in for loop, so the trick here is to replacing it with a special char assuming it should not be much used in $PATH directories
-	# # TL;DR: translate spaces -> special char -> spaces = keep single line for each directory
-	# local special_char="|"
 	
-	# if [ "$SHELL" = "/bin/bash" ]; then
-	# 	# Bash isn't creating new lines if command is used in "$(quotes)"
-	# 	for directory_raw in $(echo "$PATH" | tr ":" "\n" | tr " " "$special_char"); do
-	# 		local directory="$(echo $directory_raw | tr "$special_char" " ")"
-	# 		local command="$directory/${1}"
-
-	# 		if [ -f "$command" ]; then
-	# 			echo "$command"
-	# 		fi
-	# 	done
-	# else 
-	# 	for directory_raw in "$(echo "$PATH" | tr ":" "\n" | tr " " "$special_char")"; do
-	# 		local directory="$(echo $directory_raw | tr "$special_char" " ")"
-	# 		local command="$directory/${1}"
-
-	# 		if [ -f "$command" ]; then
-	# 			echo "$command"
-	# 		fi
-	# 	done
-	# fi
 }
 
 
 
 
-# Function to know if commands exist on the system.
+# Function to know if commands exist on the system, with always the same output to easily use it in conditions statements.
 # Usage: exists_command <command>
 exists_command() {
 	local command="${1}"
