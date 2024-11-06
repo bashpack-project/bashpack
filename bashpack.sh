@@ -666,9 +666,13 @@ create_cli() {
 				if [ -f $file ]; then
 					display_info "$file found."
 
-					display_info "starting & enabling $file." 
-					systemctl restart $file # Call "restart" and not "start" to be sure to run the unit provided in this current version (unless the old unit will be kept as the running one)
-					systemctl enable $file
+					local unit=$(basename "$file")
+
+					display_info "starting & enabling $unit." 
+					
+					# Call "restart" and not "start" to be sure to run the unit provided in this current version (unless the old unit will be kept as the running one)
+					systemctl restart "$unit" 
+					systemctl enable "$unit"
 				else
 					display_error "$file not found."
 				fi
@@ -873,6 +877,7 @@ verify_cli_commands() {
 		sleep
 		ps
 		sort
+		basename
 		tar
 		curl
 		wget
