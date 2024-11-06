@@ -826,8 +826,8 @@ create_cli() {
 
 		# Log creations
 		if [ ! -d "$dir_log" ]; then
-			display_info "$dir_log not found. Creating it..."
-			mkdir $dir_log
+			mkdir -p "$dir_log"
+			display_info "$dir_log created."
 		fi
 	
 		# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
