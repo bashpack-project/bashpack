@@ -865,7 +865,7 @@ create_cli() {
 				if [ -f $file ]; then
 					display_info "$file found."
 
-					local unit=$(basename "$file")
+					local unit="$(basename "$file")"
 
 					display_info "starting & enabling $unit." 
 					
