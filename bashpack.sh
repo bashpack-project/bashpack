@@ -427,9 +427,7 @@ case $PUBLICATION in
 		;;
 esac
 
-# Export URLs to be usable on tests
-export URL_ARCH 
-export URL_FILE
+
 
 
 
@@ -939,12 +937,12 @@ case "$1" in
 	man)					$file_COMMAND_MAN ;;
 	verify)
 		if [ -z "$2" ]; then
-			verify_cli_commands && verify_cli_files && check_repository_reachability "$URL_FILE" && check_repository_reachability "$URL_ARCH"
+			verify_cli_commands;  verify_cli_files; check_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh"; check_repository_reachability "$URL_ARCH/tarball/$VERSION"
 		else
 			case "$2" in
 				-f|--files)						verify_cli_files ;;
 				-c|--commands)					verify_cli_commands ;;
-				-r|--repository-reachability)	check_repository_reachability ;;
+				-r|--repository-reachability)	check_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh"; check_repository_reachability "$URL_ARCH/tarball/$VERSION" ;;
 				*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
