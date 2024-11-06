@@ -156,7 +156,7 @@ fi
 # Display always the same message in error messages.
 # Usage: display_error <message>
 display_error() {
-	echo "$now error:	${1}"
+	echo "$now error:   ${1}"
 }
 
 
@@ -165,7 +165,7 @@ display_error() {
 # Display always the same message in success messages.
 # Usage: display_success <message> 
 display_success() {
-	echo "$now success:	${1}"
+	echo "$now success: ${1}"
 }
 
 
@@ -174,7 +174,7 @@ display_success() {
 # Display always the same message in info messages.
 # Usage: display_info <message> 
 display_info() {
-	echo "$now info:		${1}"
+	echo "$now info:    ${1}"
 }
 
 
@@ -433,11 +433,10 @@ export URL_FILE
 
 
 
-
 if [ "$current_cli" = "./$NAME_LOWERCASE.sh" ]; then
-	dir_commands="/usr/local/src/$NAME_LOWERCASE/commands"
-else
 	dir_commands="commands"
+else
+	dir_commands="/usr/local/src/$NAME_LOWERCASE/commands"
 fi
 
 file_COMMAND_UPDATE="$dir_commands/update.sh"
@@ -447,9 +446,10 @@ file_COMMAND_FIREWALL="$dir_commands/firewall.sh"
 
 # COMMAND_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $file_systemd_update.service`"
 # COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
-
-COMMAND_SYSTEMD_LOGS="echo 'command out of service'"
-COMMAND_SYSTEMD_STATUS="echo 'command out of service'"
+COMMAND_UPDATE_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $NAME_LOWERCASE-updates.service`"
+COMMAND_UPDATE_SYSTEMD_STATUS="systemctl status $NAME_LOWERCASE-updates.service"
+COMMAND_CLI_UPDATE_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $NAME_LOWERCASE-self-update.service`"
+COMMAND_CLI_UPDATE_SYSTEMD_STATUS="systemctl status $NAME_LOWERCASE-self-update.service"
 
 
 
@@ -882,6 +882,7 @@ verify_cli_commands() {
 		curl
 		wget
 		systemctl
+		journalctl
 		pkg-config
 		command
 		exec
@@ -934,6 +935,8 @@ case "$1" in
 	-u|--self-update)		update_cli ;;		# Critical option, see the comments at function declaration for more info
 	--self-delete)			delete_all ;;
 	-p|--publication)		detect_publication ;;
+	--when)					$COMMAND_CLI_UPDATE_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
+	--get-logs)				$COMMAND_CLI_UPDATE_SYSTEMD_LOGS ;;
 	man)					$file_COMMAND_MAN ;;
 	verify)
 		if [ -z "$2" ]; then
@@ -962,8 +965,8 @@ case "$1" in
 			case "$2" in
 				-y|--assume-yes)	export install_confirmation="yes" && exec $file_COMMAND_UPDATE ;;
 				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $file_COMMAND_UPDATE ;;
-				--when)				$COMMAND_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
-				--get-logs)			$COMMAND_SYSTEMD_LOGS ;;
+				--when)				$COMMAND_UPDATE_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
+				--get-logs)			$COMMAND_UPDATE_SYSTEMD_LOGS ;;
 				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
