@@ -184,22 +184,16 @@ display_info() {
 # Usage: loading "<command that takes time>"
 loading() {
 	${1} & local pid=$!
-	# local loader="\|/-"
-	# local i=1
 
 	while ps -p $pid > /dev/null; do
-		# printf "\b%c" "${loader:i++%4:1}"
-		# sleep 0.12
 		for s in / - \\ \|; do
-			printf "\b%c\r$s"
+			echo -n $s
+			echo -ne "\033[0K\r"
+
 			sleep 0.12
 		done
 		i=$((i+1))
 	done
-
-	# Delete the loader character displayed after the loading has ended 
-	printf "\b%c" " "
-
 }
 
 
