@@ -969,6 +969,8 @@ install_cli() {
 		download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
 		create_cli
+	else
+		verify_cli_commands
 	fi
 
 }
