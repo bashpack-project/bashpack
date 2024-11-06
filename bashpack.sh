@@ -52,6 +52,7 @@ dir_systemd="/lib/systemd/system"
 
 dir_config="/etc/$NAME_LOWERCASE"
 dir_src_cli="/usr/local/src/$NAME_LOWERCASE"
+dir_log="/var/log/$NAME_LOWERCASE"
 
 export archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
 export archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
@@ -157,7 +158,7 @@ fi
 # Display always the same message in error messages.
 # Usage: display_error <message>
 display_error() {
-	echo "$now error:   ${1}"
+	echo "$now error:   ${1}" | tee "$dir_log/$NAME_LOWERCASE-$now.log"
 }
 
 
@@ -166,7 +167,7 @@ display_error() {
 # Display always the same message in success messages.
 # Usage: display_success <message> 
 display_success() {
-	echo "$now success: ${1}"
+	echo "$now success: ${1}" | tee "$dir_log/$NAME_LOWERCASE-$now.log"
 }
 
 
@@ -175,7 +176,7 @@ display_success() {
 # Display always the same message in info messages.
 # Usage: display_info <message> 
 display_info() {
-	echo "$now info:    ${1}"
+	echo "$now info:    ${1}" | tee "$dir_log/$NAME_LOWERCASE-$now.log"
 }
 
 
@@ -723,6 +724,7 @@ verify_cli_commands() {
 		ps
 		sort
 		basename
+		tee
 		tar
 		curl
 		command
@@ -819,6 +821,12 @@ create_cli() {
 
 	# Process to the installation
 	if [ -d "$archive_dir_tmp" ]; then
+
+		# Log creations
+		if [ ! -d "$dir_log" ]; then
+			display_info "$dir_log not found. Creating it..."
+			mkdir $dir_log
+		fi
 	
 		# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
 		# Remove them to allow installation of the CLI
