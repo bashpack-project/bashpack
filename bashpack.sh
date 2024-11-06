@@ -144,7 +144,7 @@ fi
 # Ask for root
 set -e
 if [ "$(id -u)" != "0" ]; then
-	display_error "must be runned as root." 1>&2
+	display_error "must be runned as root."
 	exit 1
 fi
 
@@ -388,11 +388,12 @@ download_cli() {
 
 # bash-completion doc: https://github.com/scop/bash-completion/tree/master?tab=readme-ov-file#faq
 # Force using /etc/bash_completion.d/ in case of can't automatically detect it on the system
-if [ "$(exists_command "pkg-config")" = "exists" ]; then
-	dir_autocompletion="$(pkg-config --variable=compatdir bash-completion)"
-else
-	dir_autocompletion="/etc/bash_completion.d"
-fi
+# if [ "$(exists_command "pkg-config")" = "exists" ]; then
+# 	dir_autocompletion="$(pkg-config --variable=compatdir bash-completion)"
+# else
+# 	dir_autocompletion="/etc/bash_completion.d"
+# fi
+dir_autocompletion="/etc/bash_completion.d"
 file_autocompletion="$dir_autocompletion/$NAME_LOWERCASE"
 
 
@@ -580,6 +581,206 @@ detect_publication() {
 
 
 
+# Check if all the files and directories that compose the CLI exist 
+# Usage: verify_cli_files
+verify_cli_files() {
+
+	display_info  "checking if required files are available on the system."
+
+	# local filters_example="text1\|text2\|text3\|text4" 
+	local filters_wanted="=" 
+	local filters_unwanted="local " # the space is important for "local " otherwise it can hide some /usr/local/ paths, but the goal is just to avoid local functions variables declarations
+
+	local found=0
+	local missing=0
+	local total=0
+
+	local previous_path
+
+	if [ "$(exists_command "eval")" = "exists" ]; then
+
+		# Automatically detect every files and directories used in the CLI (every paths that we want to test here must be used through variables from this file)
+		while read -r line; do
+			if [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "file_" | grep -v "\$file")" ] || [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "dir_" | grep -v "\$dir")" ]; then
+
+				local path_tested="$(echo $line | cut -d "=" -f 1 | sed s/"export "//)"
+				local path_value=""
+				
+				if [ "$previous_path" != "$path_tested" ]; then
+					eval path_value=\$$path_tested
+
+					if [ -f "$path_value" ]; then
+						# display_success "found file -> $path_tested -> $path_value"
+						display_success "found file -> $path_value"
+						found=$((found+1))
+					elif [ -d "$path_value" ]; then
+						# display_success "found dir  -> $path_tested -> $path_value"
+						display_success "found dir  -> $path_value"
+						found=$((found+1))
+					else
+						# display_error "miss.      -> $path_tested -> $path_value"
+						display_error "miss.      -> $path_value"
+						missing=$((missing+1))
+					fi
+			
+					total=$((total+1))
+
+				fi
+
+				# Store current path as the next previous path to be able to avoid tests duplication
+				previous_path="$path_tested"
+
+			fi
+		done < "$current_cli"
+
+
+		echo ""
+		display_info "$found/$total found."
+
+		if [ "$missing" != "0" ]; then
+			display_error "at least one file or directory is missing."
+		fi
+	fi
+
+
+	echo ""
+}
+
+
+
+
+
+# Check if all the required commands are available on the system
+# Usage: verify_cli_commands
+# Usage: verify_cli_commands "print-missing-required-command-only"
+verify_cli_commands() {
+
+	local print_missing_required_command_only="${1}"
+	if [ "$print_missing_required_command_only" = "print-missing-required-command-only" ]; then
+		print_missing_required_command_only="true"
+	else
+		display_info "checking if required commands are available on the system."
+	fi	
+
+	local found=0
+	local missing=0
+	local missing_required=0
+	local total=0
+
+	# Permit to find all the commands listed in a file (1 line = 1 command)
+	# Usage: find_command <file>
+	find_command() {
+		local file_tmp="${1}"
+		local type="${2}"		# "required" or "optional" command
+
+		while read -r command; do
+			if [ "$(exists_command "$command")" = "exists" ]; then
+
+				if [ "$print_missing_required_command_only" != "true" ]; then
+					display_success "found ($type) $command"
+				fi
+
+				found=$((found+1))
+			else 
+				if [ "$print_missing_required_command_only" != "true" ]; then
+					display_error "miss. ($type) $command"
+				fi
+
+				missing=$((missing+1))
+
+				if [ "$type" = "required" ]; then
+					missing_required=$((missing_required+1))
+				fi
+			fi
+
+			total=$((total+1))
+
+		done < "$file_tmp"
+	}
+
+	local commands_required=" \
+		tr
+		ls
+		echo
+		printf
+		cat
+		cut
+		sed
+		awk
+		find
+		grep
+		sudo
+		chmod
+		mkdir
+		mv
+		rm
+		cp
+		pwd
+		id
+		date
+		sleep
+		ps
+		sort
+		basename
+		tar
+		curl
+		command
+		exec
+		set
+		read
+		cd
+		eval
+		exit
+		export
+		case
+		if
+		while
+		for 
+		$SHELL \
+	"
+
+	local commands_optional=" \
+		pkg-config
+		wget
+		journalctl
+		systemctl \
+	"
+
+	# Must store the commands in a file to be able to use the counters
+	local file_tmp_required="$dir_tmp/$NAME_LOWERCASE-commands-required"
+	local file_tmp_optional="$dir_tmp/$NAME_LOWERCASE-commands-optional"
+
+	echo "$commands_required" | sort -d > $file_tmp_required
+	echo "$commands_optional" | sort -d > $file_tmp_optional
+
+	find_command $file_tmp_required "required"
+	find_command $file_tmp_optional "optional"
+
+
+	if [ "$print_missing_required_command_only" != "true" ]; then
+		echo ""
+		display_info "$found/$total found."	
+
+		if [ "$missing_required" = "0" ] && [ "$missing" != "0" ]; then
+			display_error "at least one optional command is missing but will not prevent proper functioning."
+		elif [ "$missing_required" != "0" ]; then
+			display_error "at least one required command is missing."
+		fi
+
+		echo ""
+	else
+		echo $missing_required		
+	fi
+
+
+	rm $file_tmp_required
+	rm $file_tmp_optional
+
+}
+
+
+
+
 # This function will install the new config file given within new versions, while keeping user configured values
 # Usage: install_new_config_file
 install_new_config_file() {
@@ -761,166 +962,15 @@ update_cli() {
 #		Because it's called by the update function.
 install_cli() {
 	detect_cli
+	
+	# Test if all required commands are on the system before install anything
+	if [ $(verify_cli_commands "print-missing-required-command-only") = "0"]; then
+		# Download tarball archive
+		download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
-	# Download tarball archive
-	download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
-
-	create_cli
-}
-
-
-
-
-# Check if all the files and directories that compose the CLI exist 
-# Usage: verify_cli_files
-verify_cli_files() {
-
-	display_info  "checking if required files are available on the system."
-
-	# local filters_example="text1\|text2\|text3\|text4" 
-	local filters_wanted="=" 
-	local filters_unwanted="local " # the space is important for "local " otherwise it can hide some /usr/local/ paths, but the goal is just to avoid local functions variables declarations
-
-	local found=0
-	local missing=0
-	local total=0
-
-	local previous_path
-
-	if [ "$(exists_command "eval")" = "exists" ]; then
-
-		# Automatically detect every files and directories used in the CLI (every paths that we want to test here must be used through variables from this file)
-		while read -r line; do
-			if [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "file_" | grep -v "\$file")" ] || [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "dir_" | grep -v "\$dir")" ]; then
-
-				local path_tested="$(echo $line | cut -d "=" -f 1 | sed s/"export "//)"
-				local path_value=""
-				
-				if [ "$previous_path" != "$path_tested" ]; then
-					eval path_value=\$$path_tested
-
-					if [ -f "$path_value" ]; then
-						# display_success "found file -> $path_tested -> $path_value"
-						display_success "found file -> $path_value"
-						found=$((found+1))
-					elif [ -d "$path_value" ]; then
-						# display_success "found dir  -> $path_tested -> $path_value"
-						display_success "found dir  -> $path_value"
-						found=$((found+1))
-					else
-						# display_error "miss.      -> $path_tested -> $path_value"
-						display_error "miss.      -> $path_value"
-						missing=$((missing+1))
-					fi
-			
-					total=$((total+1))
-
-				fi
-
-				# Store current path as the next previous path to be able to avoid tests duplication
-				previous_path="$path_tested"
-
-			fi
-		done < "$current_cli"
-
-
-		echo ""
-		display_info "$found/$total found."
-
-		if [ "$missing" != "0" ]; then
-			display_error "at least one file or directory is missing."
-		fi
+		create_cli
 	fi
 
-
-	echo ""
-}
-
-
-
-
-
-# Check if all the required commands are available on the system
-# Usage: verify_cli_commands
-verify_cli_commands() {
-
-	display_info "checking if required commands are available on the system."
-
-	local file_tmp="$dir_tmp/$NAME_LOWERCASE-commands" # Must store the commands in a file to be able to use the counters
-	local found=0
-	local missing=0
-	local total=0
-
-	local commands=" \
-		tr
-		ls
-		echo
-		printf
-		cat
-		cut
-		sed
-		awk
-		find
-		grep
-		sudo
-		chmod
-		mkdir
-		mv
-		rm
-		cp
-		pwd
-		id
-		date
-		sleep
-		ps
-		sort
-		basename
-		tar
-		curl
-		wget
-		systemctl
-		journalctl
-		pkg-config
-		command
-		exec
-		set
-		read
-		cd
-		eval
-		exit
-		export
-		case
-		if
-		while
-		for 
-		$SHELL \
-	"
-
-	echo "$commands" | sort -d > $file_tmp
-
-	while read -r command; do
-		if [ "$(exists_command "$command")" = "exists" ]; then
-			display_success "found $command"
-			found=$((found+1))
-		else 
-			display_error "miss. $command"
-			missing=$((missing+1))
-		fi
-
-		total=$((total+1))
-
-	done < "$file_tmp"
-
-	echo ""
-	display_info "$found/$total found."	
-
-	if [ "$missing" != "0" ]; then
-		display_error "at least one command is missing."
-	fi
-
-	rm $file_tmp
-
-	echo ""
 }
 
 
@@ -942,6 +992,7 @@ case "$1" in
 			case "$2" in
 				-f|--files)						verify_cli_files ;;
 				-c|--commands)					verify_cli_commands ;;
+				# -t)								verify_cli_commands "print-missing-required-command-only" ;;
 				-r|--repository-reachability)	check_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh"; check_repository_reachability "$URL_ARCH/tarball/$VERSION" ;;
 				*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
