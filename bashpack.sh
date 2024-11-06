@@ -62,6 +62,10 @@ export file_main="$dir_src_cli/$NAME_LOWERCASE.sh"
 export file_main_alias_1="$dir_bin/$NAME_LOWERCASE"
 export file_main_alias_2="$dir_bin/$NAME_ALIAS"
 
+file_current_publication="$dir_config/.current_publication"
+
+
+
 
 # Display a warning in case of using the script and not a command installed on the system
 if [ "$current_cli" = "./$NAME_LOWERCASE.sh" ]; then
@@ -351,15 +355,15 @@ download_cli() {
 	# Testing if repository is reachable with HTTP before doing anything.
 	check_repository_reachability "$file_url"
 	if [ "$repository_reachable" = "true" ]; then
+
 		# Try to download with curl if exists
-		display_info "downloading sources from $file_url "
 		if [ "$(exists_command "curl")" = "exists" ]; then
-			echo -n "with curl...   "
+			display_info "downloading sources from $file_url with curl."
 			loading "curl -sL $file_url -o $file_tmp"
 			
 		# Try to download with wget if exists
 		elif [ "$(exists_command "wget")" = "exists" ]; then
-			echo -n "with wget...  "
+			display_info "downloading sources from $file_url with wget."
 			loading "wget -q $file_url -O $file_tmp"
 
 		else
@@ -403,14 +407,6 @@ else
 fi
 file_autocompletion="$dir_autocompletion/$NAME_LOWERCASE"
 
-
-
-file_systemd_update="$NAME_LOWERCASE-updates"
-file_systemd_timers="$file_systemd_update.timer"
-
-
-
-file_current_publication="$dir_config/.current_publication"
 
 
 
@@ -461,9 +457,11 @@ file_COMMAND_MAN="$dir_commands/man.sh"
 file_COMMAND_VERIFY="$dir_commands/tests.sh"
 file_COMMAND_FIREWALL="$dir_commands/firewall.sh"	
 
-COMMAND_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $file_systemd_update.service`"
-COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
+# COMMAND_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $file_systemd_update.service`"
+# COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
 
+COMMAND_SYSTEMD_LOGS="echo "command out of service""
+COMMAND_SYSTEMD_STATUS="echo "command out of service""
 
 
 
@@ -567,6 +565,8 @@ delete_cli() {
 
 
 
+file_systemd_update="$NAME_LOWERCASE-updates"
+file_systemd_timers="$file_systemd_update.timer"
 
 # Delete the installed systemd units from the system
 delete_systemd() {
@@ -574,36 +574,58 @@ delete_systemd() {
 	if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
 		echo "$NAME $VERSION is not installed on your system."
 	else
-		# Delete systemd units
-		# Checking if systemd is installed (and do nothing if not installed because it means the OS doesn't work with it)
-		if [ $(exists_command "systemctl") = "exists" ]; then
+		if [ "$(exists_command "systemctl")" = "exists" ]; then
 
-			# Stop, disable and delete systemd timers
-			for unit in "${file_systemd_timers[@]}"; do
+			# # Stop, disable and delete systemd timers
+			# for unit in "${file_systemd_timers[@]}"; do
 				
-				local file="$dir_systemd/$unit"
+			# 	local file="$dir_systemd/$unit"
+
+			# 	if [ -f $file ]; then
+
+			# 		systemctl stop $unit
+			# 		systemctl disable $unit					
+			# 		rm -f $file
+
+			# 		if [ -f $file ]; then
+			# 			echo "[delete] $NAME failure: $file has not been removed."
+			# 		else
+			# 			echo "Deleted: $file"
+			# 		fi
+
+			# 	else
+			# 		echo "[delete] $NAME failure: $file not found."
+			# 	fi
+			# done
+
+
+
+			# Stop, disable and delete all systemd units
+			for file in $(ls $dir_systemd/bashpack*); do
 
 				if [ -f $file ]; then
 
-					systemctl stop $unit
-					systemctl disable $unit					
+					display_info "$file found."
+
+					systemctl stop $file
+					systemctl disable $file					
 					rm -f $file
 
 					if [ -f $file ]; then
-						echo "[delete] $NAME failure: $file has not been removed."
+						display_error "$file has not been removed."
 					else
-						echo "Deleted: $file"
+						display_success "$file has been removed."
 					fi
 
 				else
-					echo "[delete] $NAME failure: $file not found."
+					display_error "$file not found."
 				fi
-			done
+			done 
 
-			# Delete everything related to this script remaining in systemd directory
-			rm -f $dir_systemd/$NAME_LOWERCASE*
+			# # Delete everything related to this script remaining in systemd directory
+			# rm -f $dir_systemd/$NAME_LOWERCASE*
 
-			ls -al $dir_systemd | grep $NAME_LOWERCASE
+			# ls -al $dir_systemd | grep $NAME_LOWERCASE
 
 			systemctl daemon-reload
 		fi
@@ -621,8 +643,8 @@ delete_all() {
 	
 	local exclude_main=${1}
 
-	# delete_systemd && delete_cli ${1}
-	 delete_cli ${1}
+	delete_systemd && delete_cli ${1}
+	# delete_cli ${1}
 }
 
 
