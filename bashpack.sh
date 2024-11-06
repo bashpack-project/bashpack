@@ -186,9 +186,9 @@ loading() {
 	${1} & local pid=$!
 
 	while ps -p $pid > /dev/null; do
-		for s in / - \\ \|; do
-			echo -n $s
-			echo -ne "\033[0K\r"
+		# for s in / - \|; do
+		for s in . o O °; do
+			echo -ne "$s\033[0K\r"
 
 			sleep 0.12
 		done
