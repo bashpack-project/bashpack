@@ -112,9 +112,9 @@ else
 				&&		echo "Verify current $NAME installation on your system." \
 				&&		echo "" \
 				&&		echo "Options:" \
-				&&		echo " -f, --files				verify that all files composing the CLI are presents." \
-				&&		echo " -d, --download				test to download archive from remote repository." \
-				&&		echo " -r, --repository-reachability		check if remote repository is reachable." \
+				&&		echo " -f, --files				check that all required files are available." \
+				&&		echo " -c, --commands				check that required commands are available." \
+				&&		echo " -r, --repository-reachability		check that remote repository is reachable." \
 				&&		echo "" \
 				&&		echo "$NAME $VERSION" \
 				&&		exit ;;
@@ -130,9 +130,9 @@ else
 		&&		echo " -p, --publication	display your current $NAME installation publication stage (main, unstable, dev)." \
 		&&		echo "     --version		display version." \
 		&&		echo "" \
-		&&		echo "Commands:" \
-		&&		echo " update [OPTION]	update everything on your system. '$NAME_ALIAS update --help' for options." \
-		&&		echo " verify [OPTION]	verify the current $NAME installation health. '$NAME_ALIAS verify --help' for options." \
+		&&		echo "Commands (--help for commands options):" \
+		&&		echo " update [OPTION]	update everything on your system." \
+		&&		echo " verify [OPTION]	verify the current $NAME installation health." \
 		&&		echo "" \
 		&&		echo "$NAME $VERSION" \
 		&&		exit ;;
