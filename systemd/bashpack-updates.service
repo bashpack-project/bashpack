@@ -7,3 +7,12 @@ ExecStart=bashpack update -y
 KillMode=control-group
 TimeoutStartSec=1800
 TimeoutStopSec=1800
+
+[Timer]
+OnStartupSec=5min
+OnCalendar=daily
+RandomizedDelaySec=60min
+Persistent=true
+
+[Install]
+WantedBy=multi-user.target

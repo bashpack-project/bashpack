@@ -352,7 +352,7 @@ download_cli() {
 	check_repository_reachability "$file_url"
 	if [ "$repository_reachable" = "true" ]; then
 		# Try to download with curl if exists
-		echo -n "Downloading sources from $file_url "
+		display_info "downloading sources from $file_url "
 		if [ "$(exists_command "curl")" = "exists" ]; then
 			echo -n "with curl...   "
 			loading "curl -sL $file_url -o $file_tmp"
@@ -696,27 +696,27 @@ create_cli() {
 	
 		# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
 		# Remove them to allow installation of the CLI
-		echo "Removing old aliases..."
+		display_info "Removing old aliases..."
 		rm -f $file_main_alias_1
 		rm -f $file_main_alias_2
 
 		
 		# Sources files installation
-		echo "Installing sources..."
+		display_info "Installing sources..."
 		# cp -R "$archive_dir_tmp/commands" $dir_src_cli
 		cp -RT $archive_dir_tmp $dir_src_cli # -T used to overwrite the source dir and not creating a new inside
 		chmod +x -R $dir_src_cli
 
 
 		# Create an alias so the listed package are clear on the system (-f to force overwrite existing)
-		echo "Installing aliases..."
+		display_info "Installing aliases..."
 		ln -sf $file_main $file_main_alias_1
 		ln -sf $file_main $file_main_alias_2
 
 
 		# Autocompletion installation
 		# Checking if the autocompletion directory exists and create it if doesn't exists
-		echo "Installing autocompletion..."
+		display_info "Installing autocompletion..."
 		if [ ! -d "$dir_autocompletion" ]; then
 			display_error "$dir_autocompletion not found. Creating it..."
 			mkdir $dir_autocompletion
@@ -777,13 +777,10 @@ create_cli() {
 
 
 		# Success message
-		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ] && [ -f "$file_autocompletion" ]; then
+		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
 			display_success "$NAME $($NAME_ALIAS --version) ($(detect_publication)) has been installed."
-			# echo "Info: autocompletion options might not be ready on your current session, you should open a new tab or manually launch the command: source ~/.bashrc"
-		elif [ "$(exists_command "$NAME_ALIAS")" = "exists" ] && [ ! -f "$file_autocompletion" ]; then
-			echo "Partial success:"
-			echo "$NAME $VERSION has been installed, but auto-completion options could not be installed because $dir_autocompletion does not exists."
-			echo "Please ensure that bash-completion package is installed, and retry the installation of $NAME."
+		else
+			display_error "$NAME installation failed.."
 		fi
 
 		# Clear temporary files & directories
@@ -880,13 +877,16 @@ verify_cli_files() {
 					eval path_value=\$$path_tested
 
 					if [ -f "$path_value" ]; then
-						display_success "found file -> $path_tested -> $path_value"
+						# display_success "found file -> $path_tested -> $path_value"
+						display_success "found file -> $path_value"
 						found=$((found+1))
 					elif [ -d "$path_value" ]; then
-						display_success "found dir  -> $path_tested -> $path_value"
+						# display_success "found dir  -> $path_tested -> $path_value"
+						display_success "found dir  -> $path_value"
 						found=$((found+1))
 					else
-						display_error "missing    -> $path_tested -> $path_value"
+						# display_error "miss.      -> $path_tested -> $path_value"
+						display_error "miss.      -> $path_value"
 						missing=$((missing+1))
 					fi
 			
@@ -950,6 +950,7 @@ verify_cli_commands() {
 		date
 		sleep
 		ps
+		sort
 		tar
 		curl
 		wget
@@ -970,14 +971,14 @@ verify_cli_commands() {
 		$SHELL \
 	"
 
-	echo "$commands" > $file_tmp
+	echo "$commands" | sort -d > $file_tmp
 
 	while read -r command; do
 		if [ "$(exists_command "$command")" = "exists" ]; then
 			display_success "found $command"
 			found=$((found+1))
 		else 
-			display_error "missing $command"
+			display_error "miss. $command"
 			missing=$((missing+1))
 		fi
 
