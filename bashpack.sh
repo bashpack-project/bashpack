@@ -964,7 +964,7 @@ install_cli() {
 	detect_cli
 	
 	# Test if all required commands are on the system before install anything
-	if [ "$(verify_cli_commands "print-missing-required-command-only")" = "0"]; then
+	if [ "$(verify_cli_commands "print-missing-required-command-only")" = "0" ]; then
 		# Download tarball archive
 		download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
