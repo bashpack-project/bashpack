@@ -430,7 +430,6 @@ esac
 
 
 
-
 if [ "$current_cli" = "./$NAME_LOWERCASE.sh" ]; then
 	dir_commands="commands"
 else
@@ -447,6 +446,7 @@ file_COMMAND_FIREWALL="$dir_commands/firewall.sh"
 # COMMAND_CLI_UPDATE_SYSTEMD_STATUS="systemctl status $NAME_LOWERCASE-self-update.timer | grep Trigger: | awk '$1=$1'"
 COMMAND_UPDATE_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $NAME_LOWERCASE-updates.service`"
 COMMAND_UPDATE_SYSTEMD_STATUS="systemctl status $NAME_LOWERCASE-updates.timer"
+
 
 
 
