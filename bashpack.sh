@@ -459,56 +459,12 @@ COMMAND_SYSTEMD_STATUS="echo 'command out of service'"
 # - delete_cli "exclude_main"
 delete_cli() {
 	
-	# $exclude_main permit to not delete main command "bp" and "bashpack".
+	# $exclude_main permit to not delete main command "$NAME_ALIAS" and "$NAME_LOWERCASE".
 	#	(i) This is useful in case when the CLI tries to update itself, but the latest release is not accessible.
 	#	/!\ Unless it can happen that the CLI destroys itself, and then the user must reinstall it.
-	#	(i) Any new update will overwrite the "bp" and "bashpack" command, so it doesn't matter to not delete it during update.
+	#	(i) Any new update will overwrite the "$NAME_ALIAS" and "$NAME_LOWERCASE" command, so it doesn't matter to not delete it during update.
 	#	(i) It's preferable to delete all others files since updates can remove files from olders releases 
 	local exclude_main=${1}
-
-	# if [ "$exclude_main" = "exclude_main" ]; then
-	# 	local files="$dir_src_cli" "$file_autocompletion"
-	# else
-	# 	local files="$dir_src_cli" "$file_autocompletion" "$dir_config" "$file_main_alias_1" "$file_main_alias_2"
-	# fi
-	
-
-
-
-	# if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
-	# 	display_error "$NAME $VERSION is not installed on your system."
-	# else
-	# 	# Delete all files listed in $files 
-	# 	for file in "${files[@]}"; do
-		
-		
-	# 		rm -rf $file
-
-
-	# 		if [ -f "$file" ]; then
-	# 			display_error "$file has not been deleted."
-	# 		else
-	# 			display_success "$file deleted"
-	# 		fi
-	# 	done
-	# fi
-
-
-
-	# if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
-	# 	display_error "$NAME $VERSION is not installed on your system."
-	# else
-	# 	# Delete all files listed in $files 
-	# 	for file in "${files[@]}"; do
-	# 		rm -rf $file
-	# 		if [ -f $file ]; then
-	# 			display_error "$file has not been removed."
-	# 		else
-	# 			display_success "deleted: $file"
-	# 		fi
-	# 	done
-	# fi
-
 
 	if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
 		display_error "$NAME is not installed on your system."
@@ -530,7 +486,6 @@ delete_cli() {
 			
 		else
 			# Delete everything
-
 			rm -rf $dir_config
 			rm -rf $file_autocompletion
 			rm -rf $file_main_alias_1
@@ -553,8 +508,6 @@ delete_cli() {
 
 
 
-file_systemd_update="$NAME_LOWERCASE-updates"
-file_systemd_timers="$file_systemd_update.timer"
 
 # Delete the installed systemd units from the system
 delete_systemd() {
@@ -564,39 +517,13 @@ delete_systemd() {
 	else
 		if [ "$(exists_command "systemctl")" = "exists" ]; then
 
-			# # Stop, disable and delete systemd timers
-			# for unit in "${file_systemd_timers[@]}"; do
-				
-			# 	local file="$dir_systemd/$unit"
-
-			# 	if [ -f $file ]; then
-
-			# 		systemctl stop $unit
-			# 		systemctl disable $unit					
-			# 		rm -f $file
-
-			# 		if [ -f $file ]; then
-			# 			echo "[delete] $NAME failure: $file has not been removed."
-			# 		else
-			# 			echo "Deleted: $file"
-			# 		fi
-
-			# 	else
-			# 		echo "[delete] $NAME failure: $file not found."
-			# 	fi
-			# done
-
-
-
 			# Stop, disable and delete all systemd units
-			for file in $(ls $dir_systemd/bashpack*); do
-
+			for file in $(ls $dir_systemd/$NAME_LOWERCASE*); do
 				if [ -f $file ]; then
-
 					display_info "$file found."
 
 					systemctl stop $file
-					systemctl disable $file					
+					systemctl disable $file
 					rm -f $file
 
 					if [ -f $file ]; then
@@ -604,16 +531,10 @@ delete_systemd() {
 					else
 						display_success "$file has been removed."
 					fi
-
 				else
 					display_error "$file not found."
 				fi
-			done 
-
-			# # Delete everything related to this script remaining in systemd directory
-			# rm -f $dir_systemd/$NAME_LOWERCASE*
-
-			# ls -al $dir_systemd | grep $NAME_LOWERCASE
+			done
 
 			systemctl daemon-reload
 		fi
@@ -697,39 +618,34 @@ install_new_config_file() {
 # Works together with install or update functions
 create_cli() {
 
-	# Cannot display "Installing $NAME $VERSION..." until the new version is not there.
-	# echo "Installing $NAME...  "
-
-
 	# Process to the installation
 	if [ -d "$archive_dir_tmp" ]; then
-
 	
 		# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
 		# Remove them to allow installation of the CLI
-		display_info "Removing old aliases..."
+		display_info "removing old aliases."
 		rm -f $file_main_alias_1
 		rm -f $file_main_alias_2
 
 		
 		# Sources files installation
-		display_info "Installing sources..."
+		display_info "installing sources."
 		# cp -R "$archive_dir_tmp/commands" $dir_src_cli
 		cp -RT $archive_dir_tmp $dir_src_cli # -T used to overwrite the source dir and not creating a new inside
 		chmod +x -R $dir_src_cli
 
 
 		# Create an alias so the listed package are clear on the system (-f to force overwrite existing)
-		display_info "Installing aliases..."
+		display_info "installing aliases."
 		ln -sf $file_main $file_main_alias_1
 		ln -sf $file_main $file_main_alias_2
 
 
 		# Autocompletion installation
 		# Checking if the autocompletion directory exists and create it if doesn't exists
-		display_info "Installing autocompletion..."
+		display_info "installing autocompletion..."
 		if [ ! -d "$dir_autocompletion" ]; then
-			display_error "$dir_autocompletion not found. Creating it..."
+			display_error "$dir_autocompletion not found, creating it."
 			mkdir $dir_autocompletion
 		fi
 		cp "$archive_dir_tmp/bash_completion" $file_autocompletion
@@ -739,32 +655,32 @@ create_cli() {
 		# Checking if systemd is installed (and do nothing if not installed because it means the OS doesn't work with it)
 		if [ $(exists_command "systemctl") = "exists" ]; then
 		
-			display_info "installing systemd services..."
+			display_info "installing systemd services."
 		
 			# Copy systemd services & timers to systemd directory
 			cp -R $archive_dir_tmp/systemd/* $dir_systemd
 			systemctl daemon-reload
 
-			# Start & enable systemd timers (don't need to start systemd services because timers are made for this)
-			for unit in "${file_systemd_timers}"; do
+			# # Start & enable systemd timers (don't need to start systemd services because timers are made for this)
+			for file in $(ls $dir_systemd/$NAME_LOWERCASE*); do
+				if [ -f $file ]; then
+					display_info "$file found."
 
-				local file="$dir_systemd/$unit"
-
-				# Testing if systemd files exists to ensure systemctl will work as expected
-				if [ -f "$file" ]; then
-					display_info "- Starting & enabling $unit..." 
+					display_info "starting & enabling $unit." 
 					systemctl restart $unit # Call "restart" and not "start" to be sure to run the unit provided in this current version (unless the old unit will be kept as the running one)
 					systemctl enable $unit
 				else
 					display_error "$file not found."
 				fi
 			done
+
+
 		fi
 
 
 		# Config installation
 		# Checking if the config directory exists and create it if doesn't exists
-		display_info "Installing configuration..."
+		display_info "installing configuration."
 		if [ ! -d "$dir_config" ]; then
 			display_info "$dir_config not found. Creating it..."
 			mkdir $dir_config
@@ -791,7 +707,7 @@ create_cli() {
 		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
 			display_success "$NAME $($NAME_ALIAS --version) ($(detect_publication)) has been installed."
 		else
-			display_error "$NAME installation failed.."
+			display_error "$NAME installation failed."
 		fi
 
 		# Clear temporary files & directories
