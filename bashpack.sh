@@ -187,7 +187,6 @@ loading() {
 	# local loader="\|/-"
 	# local i=1
 
-	echo ""
 	while ps -p $pid > /dev/null; do
 		# printf "\b%c" "${loader:i++%4:1}"
 		# sleep 0.12
@@ -200,8 +199,7 @@ loading() {
 
 	# Delete the loader character displayed after the loading has ended 
 	printf "\b%c" " "
-	
-	echo ""
+
 }
 
 
@@ -645,11 +643,12 @@ delete_all() {
 
 
 
+
 # Detect if the command has been installed on the system
 detect_cli() {
 	if [ "$(exists_command "$NAME_LOWERCASE")" = "exists" ]; then
 		if [ -n "$($NAME_LOWERCASE --version)" ]; then
-			echo "$NAME $($NAME_ALIAS --version) detected at $(posix_which $NAME_LOWERCASE)"
+			display_info "$NAME $($NAME_ALIAS --version) detected at $(posix_which $NAME_LOWERCASE)"
 		fi
 	fi
 }
