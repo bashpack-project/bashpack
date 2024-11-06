@@ -175,6 +175,21 @@ fi
 
 
 
+# --- Update YUM packages ---
+section_title=""'\n'">>> YUM"
+
+if [ "$($current_cli helper exists_command "yum")" = "exists" ]; then
+	echo "$section_title"
+
+	yum upgrade $install_confirmation
+
+	echo ""
+	echo ""
+fi
+
+
+
+
 # --- Update Firmwares (with fwupd) ---
 section_title=""'\n'">>> fwupd"
 
