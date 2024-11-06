@@ -65,6 +65,11 @@ export file_main_alias_2="$dir_bin/$NAME_ALIAS"
 
 file_current_publication="$dir_config/.current_publication"
 
+
+# Log creations
+if [ ! -d "$dir_log" ]; then
+	mkdir -p "$dir_log"
+fi
 file_log="$dir_log/$NAME_LOWERCASE.log"
 
 
@@ -823,13 +828,6 @@ create_cli() {
 
 	# Process to the installation
 	if [ -d "$archive_dir_tmp" ]; then
-
-		# Log creations
-		if [ ! -d "$dir_log" ]; then
-			mkdir -p "$dir_log"
-			echo "" >> "$file_log"
-			display_info "$dir_log created."
-		fi
 	
 		# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
 		# Remove them to allow installation of the CLI
