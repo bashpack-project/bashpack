@@ -447,9 +447,9 @@ file_COMMAND_FIREWALL="$dir_commands/firewall.sh"
 # COMMAND_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $file_systemd_update.service`"
 # COMMAND_SYSTEMD_STATUS="systemctl status $file_systemd_update.timer"
 # COMMAND_CLI_UPDATE_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $NAME_LOWERCASE-self-update.service`"
-# COMMAND_CLI_UPDATE_SYSTEMD_STATUS="systemctl status $NAME_LOWERCASE-self-update.service | grep Trigger: | awk '$1=$1'"
+# COMMAND_CLI_UPDATE_SYSTEMD_STATUS="systemctl status $NAME_LOWERCASE-self-update.timer | grep Trigger: | awk '$1=$1'"
 COMMAND_UPDATE_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $NAME_LOWERCASE-updates.service`"
-COMMAND_UPDATE_SYSTEMD_STATUS="systemctl status $NAME_LOWERCASE-updates.service | grep Trigger: | awk '$1=$1'"
+COMMAND_UPDATE_SYSTEMD_STATUS="systemctl status $NAME_LOWERCASE-updates.timer"
 
 
 
@@ -965,7 +965,7 @@ case "$1" in
 			case "$2" in
 				-y|--assume-yes)	export install_confirmation="yes" && exec $file_COMMAND_UPDATE ;;
 				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $file_COMMAND_UPDATE ;;
-				--when)				$COMMAND_UPDATE_SYSTEMD_STATUS ;;
+				--when)				$COMMAND_UPDATE_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
 				--get-logs)			$COMMAND_UPDATE_SYSTEMD_LOGS ;;
 				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
