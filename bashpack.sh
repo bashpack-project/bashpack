@@ -90,9 +90,10 @@ else
 				--help) echo "$USAGE" \
 				&&		echo "" \
 				&&		echo "Supported package managers:" \
-				&&		echo " - APT (https://wiki.debian.org/Apt) - will be detected, but not installed." \
-				&&		echo " - Canonical Snapcraft (https://snapcraft.io) - will be detected, but not installed." \
-				&&		echo " - Firmwares with fwupd (https://github.com/fwupd/fwupd) - will be installed during execution of this script." \
+				&&		echo " - APT (https://wiki.debian.org/Apt)" \
+				&&		echo " - YUM (http://yum.baseurl.org/)" \
+				&&		echo " - Canonical Snapcraft (https://snapcraft.io)" \
+				&&		echo " - Firmwares with fwupd (https://github.com/fwupd/fwupd)" \
 				&&		echo "" \
 				&&		echo "Options:" \
 				&&		echo " -y, --assume-yes 	enable automatic installations without asking during the execution." \
