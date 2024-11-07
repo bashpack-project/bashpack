@@ -396,13 +396,10 @@ download_cli() {
 
 # bash-completion doc: https://github.com/scop/bash-completion/tree/master?tab=readme-ov-file#faq
 # Force using /etc/bash_completion.d/ in case of can't automatically detect it on the system
-# if [ "$(exists_command "pkg-config")" = "exists" ]; then
-# 	dir_autocompletion="$(pkg-config --variable=compatdir bash-completion)"
-# else
-# 	dir_autocompletion="/etc/bash_completion.d"
-# fi
-dir_autocompletion="/etc/bash_completion.d"
-file_autocompletion="$dir_autocompletion/$NAME_LOWERCASE"
+if [ "$(exists_command "pkg-config")" = "exists" ]; then
+	dir_autocompletion="$(pkg-config --variable=completionsdir bash-completion)"
+	file_autocompletion="$dir_autocompletion/$NAME_LOWERCASE"
+fi
 
 
 
@@ -850,13 +847,11 @@ create_cli() {
 
 
 		# Autocompletion installation
-		# Checking if the autocompletion directory exists and create it if doesn't exists
-		display_info "installing autocompletion..."
-		if [ ! -d "$dir_autocompletion" ]; then
-			display_error "$dir_autocompletion not found, creating it."
-			mkdir $dir_autocompletion
+		# Install autocompletion only if the directory has been found.
+		if [ -d "$dir_autocompletion" ]; then
+			display_info "installing autocompletion."
+			cp "$archive_dir_tmp/bash_completion" $file_autocompletion
 		fi
-		cp "$archive_dir_tmp/bash_completion" $file_autocompletion
 
 		
 		# Systemd services installation
