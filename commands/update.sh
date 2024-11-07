@@ -99,24 +99,20 @@ continue_question="Do you want to continue? [y/N] "
 # - user input is not required	: apt upgrade -y
 # - user input is required		: apt upgrade
 if [ "$($current_cli helper sanitize_confirmation $install_confirmation)" = "yes" ]; then
-
 	install_confirmation="-y"
 	$current_cli helper display_info "all installations will be automatically accepted."
-
 else
-
 	# Not "-y", so it means "no", and no = empty
 	install_confirmation=""
 	$current_cli helper display_info "installations will not be automatically accepted, you'll have to specify your choice for each steps."
-
 fi
 
 
 
 
-# --- Update APT packages ---
+# Update APT packages
 if [ "$($current_cli helper exists_command "apt")" = "exists" ]; then
-	$current_cli helper display_info "APT updates"
+	$current_cli helper display_info "Starting updates with APT."
 
 	if [ "$($current_cli helper exists_command "dpkg")" = "exists" ]; then
 		dpkg --configure -a
@@ -138,9 +134,7 @@ fi
 
 
 
-# --- Update Snapcraft packages ---
-section_title=""'\n'">>> Snapcraft"
-
+# Update Snapcraft packages
 # Usage : upgrade_with_snapcraft <-y>
 upgrade_with_snapcraft() {
 	# List available updates & ask for update if found any (or auto update if <-y>).
@@ -161,16 +155,16 @@ upgrade_with_snapcraft() {
 }
 
 if [ "$($current_cli helper exists_command "snap")" = "exists" ]; then
-	$current_cli helper display_info "Snapcraft updates"
+	$current_cli helper display_info "Starting updates with Snap."
 	upgrade_with_snapcraft $install_confirmation
 fi
 
 
 
 
-# --- Update YUM packages ---
+# Update YUM packages
 if [ "$($current_cli helper exists_command "yum")" = "exists" ]; then
-	$current_cli helper display_info "YUM updates"
+	$current_cli helper display_info "Starting updates with YUM."
 
 	yum upgrade $install_confirmation
 
@@ -181,18 +175,19 @@ fi
 
 
 
-# --- Update Firmwares (with fwupd) ---
-# Checking if the system is bare-metal (and not virtualized) with the systemd-detect-virt command.
-# If not bare-metal, firmwares will not be updated.
+# Update firmwares with fwupd
+# Checking if the system is bare-metal (and not virtualized) with the "systemd-detect-virt" command and if not bare-metal, firmwares will not be updated.
 if [ "$($current_cli helper exists_command "systemd-detect-virt")" = "exists" ]; then
 		if [ "$(systemd-detect-virt)" = "none" ]; then
 
 				# Process to firmware updates with fwupdmgr
 				if [ "$($current_cli helper exists_command "fwupdmgr")" = "exists" ]; then
-						$current_cli helper display_info "Firmwares updates (fwupd)"
+
+						$current_cli helper display_info "Starting updates with fwupd (firmwares)."
 						fwupdmgr upgrade $install_confirmation
 				else
-					$current_cli helper display_info "Firmwares updates (fwupd)"
+
+					$current_cli helper display_info "Starting firmwares updates (fwupd)."
 					install_package apt fwupd
 
 					if [ "$($current_cli helper exists_command "fwupdmgr")" = "exists" ]; then

@@ -75,9 +75,14 @@ file_log="$dir_log/main.log"
 
 
 # Display a warning in case of using the script and not a command installed on the system
-if [ "$current_cli" = "./$NAME_LOWERCASE.sh" ]; then
-	echo "Warning: you are currently using '$current_cli' which is located in $(pwd)."
-	echo ""
+# Export a variable that permit to avoid this message duplication (because this file is called multiple times over the differents process)
+if [ "$WARNING_ALREADY_SEND" != "true" ]; then
+	if [ "$current_cli" = "./$NAME_LOWERCASE.sh" ]; then
+		echo "Warning: you are currently using '$current_cli' which is located in $(pwd)."
+		echo ""
+
+		export WARNING_ALREADY_SEND="true"
+	fi
 fi
 
 
