@@ -157,15 +157,15 @@ fi
 # Ask for root
 set -e
 if [ "$(id -u)" != "0" ]; then
-	display_error "must be runned as root."
+	echo "$now error:   must be runned as root."
 	exit 1
 fi
 
 
+
+
 # --- --- --- --- --- --- ---
 # Helper functions - begin
-
-
 
 
 # Display always the same message in error messages.
