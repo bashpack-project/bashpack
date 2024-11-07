@@ -166,6 +166,8 @@ fi
 # Helper functions - begin
 
 
+
+
 # Display always the same message in error messages.
 # Usage: display_error <message>
 display_error() {
@@ -618,7 +620,7 @@ detect_publication() {
 # Usage: verify_cli_files
 verify_cli_files() {
 
-	display_info  "checking if required files are available on the system."
+	display_info  "checking if required files and directories are available on the system."
 
 	# local filters_example="text1\|text2\|text3\|text4" 
 	local filters_wanted="=" 
@@ -628,7 +630,7 @@ verify_cli_files() {
 	local missing=0
 	local total=0
 
-	# Just init preivous_path to set it local
+	# Just init variable to set it local
 	local previous_path
 
 	if [ "$(exists_command "eval")" = "exists" ]; then
@@ -637,47 +639,46 @@ verify_cli_files() {
 		while read -r line; do
 			if [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "file_" | grep -v "\$file")" ] || [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "dir_" | grep -v "\$dir")" ]; then
 
-				local path_tested="$(echo $line | cut -d "=" -f 1 | sed s/"export "//)"
-				local path_value=""
-				
-				if [ "$previous_path" != "$path_tested" ]; then
-					eval path_value=\$$path_tested
-
-					if [ -f "$path_value" ]; then
-						display_success "found file -> $path_tested -> $path_value"
-						# display_success "found file -> $path_value"
-						found=$((found+1))
-					elif [ -d "$path_value" ]; then
-						display_success "found dir  -> $path_tested -> $path_value"
-						# display_success "found dir  -> $path_value"
-						found=$((found+1))
-					else
-						display_error "miss.      -> $path_tested -> $path_value"
-						# display_error "miss.      -> $path_value"
-						missing=$((missing+1))
-					fi
+				local path_variable="$(echo $line | cut -d "=" -f 1 | sed s/"export "//)"
 			
-					total=$((total+1))
+				# Just init variable to set it local
+				local path_value
+				eval path_value=\$$path_variable
 
+				if [ -n "$path_value" ]; then
+					if [ "$previous_path" != "$path_variable" ]; then
+
+						if [ -f "$path_value" ]; then
+							# display_success "found file -> $path_variable -> $path_value"
+							display_success "found file -> $path_value"
+							found=$((found+1))
+						elif [ -d "$path_value" ]; then
+							# display_success "found dir  -> $path_variable -> $path_value"
+							display_success "found dir  -> $path_value"
+							found=$((found+1))
+						else
+							# display_error "miss.      -> $path_variable -> $path_value"
+							display_error "miss.      -> $path_value"
+							missing=$((missing+1))
+						fi
+				
+						total=$((total+1))
+					fi
 				fi
 
 				# Store current path as the next previous path to be able to avoid tests duplication
-				previous_path="$path_tested"
+				previous_path="$path_variable"
 
 			fi
 		done < "$current_cli"
 
 
-		echo ""
-		display_info "$found/$total found."
+		display_info "$found/$total paths found."
 
 		if [ "$missing" != "0" ]; then
 			display_error "at least one file or directory is missing."
 		fi
 	fi
-
-
-	echo ""
 }
 
 
@@ -794,16 +795,14 @@ verify_cli_commands() {
 
 
 	if [ "$print_missing_required_command_only" != "true" ]; then
-		echo ""
-		display_info "$found/$total found."	
+		
+		display_info "$found/$total commands found."	
 
 		if [ "$missing_required" = "0" ] && [ "$missing" != "0" ]; then
 			display_error "at least one optional command is missing but will not prevent proper functioning."
 		elif [ "$missing_required" != "0" ]; then
 			display_error "at least one required command is missing."
 		fi
-
-		echo ""
 	else
 		echo $missing_required		
 	fi

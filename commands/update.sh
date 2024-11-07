@@ -112,7 +112,7 @@ fi
 
 # Update APT packages
 if [ "$($current_cli helper exists_command "apt")" = "exists" ]; then
-	$current_cli helper display_info "Starting updates with APT."
+	$current_cli helper display_info "updating with APT."
 
 	if [ "$($current_cli helper exists_command "dpkg")" = "exists" ]; then
 		dpkg --configure -a
@@ -155,7 +155,7 @@ upgrade_with_snapcraft() {
 }
 
 if [ "$($current_cli helper exists_command "snap")" = "exists" ]; then
-	$current_cli helper display_info "Starting updates with Snap."
+	$current_cli helper display_info "updating with Snap."
 	upgrade_with_snapcraft $install_confirmation
 fi
 
@@ -164,7 +164,7 @@ fi
 
 # Update YUM packages
 if [ "$($current_cli helper exists_command "yum")" = "exists" ]; then
-	$current_cli helper display_info "Starting updates with YUM."
+	$current_cli helper display_info "updating with YUM."
 
 	yum upgrade $install_confirmation
 
@@ -183,11 +183,11 @@ if [ "$($current_cli helper exists_command "systemd-detect-virt")" = "exists" ];
 				# Process to firmware updates with fwupdmgr
 				if [ "$($current_cli helper exists_command "fwupdmgr")" = "exists" ]; then
 
-						$current_cli helper display_info "Starting updates with fwupd (firmwares)."
+						$current_cli helper display_info "updating with fwupd (firmwares)."
 						fwupdmgr upgrade $install_confirmation
 				else
 
-					$current_cli helper display_info "Starting firmwares updates (fwupd)."
+					$current_cli helper display_info "starting firmwares updates (fwupd)."
 					install_package apt fwupd
 
 					if [ "$($current_cli helper exists_command "fwupdmgr")" = "exists" ]; then
