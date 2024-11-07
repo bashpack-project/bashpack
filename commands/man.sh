@@ -24,14 +24,10 @@
 
 
 
-# . "core/helper.sh"
-
-
-
 export allow_helper_functions="true"
 
 
-echo -n "Have you ever seen a P carrying a B ?  "
+echo "Have you ever seen a P carrying a B ?  "
 $current_cli helper loading "sleep 1.3"
 
 
@@ -47,7 +43,6 @@ $current_cli helper loading "sleep 1.3"
 &&	echo ""
 
 
-# export allow_helper_functions="false"
 
 
 # Properly exit
