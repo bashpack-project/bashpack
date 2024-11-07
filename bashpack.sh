@@ -70,7 +70,7 @@ file_current_publication="$dir_config/.current_publication"
 if [ ! -d "$dir_log" ]; then
 	mkdir -p "$dir_log"
 fi
-file_log="$dir_log/$NAME_LOWERCASE.log"
+file_log="$dir_log/main.log"
 
 
 
@@ -411,7 +411,7 @@ download_cli() {
 
 
 # bash-completion doc: https://github.com/scop/bash-completion/tree/master?tab=readme-ov-file#faq
-# Force using /etc/bash_completion.d/ in case of can't automatically detect it on the system
+# If pkg-config doesn't exist, then the system won't have autocompletion.
 if [ "$(exists_command "pkg-config")" = "exists" ]; then
 	dir_autocompletion="$(pkg-config --variable=completionsdir bash-completion)"
 	file_autocompletion="$dir_autocompletion/$NAME_LOWERCASE"
@@ -424,9 +424,11 @@ export file_config="$dir_config/$NAME_LOWERCASE.conf"
 # Since 1.2.0 the main config file has been renamed from $NAME_LOWERCASE_config to $NAME_LOWERCASE.conf
 # The old file is not needed anymore and must be removed (here it's automatically renamed)
 if [ -f "$dir_config/"$NAME_LOWERCASE"_config" ]; then
-	# rm -f "$dir_config/"$NAME_LOWERCASE"_config"
 	mv "$dir_config/"$NAME_LOWERCASE"_config" "$file_config"
 fi
+
+
+
 
 # Depending on the chosen publication, the repository will be different:
 # - Main (= stable) releases:	https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE
