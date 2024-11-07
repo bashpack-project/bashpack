@@ -158,7 +158,7 @@ fi
 set -e
 if [ "$(id -u)" != "0" ]; then
 	echo "$now error:   must be runned as root."
-	exit 1
+	exit
 fi
 
 
@@ -925,7 +925,7 @@ create_cli() {
 			cp "$archive_dir_tmp/config/$file_config" "$file_config"
 
 		else
-			display_info "$file_config already exists, copy new file while leaving current configured options."
+			display_info "$file_config already exists, install new file and insert current configured options."
 			install_new_config_file
 		fi
 		
