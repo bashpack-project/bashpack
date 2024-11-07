@@ -44,7 +44,7 @@ REPO_URL="$NAME_LOWERCASE-project"
 HOST_URL_ARCH="https://api.github.com/repos/$REPO_URL"
 HOST_URL_FILE="https://raw.githubusercontent.com/$REPO_URL"
 
-USAGE="Usage: $current_cli [COMMAND] [OPTION]..."'\n'"$current_cli --help"
+USAGE="Usage: $current_cli [COMMAND] [OPTION] \n$current_cli --help"
 
 dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
