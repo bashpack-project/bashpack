@@ -310,6 +310,22 @@ sanitize_confirmation() {
 
 
 
+# Display logs from given file
+# Usage: get_log <file>
+get_log() {
+
+	display_info "getting logs from ${1}"
+
+	if [ "$(exists_command "less")" = "exists" ]; then
+		cat "${1}" | less +G
+	else
+		cat "${1}"
+	fi
+}
+
+
+
+
 # Permit to verify if the remote repository is reachable with HTTP.
 # Usage: check_repository_reachability <URL>
 check_repository_reachability() {
@@ -747,6 +763,7 @@ verify_cli_commands() {
 	"
 
 	local commands_optional=" \
+		less
 		pkg-config
 		wget
 		journalctl
@@ -989,8 +1006,7 @@ case "$1" in
 	-u|--self-update)		update_cli ;;		# Critical option, see the comments at function declaration for more info
 	--self-delete)			delete_all ;;
 	-p|--publication)		detect_publication ;;
-	# --when)					$COMMAND_CLI_UPDATE_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
-	# --get-logs)				$COMMAND_CLI_UPDATE_SYSTEMD_LOGS ;;
+	--get-logs)				get_log $file_log ;;
 	man)					$file_COMMAND_MAN ;;
 	verify)
 		if [ -z "$2" ]; then
@@ -999,7 +1015,6 @@ case "$1" in
 			case "$2" in
 				-f|--files)						verify_cli_files ;;
 				-c|--commands)					verify_cli_commands ;;
-				# -t)								verify_cli_commands "print-missing-required-command-only" ;;
 				-r|--repository-reachability)	check_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh"; check_repository_reachability "$URL_ARCH/tarball/$VERSION" ;;
 				*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
