@@ -887,17 +887,17 @@ create_cli() {
 		# Checking if the config directory exists and create it if doesn't exists
 		display_info "installing configuration."
 		if [ ! -d "$dir_config" ]; then
-			display_info "$dir_config not found. Creating it..."
+			display_info "$dir_config not found, creating it."
 			mkdir $dir_config
 		fi
 
 		# Must testing if config file exists to avoid overwrite user customizations 
 		if [ ! -f "$file_config" ]; then
-			display_info "$file_config not found. Creating it... "
+			display_info "$file_config not found, creating it. "
 			cp "$archive_dir_tmp/config/$file_config" "$file_config"
 
 		else
-			display_info "$file_config already exists. Copy new file while leaving current configured options."
+			display_info "$file_config already exists, copy new file while leaving current configured options."
 			install_new_config_file
 		fi
 		
