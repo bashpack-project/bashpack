@@ -311,8 +311,8 @@ sanitize_confirmation() {
 
 
 # Display logs from given file
-# Usage: get_log <file>
-get_log() {
+# Usage: get_logs <file>
+get_logs() {
 
 	display_info "getting logs from ${1}"
 
@@ -397,7 +397,7 @@ download_cli() {
 					tar -xf "$file_tmp" -C "$dir_extract_tmp" --strip-components 1
 				fi
 			else
-				display_error "file '$file_url' is a non-working .tar.gz tarball and cannot be used. Deleting it."
+				display_error "file '$file_url' is a non-working tarball and cannot be used, deleting it."
 			fi
 		fi
 	fi
@@ -623,6 +623,7 @@ verify_cli_files() {
 	local missing=0
 	local total=0
 
+	# Just init preivous_path to set it local
 	local previous_path
 
 	if [ "$(exists_command "eval")" = "exists" ]; then
@@ -638,16 +639,16 @@ verify_cli_files() {
 					eval path_value=\$$path_tested
 
 					if [ -f "$path_value" ]; then
-						# display_success "found file -> $path_tested -> $path_value"
-						display_success "found file -> $path_value"
+						display_success "found file -> $path_tested -> $path_value"
+						# display_success "found file -> $path_value"
 						found=$((found+1))
 					elif [ -d "$path_value" ]; then
-						# display_success "found dir  -> $path_tested -> $path_value"
-						display_success "found dir  -> $path_value"
+						display_success "found dir  -> $path_tested -> $path_value"
+						# display_success "found dir  -> $path_value"
 						found=$((found+1))
 					else
-						# display_error "miss.      -> $path_tested -> $path_value"
-						display_error "miss.      -> $path_value"
+						display_error "miss.      -> $path_tested -> $path_value"
+						# display_error "miss.      -> $path_value"
 						missing=$((missing+1))
 					fi
 			
@@ -1008,38 +1009,38 @@ install_cli() {
 
 # The options (except --help) must be called with root
 case "$1" in
-	-i|--self-install)		install_cli ;;		# Critical option, see the comments at function declaration for more info
-	-u|--self-update)		update_cli ;;		# Critical option, see the comments at function declaration for more info
-	--self-delete)			delete_all ;;
-	-p|--publication)		detect_publication ;;
-	--get-logs)				get_log $file_log ;;
-	man)					$file_COMMAND_MAN ;;
+	-i|--self-install)		loading "install_cli" ;;		# Critical option, see the comments at function declaration for more info
+	-u|--self-update)		loading "update_cli" ;;			# Critical option, see the comments at function declaration for more info
+	--self-delete)			loading "delete_all" ;;
+	-p|--publication)		loading "detect_publication" ;;
+	--get-logs)				get_logs $file_log ;;
+	man)					loading "$file_COMMAND_MAN" ;;
 	verify)
 		if [ -z "$2" ]; then
-			verify_cli_commands;  verify_cli_files; check_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh"; check_repository_reachability "$URL_ARCH/tarball/$VERSION"
+			loading "verify_cli_commands";  loading "verify_cli_files"; loading "check_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading "check_repository_reachability "$URL_ARCH/tarball/$VERSION""
 		else
 			case "$2" in
-				-f|--files)						verify_cli_files ;;
-				-c|--commands)					verify_cli_commands ;;
-				-r|--repository-reachability)	check_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh"; check_repository_reachability "$URL_ARCH/tarball/$VERSION" ;;
+				-f|--files)						loading "verify_cli_files" ;;
+				-c|--commands)					loading "verify_cli_commands" ;;
+				-r|--repository-reachability)	loading "check_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading "check_repository_reachability "$URL_ARCH/tarball/$VERSION"" ;;
 				*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
 	firewall)
 		if [ -z "$2" ]; then
-			exec $file_COMMAND_FIREWALL
+			loading "exec $file_COMMAND_FIREWALL"
 		else
 			case "$2" in
-				-r|--restart)	exec $file_COMMAND_FIREWALL ;;
+				-r|--restart)	loading "exec $file_COMMAND_FIREWALL" ;;
 				*)				display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
 	update)
 		if [ -z "$2" ]; then
-			exec $file_COMMAND_UPDATE
+			loading "exec $file_COMMAND_UPDATE"
 		else
 			case "$2" in
-				-y|--assume-yes)	export install_confirmation="yes" && exec $file_COMMAND_UPDATE ;;
+				-y|--assume-yes)	export install_confirmation="yes" && loading "exec $file_COMMAND_UPDATE" ;;
 				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $file_COMMAND_UPDATE ;;
 				--when)				$COMMAND_UPDATE_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
 				--get-logs)			$COMMAND_UPDATE_SYSTEMD_LOGS ;;
