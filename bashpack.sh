@@ -654,7 +654,7 @@ verify_cli_files() {
 							found=$((found+1))
 						elif [ -d "$path_value" ]; then
 							# display_success "found dir  -> $path_variable -> $path_value"
-							display_success "found dir  -> $path_value"
+							display_success "found dir. -> $path_value"
 							found=$((found+1))
 						else
 							# display_error "miss.      -> $path_variable -> $path_value"
@@ -876,7 +876,7 @@ create_cli() {
 
 		# Autocompletion installation
 		# Install autocompletion only if the directory has been found.
-		if [ -d "$dir_autocompletion" ]; then
+		if [ -n "$dir_autocompletion" ]; then
 			display_info "installing autocompletion."
 			cp "$archive_dir_tmp/bash_completion" $file_autocompletion
 		fi
