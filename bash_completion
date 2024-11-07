@@ -27,7 +27,7 @@ _bashpack() {
   local prev=${COMP_WORDS[COMP_CWORD-1]}
   
   case ${COMP_CWORD} in
-    1) COMPREPLY=($(compgen -W "verify update man --publication --version --help --self-install --self-update --self-delete" -- ${cur})) ;;
+    1) COMPREPLY=($(compgen -W "verify update man --get-logs --publication --version --help --self-install --self-update --self-delete" -- ${cur})) ;;
     2)
       case ${prev} in
         update) COMPREPLY=($(compgen -W "--help --assume-yes --ask --when --get-logs" -- ${cur})) ;;
