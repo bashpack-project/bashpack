@@ -967,8 +967,8 @@ create_cli() {
 		chmod +rw -R $dir_config
 
 
-		# Remove unwanted files from the installed sources
-		find $dir_src_cli -mindepth 1 -not -name "$NAME_LOWERCASE.sh" -not -name "commands" -not -name "*.md" -delete
+		# Remove unwanted files from the installed sources (keep only main, sub commands and .md files)
+		find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -not -name "*.md" -not -name "commands" -exec rm -rf {} +
 
 
 		# Success message
