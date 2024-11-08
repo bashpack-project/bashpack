@@ -1030,6 +1030,10 @@ install_cli() {
 		# Download tarball archive
 		download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
+		# Delete old files
+		delete_cli
+
+		# Install new files
 		create_cli
 	else
 		verify_cli_commands
