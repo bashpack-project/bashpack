@@ -968,11 +968,7 @@ create_cli() {
 
 
 		# Remove unwanted files from the installed sources
-		find $dir_src_cli -mindepth 1 -maxdepth 1	\
-			! -name "$NAME_LOWERCASE.sh"			\
-			! -name "commands"						\
-			! -name "LICENSE.md"					\
-			-exec rm -rv {} + 2&> /dev/null
+		find $dir_src_cli -mindepth 1 -not -name "$NAME_LOWERCASE.sh" -not -name "commands" -not -name "*.md" -delete
 
 
 		# Success message
