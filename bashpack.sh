@@ -58,8 +58,6 @@ dir_src_cli="/opt/$NAME_LOWERCASE"
 # Usage: define_installation_path
 define_installation_path() {
 
-	local filters="usr\|local" 
-
 	# Useful in case of spaces in path
 	# Spaces are creating new lines in for loop, so the trick here is to replacing it with a special char assuming it should not be much used in $PATH directories
 	# TL;DR: translate spaces -> special char -> spaces = keep single line for each directory
@@ -68,16 +66,19 @@ define_installation_path() {
 	for directory_raw in $(echo "$PATH" | tr ":" "\n" | tr " " "$special_char"); do
 		local directory="$(echo $directory_raw | tr "$special_char" " ")"
 
-		if [ -d "$directory" ] && [ "$(echo "$directory" | grep "$filters" | grep "local" )" ]; then
+		if [ -d "$directory" ] && [ "$(echo "$directory" | grep "usr" | grep "sbin" | grep "local" )" ]; then
 			echo $directory
-		elif [ -d "$directory" ] && [ "$(echo "$directory" | grep "$filters" )" ]; then
-			echo $directory
-		else
-			echo "can't define an installation PATH, aborting."
-			exit
-		fi
+			break
 
-		break
+		elif [ -d "$directory" ] && [ "$(echo "$directory" | grep "usr" | grep "sbin" )" ]; then
+			echo $directory
+			break
+
+		elif [ -d "$directory" ] && [ "$(echo "$directory" | grep "usr" | grep "bin" )" ]; then
+			echo $directory
+			break
+
+		fi
 	done
 }
 dir_bin="$(define_installation_path)"
