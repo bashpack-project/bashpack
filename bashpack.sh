@@ -791,6 +791,7 @@ verify_cli_commands() {
 		sort
 		basename
 		tee
+		file
 		tar
 		curl
 		command
