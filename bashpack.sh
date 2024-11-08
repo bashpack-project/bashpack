@@ -545,7 +545,7 @@ delete_cli() {
 			# This command can be used to list concerned files and directories : 
 			# find $dir_src_cli -mindepth 1 -maxdepth 1 ! -name "$NAME_LOWERCASE.sh" -print
 			find $dir_src_cli -mindepth 1 -maxdepth 1 ! -name "$NAME_LOWERCASE.sh" -exec rm -rv {} + 2&> /dev/null
-			
+
 		else
 			# Delete everything
 			rm -rf $dir_config
@@ -670,7 +670,7 @@ verify_cli_files() {
 			if [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "file_" | grep -v "\$file")" ] || [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "dir_" | grep -v "\$dir")" ]; then
 
 				local path_variable="$(echo $line | cut -d "=" -f 1 | sed s/"export "//)"
-			
+
 				# Just init variable to set it local
 				local path_value
 				eval path_value=\$$path_variable
@@ -962,7 +962,17 @@ create_cli() {
 		# Creating a file that permit to know what is the current installed publication
 		echo "$PUBLICATION" > $file_current_publication
 
+
+		# Allow users to edit the configuration
 		chmod +rw -R $dir_config
+
+
+		# Remove unwanted files from the installed sources
+		find $dir_src_cli -mindepth 1 -maxdepth 1	\
+			! -name "$NAME_LOWERCASE.sh"			\
+			! -name "commands"						\
+			! -name "LICENSE.md"					\
+			-exec rm -rv {} + 2&> /dev/null
 
 
 		# Success message
@@ -972,9 +982,10 @@ create_cli() {
 			display_error "$NAME installation failed."
 		fi
 
-		# Clear temporary files & directories
-		rm -rf $dir_tmp/$NAME_LOWERCASE*		# Cleaning also temp files created during update process since create_cli is not called directly during update.
 
+		# Clear temporary files & directories
+		rm -rf $dir_tmp/$NAME_LOWERCASE* # Cleaning also temp files created during update process since create_cli is not called directly during update.
+		
 	fi
 }
 
