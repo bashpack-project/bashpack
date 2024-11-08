@@ -807,6 +807,11 @@ verify_cli_commands() {
 		while
 		for
 		local
+		then
+		fi
+		esac
+		do
+		done
 		$SHELL \
 	"
 
