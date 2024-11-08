@@ -505,7 +505,6 @@ file_COMMAND_UPDATE="$dir_commands/update.sh"
 file_COMMAND_MAN="$dir_commands/man.sh"
 file_COMMAND_FIREWALL="$dir_commands/firewall.sh"	
 
-
 if [ "$(exists_command "systemctl")" = "exists" ]; then
 	COMMAND_UPDATE_SYSTEMD_STATUS="systemctl status $NAME_LOWERCASE-updates.timer"
 	
