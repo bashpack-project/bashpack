@@ -1072,19 +1072,19 @@ case "$1" in
 		fi ;;
 	firewall)
 		if [ -z "$2" ]; then
-			loading "exec $file_COMMAND_FIREWALL"
+			exec $file_COMMAND_FIREWALL
 		else
 			case "$2" in
-				-r|--restart)	loading "exec $file_COMMAND_FIREWALL" ;;
+				-r|--restart)	exec $file_COMMAND_FIREWALL ;;
 				*)				display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
 	update)
 		if [ -z "$2" ]; then
-			loading "exec $file_COMMAND_UPDATE"
+			exec $file_COMMAND_UPDATE
 		else
 			case "$2" in
-				-y|--assume-yes)	export install_confirmation="yes" && loading "exec $file_COMMAND_UPDATE" ;;
+				-y|--assume-yes)	export install_confirmation="yes" && exec $file_COMMAND_UPDATE ;;
 				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $file_COMMAND_UPDATE ;;
 				--when)				$COMMAND_UPDATE_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
 				--get-logs)			$COMMAND_UPDATE_SYSTEMD_LOGS ;;
