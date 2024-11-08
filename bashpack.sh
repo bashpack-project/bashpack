@@ -526,7 +526,7 @@ delete_cli() {
 	#	/!\ Unless it can happen that the CLI destroys itself, and then the user must reinstall it.
 	#	(i) Any new update will overwrite the "$NAME_ALIAS" and "$NAME_LOWERCASE" command, so it doesn't matter to not delete it during update.
 	#	(i) It's preferable to delete all others files since updates can remove files from olders releases 
-	local exclude_main=${1}
+	local exclude_main="${1}"
 
 	if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
 		display_error "$NAME is not installed on your system."
@@ -543,8 +543,8 @@ delete_cli() {
 			# - "mindepth 1" permit to avoid the $dir_src_cli directory to be itself deleted
 			#
 			# This command can be used to list concerned files and directories : 
-			# find $dir_src_cli -mindepth 1 -maxdepth 1 ! -name "$NAME_LOWERCASE.sh" ! -name "core" -print
-			find $dir_src_cli -mindepth 1 -maxdepth 1 ! -name "$NAME_LOWERCASE.sh" ! -name "core" -exec rm -rv {} + 2&> /dev/null
+			# find $dir_src_cli -mindepth 1 -maxdepth 1 ! -name "$NAME_LOWERCASE.sh" -print
+			find $dir_src_cli -mindepth 1 -maxdepth 1 ! -name "$NAME_LOWERCASE.sh" -exec rm -rv {} + 2&> /dev/null
 			
 		else
 			# Delete everything
@@ -1031,7 +1031,7 @@ install_cli() {
 		download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
 		# Delete old files
-		delete_cli
+		delete_cli "exclude_main"
 
 		# Install new files
 		create_cli
