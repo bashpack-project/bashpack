@@ -888,9 +888,11 @@ create_cli() {
 	
 		# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
 		# Remove them to allow installation of the CLI
-		display_info "removing old aliases."
-		rm -f $file_main_alias_1
-		rm -f $file_main_alias_2
+		if [ -f "$file_main_alias_1" ] || [ -f "$file_main_alias_2" ]; then
+			display_info "removing old aliases."
+			rm -f $file_main_alias_1
+			rm -f $file_main_alias_2
+		fi
 
 		
 		# Sources files installation
