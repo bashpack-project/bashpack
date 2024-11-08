@@ -805,7 +805,8 @@ verify_cli_commands() {
 		case
 		if
 		while
-		for 
+		for
+		local
 		$SHELL \
 	"
 
