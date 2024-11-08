@@ -498,7 +498,7 @@ esac
 if [ "$current_cli" = "./$NAME_LOWERCASE.sh" ]; then
 	dir_commands="commands"
 else
-	dir_commands="/usr/local/src/$NAME_LOWERCASE/commands"
+	dir_commands="$dir_src_cli/$NAME_LOWERCASE/commands"
 fi
 
 file_COMMAND_UPDATE="$dir_commands/update.sh"
