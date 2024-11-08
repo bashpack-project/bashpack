@@ -586,8 +586,10 @@ delete_systemd() {
 				if [ -f $file ]; then
 					display_info "$file found."
 
-					systemctl stop $file
-					systemctl disable $file
+					local unit="$(basename "$file")"
+
+					systemctl stop $unit
+					systemctl disable $unit
 					rm -f $file
 
 					if [ -f $file ]; then
@@ -922,7 +924,7 @@ create_cli() {
 			cp -R $archive_dir_tmp/systemd/* $dir_systemd
 			systemctl daemon-reload
 
-			# # Start & enable systemd timers (don't need to start systemd services because timers are made for this)
+			# Start & enable systemd timers (don't need to start systemd services because timers are made for this)
 			for file in $(ls $dir_systemd/$NAME_LOWERCASE* | grep ".timer"); do
 				if [ -f $file ]; then
 					display_info "$file found."
