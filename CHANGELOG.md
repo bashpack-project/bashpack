@@ -19,6 +19,7 @@ The released versions changelogs below are only about the main repository.
 - Config file rename from bashpack_config to bashpack.conf
 - Detection of systemd improved to be able to install on incompatible systems
 - Detection of pkg-config improved to be able to install on incompatible systems
+- Moving sources from /usr/local/src/ to /opt/
 
 ------------
 ### 1.1.1
