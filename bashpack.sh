@@ -545,7 +545,8 @@ delete_cli() {
 			#
 			# This command can be used to list concerned files and directories : 
 			# find $dir_src_cli -mindepth 1 -maxdepth 1 ! -name "$NAME_LOWERCASE.sh" -print
-			find $dir_src_cli -mindepth 1 -maxdepth 1 ! -name "$NAME_LOWERCASE.sh" -exec rm -rv {} + 2&> /dev/null
+			# find $dir_src_cli -mindepth 1 -maxdepth 1 ! -name "$NAME_LOWERCASE.sh" -exec rm -rv {} + 2&> /dev/null
+			find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -exec rm -rf {} +
 
 		else
 			# Delete everything
@@ -559,14 +560,13 @@ delete_cli() {
 
 		if [ -f "$file_main" ]; then
 			if [ "$exclude_main" = "exclude_main" ]; then
-				display_success "$NAME $VERSION has been uninstalled ($file_main has been kept)."
+				display_success "all sources removes excepted $file_main."
 			else
 				display_error "$NAME $VERSION located at $(posix_which $NAME_ALIAS) has not been uninstalled." && exit
 			fi
 		else
-			display_success "$NAME $VERSION has been uninstalled."
+			display_success "$NAME $VERSION ($(detect_publication)) has been uninstalled."
 		fi
-		
 	fi
 }
 
