@@ -51,8 +51,38 @@ dir_bin="/usr/local/sbin"
 dir_systemd="/lib/systemd/system"
 
 dir_config="/etc/$NAME_LOWERCASE"
-dir_src_cli="/usr/local/src/$NAME_LOWERCASE"
 dir_log="/var/log/$NAME_LOWERCASE"
+dir_src_cli="/opt/$NAME_LOWERCASE"
+
+# Automatically detect the best PATH for the installation 
+# Usage: define_installation_path
+define_installation_path() {
+
+	local filters="usr\|local" 
+
+	# Useful in case of spaces in path
+	# Spaces are creating new lines in for loop, so the trick here is to replacing it with a special char assuming it should not be much used in $PATH directories
+	# TL;DR: translate spaces -> special char -> spaces = keep single line for each directory
+	local special_char="|"
+			
+	for directory_raw in $(echo "$PATH" | tr ":" "\n" | tr " " "$special_char"); do
+		local directory="$(echo $directory_raw | tr "$special_char" " ")"
+
+		if [ -d "$directory" ] && [ "$(echo "$directory" | grep "$filters" | grep "local" )" ]; then
+			echo $directory
+		elif [ -d "$directory" ] && [ "$(echo "$directory" | grep "$filters" )" ]; then
+			echo $directory
+		else
+			echo "can't define an installation PATH, aborting."
+			exit
+		fi
+
+		break
+	done
+}
+dir_bin="$(define_installation_path)"
+
+
 
 export archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
 export archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
@@ -744,7 +774,6 @@ verify_cli_commands() {
 		awk
 		find
 		grep
-		sudo
 		chmod
 		mkdir
 		mv
