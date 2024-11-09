@@ -367,15 +367,15 @@ get_logs() {
 
 
 # Permit to verify if the remote repository is reachable with HTTP.
-# Usage: check_repository_reachability <URL>
-check_repository_reachability() {
+# Usage: verify_repository_reachability <URL>
+verify_repository_reachability() {
 
 	local url="${1}"
 
 	if [ "$(exists_command "curl")" = "exists" ]; then
 		http_code="$(curl -s -I "$url" | awk '/^HTTP/{print $2}')"
 	elif [ "$(exists_command "wget")" = "exists" ]; then
-		http_code="$(wget --server-response "$url" 2>&1 | awk '/^  HTTP/{print $2}' | head -n 1)"
+		http_code="$(wget --spider --server-response "$url" 2>&1 | awk '/^  HTTP/{print $2}' | head -n 1)"
 	else
 		display_error "can't get HTTP code with curl or wget."
 	fi
@@ -405,7 +405,7 @@ download_cli() {
 	local dir_extract_tmp="${3}"
 
 	# Testing if repository is reachable with HTTP before doing anything.
-	check_repository_reachability "$file_url"
+	verify_repository_reachability "$file_url"
 	if [ "$repository_reachable" = "true" ]; then
 
 		# Try to download with curl if exists
@@ -1107,12 +1107,12 @@ case "$1" in
 	man)						loading "$file_COMMAND_MAN" ;;
 	verify)
 		if [ -z "$2" ]; then
-			loading "verify_cli_commands";  loading "verify_cli_files"; loading "check_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading "check_repository_reachability "$URL_ARCH/tarball/$VERSION""
+			loading "verify_cli_commands";  loading "verify_cli_files"; loading "verify_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading "verify_repository_reachability "$URL_ARCH/tarball/$VERSION""
 		else
 			case "$2" in
 				-f|--files)						loading "verify_cli_files" ;;
 				-c|--commands)					loading "verify_cli_commands" ;;
-				-r|--repository-reachability)	loading "check_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading "check_repository_reachability "$URL_ARCH/tarball/$VERSION"" ;;
+				-r|--repository-reachability)	loading "verify_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading "verify_repository_reachability "$URL_ARCH/tarball/$VERSION"" ;;
 				*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
