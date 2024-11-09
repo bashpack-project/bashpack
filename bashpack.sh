@@ -992,10 +992,6 @@ create_cli() {
 		else
 			display_error "$NAME installation failed."
 		fi
-
-
-		# Clear temporary files & directories
-		rm -rf $dir_tmp/$NAME_LOWERCASE* # Cleaning also temp files created during update process since create_cli is not called directly during update.
 		
 	fi
 }
@@ -1014,13 +1010,9 @@ create_cli() {
 update_cli() {
 
 	local downloaded_cli="$dir_tmp/$NAME_LOWERCASE.sh"
+	local reinstall="${1}"
 
-	# Testing if a new version exists on the current publication to avoid reinstall if not.
-	# This test requires curl, if not usable, then the CLI will be reinstalled at each update.
-	if [ "$(curl -s "$URL_ARCH/releases/latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
-		display_info "latest $NAME version is already installed ($VERSION $(detect_publication))."
-	else
-
+	update_process() {
 		display_info "starting self update."
 
 		# Download only the main file 
@@ -1030,9 +1022,21 @@ update_cli() {
 		chmod +x "$downloaded_cli"
 		"$downloaded_cli" -i
 
-		# rm -rf "$dir_tmp/$NAME_LOWERCASE.sh"
-
 		display_info "end of self update."
+	}
+
+
+	# Option to reinstall (just bypass the version check)
+	if [ "$reinstall" = "reinstall" ]; then
+		update_process
+	else
+		# Testing if a new version exists on the current publication to avoid reinstall if not.
+		# This test requires curl, if not usable, then the CLI will be reinstalled at each update.
+		if [ "$(curl -s "$URL_ARCH/releases/latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
+			display_info "latest $NAME version is already installed ($VERSION $(detect_publication))."
+		else
+			update_process
+		fi
 	fi
 }
 
@@ -1053,7 +1057,6 @@ install_cli() {
 	if [ "$(verify_cli_commands "print-missing-required-command-only")" = "0" ]; then
 
 		display_info "starting installation."
-
 		detect_cli
 
 		# Download tarball archive
@@ -1064,6 +1067,10 @@ install_cli() {
 
 		# Install new files
 		create_cli
+
+		# Clear temporary files & directories
+		rm -rf $dir_tmp/$NAME_LOWERCASE*
+		
 
 		display_info "end of installation."
 	else
@@ -1077,10 +1084,10 @@ install_cli() {
 
 # The options (except --help) must be called with root
 case "$1" in
-	-i|--self-install)		loading "install_cli" ;;		# Critical option, see the comments at function declaration for more info
-	-u|--self-update)		loading "update_cli" ;;			# Critical option, see the comments at function declaration for more info
+	-i|--self-install)		loading "install_cli" ;;			# Critical option, see the comments at function declaration for more info
+	-u|--self-update)		loading "update_cli" ;;				# Critical option, see the comments at function declaration for more info
+	-r|--self-reinstall)	loading "update_cli reinstall" ;;	# Shortcut to quickly reinstall the CLI
 	--self-delete)			loading "delete_all" ;;
-	-ri|--self-reinstall)	loading "install_cli" && loading "install_cli" 2> /dev/null ;; # Shortcut to quickly reinstall the CLI: calling 2 times the install function permit to have the "future" version and not only the current version as the code might have change
 	-p|--publication)		loading "detect_publication" ;;
 	--get-logs)				get_logs $file_log ;;
 	man)					loading "$file_COMMAND_MAN" ;;
