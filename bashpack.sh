@@ -771,6 +771,7 @@ verify_cli_commands() {
 	local commands_required=" \
 		tr
 		ls
+		ln
 		echo
 		printf
 		cat
@@ -906,7 +907,7 @@ create_cli() {
 		
 		# Sources files installation
 		display_info "installing sources."
-		cp -RT $archive_dir_tmp $dir_src_cli # -T used to overwrite the source dir and not creating a new inside
+		cp -RT $archive_dir_tmp $dir_src_cli	# -T used to overwrite the source dir and not creating a new inside
 		chmod 555 -R $dir_src_cli				# Set everyting in read+exec by default
 		chmod 550 $file_main					# Set main file executable for users + root
 		chmod 550 -R "$dir_src_cli/commands/"	# Set commands files executable for users + root
