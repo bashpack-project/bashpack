@@ -167,8 +167,9 @@ else
 		&&		echo "" \
 		&&		echo "Options:" \
 		&&		echo " -i, --self-install	install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
-		&&		echo " -u, --self-update	update your current $NAME installation to the latest available version on the chosen publication." \
+		&&		echo " -u, --self-update	update your current $NAME installation to the latest available version on the chosen publication (-f or --force are available)." \
 		&&		echo "     --self-delete	delete $NAME from your system." \
+		&&		echo "     --get-logs		display logs." \
 		&&		echo "     --help   		display this information." \
 		&&		echo " -p, --publication	display your current $NAME installation publication stage (main, unstable, dev)." \
 		&&		echo "     --version		display version." \
@@ -376,7 +377,7 @@ check_repository_reachability() {
 	elif [ "$(exists_command "wget")" = "exists" ]; then
 		http_code="$(wget --server-response "$url" 2>&1 | awk '/^  HTTP/{print $2}' | head -n 1)"
 	else
-		display_error "can't get HTTP status code with curl or wget."
+		display_error "can't get HTTP code with curl or wget."
 	fi
 
 	http_family="$(echo $http_code | cut -c 1)"
