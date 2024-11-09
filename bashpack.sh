@@ -793,7 +793,6 @@ verify_cli_commands() {
 		tee
 		file
 		tar
-		curl
 		command
 		exec
 		set
@@ -1010,6 +1009,7 @@ create_cli() {
 update_cli() {
 
 	local downloaded_cli="$dir_tmp/$NAME_LOWERCASE.sh"
+	local remote_file="$URL_ARCH/releases/latest"
 	local force="${1}"
 
 	update_process() {
@@ -1033,11 +1033,12 @@ update_cli() {
 		update_process
 	else
 		# Testing if a new version exists on the current publication to avoid reinstall if not.
-		# This test requires curl, if not usable, then the CLI will be reinstalled at each update.
-		if [ "$(curl -s "$URL_ARCH/releases/latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
-			display_info "latest $NAME version is already installed ($VERSION $(detect_publication))."
-		elif [ "$(wget -q -O- "$URL_ARCH/releases/latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
-			display_info "latest $NAME version is already installed ($VERSION $(detect_publication))."
+		if [ "$(exists_command "curl")" = "exists" ] && [ "$(curl -s "$remote_file" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
+			display_info "latest version is already installed ($VERSION-$(detect_publication) detected with curl)."
+
+		elif [ "$(exists_command "wget")" = "exists" ] && [ "$(wget -q -O- "$remote_file" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
+			display_info "latest version is already installed ($VERSION-$(detect_publication) detected with wget)."
+
 		else
 			update_process
 		fi
