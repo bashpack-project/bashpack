@@ -1010,32 +1010,34 @@ create_cli() {
 update_cli() {
 
 	local downloaded_cli="$dir_tmp/$NAME_LOWERCASE.sh"
-	local reinstall="${1}"
+	local force="${1}"
 
 	update_process() {
+		display_info "starting self update."
+
 		# Download only the main file 
 		download_cli "$URL_FILE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
 		
 		# Execute the installation from the downloaded file 
 		chmod +x "$downloaded_cli"
 		"$downloaded_cli" -i
+
+		display_info "end of self update."
 	}
 
 
-	# Option to reinstall (just bypass the version check)
-	if [ "$reinstall" = "reinstall" ]; then
-		display_info "starting reinstallation."
+	# Option to force update (just bypass the version check)
+	# If the newest version already installed, it will just install it again
+	if [ "$force" = "force" ]; then
+		display_info "using force option."
 		update_process
-		display_info "end of reinstallation."
 	else
 		# Testing if a new version exists on the current publication to avoid reinstall if not.
 		# This test requires curl, if not usable, then the CLI will be reinstalled at each update.
 		if [ "$(curl -s "$URL_ARCH/releases/latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
 			display_info "latest $NAME version is already installed ($VERSION $(detect_publication))."
 		else
-			display_info "starting self update."
 			update_process
-			display_info "end of self update."
 		fi
 	fi
 }
@@ -1084,13 +1086,13 @@ install_cli() {
 
 # The options (except --help) must be called with root
 case "$1" in
-	-i|--self-install)		loading "install_cli" ;;			# Critical option, see the comments at function declaration for more info
-	-u|--self-update)		loading "update_cli" ;;				# Critical option, see the comments at function declaration for more info
-	-r|--self-reinstall)	loading "update_cli reinstall" ;;	# Shortcut to quickly reinstall the CLI
-	--self-delete)			loading "delete_all" ;;
-	-p|--publication)		loading "detect_publication" ;;
-	--get-logs)				get_logs $file_log ;;
-	man)					loading "$file_COMMAND_MAN" ;;
+	-i|--self-install)			loading "install_cli" ;;		# Critical option, see the comments at function declaration for more info
+	-u|--self-update)			loading "update_cli" ;;			# Critical option, see the comments at function declaration for more info
+	-uf|--self-update --force)	loading "update_cli force" ;;	# Shortcut to quickly reinstall the CLI
+	--self-delete)				loading "delete_all" ;;
+	-p|--publication)			loading "detect_publication" ;;
+	--get-logs)					get_logs $file_log ;;
+	man)						loading "$file_COMMAND_MAN" ;;
 	verify)
 		if [ -z "$2" ]; then
 			loading "verify_cli_commands";  loading "verify_cli_files"; loading "check_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading "check_repository_reachability "$URL_ARCH/tarball/$VERSION""
