@@ -1036,6 +1036,8 @@ update_cli() {
 		# This test requires curl, if not usable, then the CLI will be reinstalled at each update.
 		if [ "$(curl -s "$URL_ARCH/releases/latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
 			display_info "latest $NAME version is already installed ($VERSION $(detect_publication))."
+		elif [ "$(wget -q -O- "$URL_ARCH/releases/latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
+			display_info "latest $NAME version is already installed ($VERSION $(detect_publication))."
 		else
 			update_process
 		fi
@@ -1086,9 +1088,15 @@ install_cli() {
 
 # The options (except --help) must be called with root
 case "$1" in
-	-i|--self-install)			loading "install_cli" ;;		# Critical option, see the comments at function declaration for more info
-	-u|--self-update)			loading "update_cli" ;;			# Critical option, see the comments at function declaration for more info
-	-uf|--self-update --force)	loading "update_cli force" ;;	# Shortcut to quickly reinstall the CLI
+	-i|--self-install)		loading "install_cli" ;;		# Critical option, see the comments at function declaration for more info
+	-u|--self-update)
+		if [ -z "$2" ]; then
+							loading "update_cli"			# Critical option, see the comments at function declaration for more info
+		else
+			case "$2" in
+				-f|--force)	loading "update_cli force" ;;	# Shortcut to quickly reinstall the CLI
+			esac
+		fi ;;
 	--self-delete)				loading "delete_all" ;;
 	-p|--publication)			loading "detect_publication" ;;
 	--get-logs)					get_logs $file_log ;;
