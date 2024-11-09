@@ -14,12 +14,15 @@ The released versions changelogs below are only about the main repository.
 - Entirely rewritten to be compliant with POSIX systems
 - Update process improved to avoid downloading too much files
 - Installation process improved by automatically detect the better $PATH
-- Sub command "verify" is now more used in installations process
+- Sub command "verify" is now more used in installation process
 - Sub command "verify" can now detect presence of required commands
 - Config file rename from bashpack_config to bashpack.conf
 - Detection of systemd improved to be able to install on compatible systems only
 - Detection of pkg-config improved to be able to install on compatible systems only
 - Moving sources from /usr/local/src/ to /opt/
+
+##### Removed
+- Sub command "verify" download/extraction
 
 ------------
 ### 1.1.1
