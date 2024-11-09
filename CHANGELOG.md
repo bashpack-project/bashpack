@@ -5,9 +5,9 @@ The released versions changelogs below are only about the main repository.
 ### 2.0.0
 *incoming release date*
 ##### Added
-- Log support in /var/log/bashpack/
-- YUM updates support
-- (WIP) Firewall management (nftables only for now)
+- Log support in /var/log/bashpack/ and --get-logs option
+- Sub command "update" YUM support
+- (WIP) Sub command "firewall" for firewall management (nftables only for now)
 - This changelog file :D
 
 ##### Modified
