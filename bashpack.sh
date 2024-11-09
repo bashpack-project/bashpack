@@ -1013,29 +1013,29 @@ update_cli() {
 	local reinstall="${1}"
 
 	update_process() {
-		display_info "starting self update."
-
 		# Download only the main file 
 		download_cli "$URL_FILE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
 		
 		# Execute the installation from the downloaded file 
 		chmod +x "$downloaded_cli"
 		"$downloaded_cli" -i
-
-		display_info "end of self update."
 	}
 
 
 	# Option to reinstall (just bypass the version check)
 	if [ "$reinstall" = "reinstall" ]; then
+		display_info "starting reinstallation."
 		update_process
+		display_info "end of reinstallation."
 	else
 		# Testing if a new version exists on the current publication to avoid reinstall if not.
 		# This test requires curl, if not usable, then the CLI will be reinstalled at each update.
 		if [ "$(curl -s "$URL_ARCH/releases/latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
 			display_info "latest $NAME version is already installed ($VERSION $(detect_publication))."
 		else
+			display_info "starting self update."
 			update_process
+			display_info "end of self update."
 		fi
 	fi
 }
