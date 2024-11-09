@@ -1021,6 +1021,8 @@ update_cli() {
 		display_info "latest $NAME version is already installed ($VERSION $(detect_publication))."
 	else
 
+		display_info "starting self update."
+
 		# Download only the main file 
 		download_cli "$URL_FILE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
 		
@@ -1030,6 +1032,7 @@ update_cli() {
 
 		# rm -rf "$dir_tmp/$NAME_LOWERCASE.sh"
 
+		display_info "end of self update."
 	fi
 }
 
@@ -1045,10 +1048,14 @@ update_cli() {
 # /!\	This function must work everytime a modification is made in the code. 
 #		Because it's called by the update function.
 install_cli() {
-	detect_cli
-	
+
 	# Test if all required commands are on the system before install anything
 	if [ "$(verify_cli_commands "print-missing-required-command-only")" = "0" ]; then
+
+		display_info "starting installation."
+
+		detect_cli
+
 		# Download tarball archive
 		download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
@@ -1057,6 +1064,8 @@ install_cli() {
 
 		# Install new files
 		create_cli
+
+		display_info "end of installation."
 	else
 		verify_cli_commands
 	fi
