@@ -906,10 +906,10 @@ create_cli() {
 		# Sources files installation
 		display_info "installing sources."
 		cp -RT $archive_dir_tmp $dir_src_cli # -T used to overwrite the source dir and not creating a new inside
-		# chmod +x -R $dir_src_cli
-		chmod 440 -R $dir_src_cli
-		chmod 550 $file_main
-		chmod 550 -R "$dir_src_cli/commands/"
+		chmod 555 -R $dir_src_cli				# Set everyting in read+exec by default
+		chmod 550 $file_main					# Set main file executable for users + root
+		chmod 550 -R "$dir_src_cli/commands/"	# Set commands files executable for users + root
+		chmod 444 -R "$dir_src_cli/"*.md		# Set .md files read-only for everyone
 
 
 		# Create an alias so the listed package are clear on the system (-f to force overwrite existing)
