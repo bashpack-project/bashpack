@@ -817,6 +817,7 @@ verify_cli_commands() {
 	local commands_optional=" \
 		less
 		pkg-config
+		curl
 		wget
 		journalctl
 		systemctl \
