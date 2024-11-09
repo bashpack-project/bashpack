@@ -561,7 +561,7 @@ delete_cli() {
 
 		if [ -f "$file_main" ]; then
 			if [ "$exclude_main" = "exclude_main" ]; then
-				display_success "all sources removes excepted $file_main."
+				display_success "all sources removed excepted $file_main."
 			else
 				display_error "$NAME $VERSION located at $(posix_which $NAME_ALIAS) has not been uninstalled." && exit
 			fi
