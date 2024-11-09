@@ -1080,6 +1080,7 @@ case "$1" in
 	-i|--self-install)		loading "install_cli" ;;		# Critical option, see the comments at function declaration for more info
 	-u|--self-update)		loading "update_cli" ;;			# Critical option, see the comments at function declaration for more info
 	--self-delete)			loading "delete_all" ;;
+	-ri|--self-reinstall)	loading "install_cli" && loading "install_cli" 2> /dev/null ;; # Shortcut to quickly reinstall the CLI: calling 2 times the install function permit to have the "future" version and not only the current version as the code might have change
 	-p|--publication)		loading "detect_publication" ;;
 	--get-logs)				get_logs $file_log ;;
 	man)					loading "$file_COMMAND_MAN" ;;
