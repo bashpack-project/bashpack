@@ -7,7 +7,7 @@ The released versions changelogs below are only about the main repository.
 ##### Added
 - Log support in /var/log/bashpack/
 - YUM updates support
-- Firewall management (nftables only for now)
+- (WIP) Firewall management (nftables only for now)
 - This changelog file :D
 
 ##### Modified
@@ -17,8 +17,8 @@ The released versions changelogs below are only about the main repository.
 - Sub command "verify" is now more used in installations process
 - Sub command "verify" can now detect presence of required commands
 - Config file rename from bashpack_config to bashpack.conf
-- Detection of systemd improved to be able to install on incompatible systems
-- Detection of pkg-config improved to be able to install on incompatible systems
+- Detection of systemd improved to be able to install on compatible systems only
+- Detection of pkg-config improved to be able to install on compatible systems only
 - Moving sources from /usr/local/src/ to /opt/
 
 ------------
