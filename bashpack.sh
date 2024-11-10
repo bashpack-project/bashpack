@@ -109,7 +109,7 @@ file_log="$dir_log/main.log"
 # Export a variable that permit to avoid this message duplication (because this file is called multiple times over the differents process)
 if [ "$WARNING_ALREADY_SEND" != "true" ]; then
 	if [ "$current_cli" = "./$NAME_LOWERCASE.sh" ]; then
-		echo "Warning: you are currently using '$current_cli' which is located in $(pwd)."
+		echo "Warning: you are currently using '$current_cli' which is located at $(pwd)."
 		echo ""
 
 		export WARNING_ALREADY_SEND="true"
@@ -235,6 +235,7 @@ loading() {
 	# while ps -p $pid > /dev/null; do
 	while ps -T | grep $pid > /dev/null; do
 		# for s in / - \|; do
+		# for s in l o a d e r; do
 		for s in . o O °; do
 			printf "$s\033[0K\r"
 
