@@ -458,7 +458,8 @@ if [ "$(exists_command "pkg-config")" = "exists" ]; then
 	# Test if completion dir exists to avoid interruption
 	if [ -n "$(pkg-config --variable=completionsdir bash-completion)" ]; then
 		dir_autocompletion="$(pkg-config --variable=completionsdir bash-completion)"
-		file_autocompletion="$dir_autocompletion/$NAME_ALIAS"
+		file_autocompletion_1="$dir_autocompletion/$NAME_LOWERCASE"
+		file_autocompletion_2="$dir_autocompletion/$NAME_ALIAS"
 	fi
 fi
 
@@ -554,7 +555,8 @@ delete_cli() {
 		else
 			# Delete everything
 			rm -rf $dir_config
-			rm -rf $file_autocompletion
+			rm -rf $file_autocompletion_1
+			rm -rf $file_autocompletion_2
 			rm -rf $file_main_alias_1
 			rm -rf $file_main_alias_2
 			rm -rf $dir_src_cli
@@ -910,7 +912,7 @@ create_cli() {
 		display_info "installing sources."
 		cp -RT $archive_dir_tmp $dir_src_cli	# -T used to overwrite the source dir and not creating a new inside
 		chmod 555 -R $dir_src_cli				# Set everyting in read+exec by default
-		chmod 550 $file_main					# Set main file executable for users + root
+		chmod 555 $file_main					# Set main file executable for everyone (autcompletion of the command itself requires it)
 		chmod 550 -R "$dir_src_cli/commands/"	# Set commands files executable for users + root
 		chmod 444 -R "$dir_src_cli/"*.md		# Set .md files read-only for everyone
 
@@ -925,7 +927,8 @@ create_cli() {
 		# Install autocompletion only if the directory has been found.
 		if [ -n "$dir_autocompletion" ]; then
 			display_info "installing autocompletion."
-			cp "$archive_dir_tmp/bash_completion" $file_autocompletion
+			cp "$archive_dir_tmp/bash_completion" $file_autocompletion_1
+			cp "$archive_dir_tmp/bash_completion" $file_autocompletion_2
 		fi
 
 		

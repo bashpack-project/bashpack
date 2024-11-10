@@ -32,6 +32,7 @@ _bashpack() {
       case ${prev} in
         update) COMPREPLY=($(compgen -W "--help --assume-yes --ask --when --get-logs" -- ${cur})) ;;
         verify) COMPREPLY=($(compgen -W "--help --files --commands --repository-reachability" -- ${cur})) ;;
+        firewall) COMPREPLY=($(compgen -W "--help --restart" -- ${cur})) ;;
       esac ;;
     *) COMPREPLY=() ;;
   esac

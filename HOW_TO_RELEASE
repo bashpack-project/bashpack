@@ -1,7 +1,6 @@
-After you're satisfied of your code (it means it must be tested) :
+After you're satisfied of your code (it means it must be tested):
 - Edit the $VERSION in bashpack.sh with the new version 
-- Commit to the working branch
-- On Github, merge the working branch to main
+- Commit to the dev repository
 - Create a new release & tag with the same version written in $VERSION earlier
 - Test on a Linux that the update is working as expected with: sudo bp -u 
 
