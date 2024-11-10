@@ -1024,6 +1024,9 @@ update_cli() {
 
 		# Download only the main file 
 		download_cli "$URL_FILE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
+
+		# Delete old files
+		delete_cli "exclude_main"
 		
 		# Execute the installation from the downloaded file 
 		chmod +x "$downloaded_cli"
@@ -1073,9 +1076,6 @@ install_cli() {
 
 		# Download tarball archive
 		download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
-
-		# Delete old files
-		delete_cli "exclude_main"
 
 		# Install new files
 		create_cli
