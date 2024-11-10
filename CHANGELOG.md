@@ -6,7 +6,7 @@ The released versions changelogs below are only about the main repository.
 *incoming release date*
 ##### Added
 - Log support in /var/log/bashpack/ and "--get-logs" option
-- Sub command "update" YUM support
+- Sub command "update" support of DNF (and YUM fallback)
 - (WIP) Sub command "firewall" for firewall management (nftables only for now)
 - This changelog file :D
 
