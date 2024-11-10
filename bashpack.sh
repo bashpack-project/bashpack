@@ -451,14 +451,14 @@ download_cli() {
 
 
 
-# bash-completion doc: https://github.com/scop/bash-completion/tree/master?tab=readme-ov-file#faq
+# bash-completion doc: https://github.com/scop/bash-completion/blob/main/README.md#faq
 # If pkg-config doesn't exist, then the system won't have autocompletion.
 if [ "$(exists_command "pkg-config")" = "exists" ]; then
 
 	# Test if completion dir exists to avoid interruption
 	if [ -n "$(pkg-config --variable=completionsdir bash-completion)" ]; then
 		dir_autocompletion="$(pkg-config --variable=completionsdir bash-completion)"
-		file_autocompletion="$dir_autocompletion/$NAME_LOWERCASE"
+		file_autocompletion="$dir_autocompletion/$NAME_ALIAS"
 	fi
 fi
 
