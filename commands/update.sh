@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # MIT License
 
@@ -24,9 +24,12 @@
 
 
 
+# . "core/helper.sh"
+export allow_helper_functions="true"
 
-# continue_question="Do you want to continue? [y/N] "
 
+
+continue_question="Do you want to continue? [y/N] "
 
 
 
@@ -49,9 +52,9 @@
 # 	echo "Installing $package with $manager...  "
 # 	echo ""
 
-# 	if ([[ $manager = "apt" ]] && [[ $(exists_command "apt") = "exists" ]]) || [[ $(exists_command "apt") = "exists" ]]; then
+# 	if ([ $manager = "apt" ] && [ $($current_cli helper exists_command "apt") = "exists" ]) || [ $($current_cli helper exists_command "apt") = "exists" ]; then
 # 		apt install -y $package
-# 	elif ([[ $manager = "snap" ]] && [[ $(exists_command "snap") = "exists" ]]) || [[ $(exists_command "snap") = "exists" ]]; then
+# 	elif ([ $manager = "snap" ] && [ $($current_cli helper exists_command "snap") = "exists" ]) || [ $($current_cli helper exists_command "snap") = "exists" ]; then
 # 		snap install $package
 # 	else
 # 		echo "$package: Error: package not found."
@@ -71,16 +74,16 @@
 # 	local manager=${2}
 
 # 	echo ""
-# 	if [[ $manager != "" ]]; then
+# 	if [ "$manager != "" ]; then
 # 		echo "Uninstalling $package with $manager...  "
 # 	else
 # 		echo "Uninstalling $package with the default system manager...  "
 # 	fi
 # 	echo ""
 
-# 	if ([[ $manager = "apt" ]] && [[ $(exists_command "apt") = "exists" ]]) || [[ $(exists_command "apt") = "exists" ]]; then
+# 	if ([ $manager = "apt" ] && [ $($current_cli helper exists_command "apt") = "exists" ]) || [ $($current_cli helper exists_command "apt") = "exists" ]; then
 # 		apt remove -y $package
-# 	elif ([[ $manager = "snap" ]] && [[ $(exists_command "snap") = "exists" ]]) || [[ $(exists_command "snap") = "exists" ]]; then
+# 	elif ([ $manager = "snap" ] && [ $($current_cli helper exists_command "snap") = "exists" ]) || [ $($current_cli helper exists_command "snap") = "exists" ]; then
 # 		snap remove $package
 # 	else
 # 		echo "$package: Error: package not found."
@@ -95,31 +98,25 @@
 # Examples :
 # - user input is not required	: apt upgrade -y
 # - user input is required		: apt upgrade
-if [[ $install_confirmation = $yes ]]; then
-
+if [ "$($current_cli helper sanitize_confirmation $install_confirmation)" = "yes" ]; then
 	install_confirmation="-y"
-	echo ""
-	echo "All installations will be automatically accepted."
-
+	$current_cli helper display_info "all installations will be automatically accepted."
 else
-
 	# Not "-y", so it means "no", and no = empty
 	install_confirmation=""
-	echo ""
-	echo "Installations will not be automatically accepted, you'll have to specify your choice for each steps."
-
+	$current_cli helper display_info "installations will not be automatically accepted, you'll have to specify your choice for each steps."
 fi
 
 
 
 
-# --- Update APT packages ---
-section_title=""$'\n'">>> APT"
+# Update APT packages
+if [ "$($current_cli helper exists_command "apt")" = "exists" ]; then
+	$current_cli helper display_info "updating with APT."
 
-if [[ $(exists_command "apt") = "exists" ]]; then
-	echo "$section_title"
-
-	dpkg --configure -a
+	if [ "$($current_cli helper exists_command "dpkg")" = "exists" ]; then
+		dpkg --configure -a
+	fi
 	apt update
 	apt install --fix-broken $install_confirmation
 	apt full-upgrade $install_confirmation
@@ -137,62 +134,71 @@ fi
 
 
 
-# --- Update Snapcraft packages ---
-section_title=""$'\n'">>> Snapcraft"
-
+# Update Snapcraft packages
 # Usage : upgrade_with_snapcraft <-y>
 upgrade_with_snapcraft() {
 	# List available updates & ask for update if found any (or auto update if <-y>).
-	if [[ $(snap refresh --list | grep -v "All snaps up to date.") ]]; then
+	if [ "$(snap refresh --list | grep -v "All snaps up to date.")" ]; then
 
 		snap refresh --list
 
-		if [[ ${1} = "-y" ]]; then
+		if [ "${1}" = "-y" ]; then
 			snap refresh
 		else
 			read -p "$continue_question" install_confirmation_snapcraft
 
-			if [[ $install_confirmation_snapcraft = $yes ]]; then
+			if [ "$install_confirmation_snapcraft" = "$yes" ]; then
 				snap refresh
 			fi
 		fi
 	fi
-
-	echo ""
-	echo ""
 }
 
-if [[ $(exists_command "snap") = "exists" ]]; then
-	echo "$section_title"
+if [ "$($current_cli helper exists_command "snap")" = "exists" ]; then
+	$current_cli helper display_info "updating with Snap."
 	upgrade_with_snapcraft $install_confirmation
 fi
 
 
 
 
-# --- Update Firmwares (with fwupd) ---
-section_title=""$'\n'">>> fwupd"
+# Update DNF packages (using YUM as fallback if DNF doesn't exist)
+if [ "$($current_cli helper exists_command "dnf")" = "exists" ]; then
+	$current_cli helper display_info "updating with DNF."
 
-# Checking if the system is bare-metal (and not virtualized) with the systemd-detect-virt command.
-# If not bare-metal, firmwares will not be updated.
-if [[ $(exists_command "systemd-detect-virt") = "exists" ]]; then
-        if [[ $(systemd-detect-virt) = "none" ]]; then
+	dnf upgrade $install_confirmation
 
-                # Process to firmware updates with fwupdmgr
-                if [[ $(exists_command "fwupdmgr") = "exists" ]]; then
-                        echo "$section_title"
-                        fwupdmgr upgrade $install_confirmation
-                else
-                        echo "$section_title"
-                        install_package apt fwupd
+elif [ "$($current_cli helper exists_command "yum")" = "exists" ]; then
+	$current_cli helper display_info "updating with YUM."
 
-                        if [[ $(exists_command "fwupdmgr") = "exists" ]]; then
-                                fwupdmgr upgrade $install_confirmation
-                        fi
-                fi
-        fi
+	yum upgrade $install_confirmation
+fi
+
+
+
+
+# Update firmwares with fwupd
+# Checking if the system is bare-metal (and not virtualized) with the "systemd-detect-virt" command and if not bare-metal, firmwares will not be updated.
+if [ "$($current_cli helper exists_command "systemd-detect-virt")" = "exists" ]; then
+		if [ "$(systemd-detect-virt)" = "none" ]; then
+
+				# Process to firmware updates with fwupdmgr
+				if [ "$($current_cli helper exists_command "fwupdmgr")" = "exists" ]; then
+
+						$current_cli helper display_info "updating with fwupd (firmwares)."
+						fwupdmgr upgrade $install_confirmation
+				else
+
+					$current_cli helper display_info "starting firmwares updates (fwupd)."
+					install_package apt fwupd
+
+					if [ "$($current_cli helper exists_command "fwupdmgr")" = "exists" ]; then
+						fwupdmgr upgrade $install_confirmation
+					fi
+				fi
+		fi
 else
-        echo "Error: can't detect if your system is bare-metal with the command 'systemd-detect-virt'. Will not upgrade firmwares."
+	$current_cli helper display_error "can't detect if your system is bare-metal with the command 'systemd-detect-virt', will not upgrade firmwares."
 fi
 
 
