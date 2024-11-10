@@ -162,14 +162,16 @@ fi
 
 
 
-# Update YUM packages
-if [ "$($current_cli helper exists_command "yum")" = "exists" ]; then
+# Update DNF packages (using YUM as fallback if DNF doesn't exist)
+if [ "$($current_cli helper exists_command "dnf")" = "exists" ]; then
+	$current_cli helper display_info "updating with DNF."
+
+	dnf upgrade $install_confirmation
+
+elif [ "$($current_cli helper exists_command "yum")" = "exists" ]; then
 	$current_cli helper display_info "updating with YUM."
 
 	yum upgrade $install_confirmation
-
-	echo ""
-	echo ""
 fi
 
 
