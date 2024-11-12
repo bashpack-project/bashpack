@@ -24,7 +24,6 @@
 
 
 
-# . "core/helper.sh"
 export allow_helper_functions="true"
 
 
@@ -33,9 +32,90 @@ firewall_config="$dir_config/firewall.conf"
 firewall_allowed="$($current_cli helper get_config_value "$file_config" "firewall")"
 
 
+nftables_file="/etc/nftables.conf"
+nftables_dir="/etc/bashpack/firewall"
+nftables_file_backup="$nftables_dir/nftables.conf_backup_$now"
 
+
+
+# Create the custom inbound ruleset file
+if [ ! -f "$firewall_config" ]; then
+	echo "# Customs inbound rules can be added below" > "$firewall_config"
+	echo "# Every lines will automatically be wrapped inside the well formatted nftables command 'nft add rule inet filter $NAME_UPPERCASE-PREROUTING [LINE] counter accept'" >> "$firewall_config"
+	echo "# Examples of rules that can be copied, pasted and adapted:" >> "$firewall_config"
+	echo "#tcp dport <PORT>" >> "$firewall_config"
+	echo "#ip saddr <CIDR>" >> "$firewall_config"
+	echo "#ip6 saddr <CIDR>" >> "$firewall_config"
+	chmod 755 "$firewall_config"
+fi
+
+
+
+
+# Display the current ruleset
+# Usage: display_firewall
+display_firewall() {
+	if [ "$($current_cli helper exists_command "nft")" = "exists" ]; then
+		nft list ruleset
+	fi
+}
+
+
+
+
+# Disable the current ruleset
+# Usage: disable_firewall
 disable_firewall() {
-	systemctl stop nftables.service
+	if [ "$($current_cli helper exists_command "systemctl")" = "exists" ]; then
+		systemctl stop nftables.service
+	fi
+}
+
+
+
+
+# Restart the current ruleset
+# Usage: restart_firewall
+restart_firewall() {
+	if [ "$($current_cli helper exists_command "systemctl")" = "exists" ]; then
+		systemctl restart nftables.service
+		systemctl status nftables.service
+
+		display_firewall
+	fi
+}
+
+
+
+
+# Backup the current ruleset
+# Usage: backup_firewall
+backup_firewall() {
+	if [ "$($current_cli helper exists_command "nft")" = "exists" ]; then
+		# Making a backup of your current nftables ruleset
+		mkdir -p $nftables_dir
+		chmod 755 $nftables_dir
+		nft list ruleset > $nftables_file_backup
+
+		$current_cli helper display_info "A backup of your current nftables firewall ruleset has been saved to "$nftables_file_backup"."
+	fi
+}
+
+
+
+
+# Restore a backuped ruleset
+# Usage: restore_firewall
+restore_firewall() {
+
+	# Ask user to select a file from the backup list
+	ls -l "$nftables_dir"
+	local restoration_file
+	read -p "Enter the file name to restore: " restoration_file
+
+	cp "$nftables_dir/$restoration_file" $nftables_file
+	
+	restart_firewall
 }
 
 
@@ -43,21 +123,21 @@ disable_firewall() {
 
 # This script is based on nftables, it can't work without it.
 # Testing if nftables is installed on the system, try to install it if not, or exit.
+# Usage: install_firewall
 install_firewall() {
 	if [ "$($current_cli helper exists_command "nft")" != "exists" ]; then
 		$current_cli helper display_error "nftables not found on the system but is required to configure your firewall with $NAME."
 		
 		if [ "$($current_cli helper exists_command "apt")" = "exists" ]; then
-			echo "Installing nftables with APT..."
-			echo "Warning: if iptables is installed, nftables will replace it. "
-			echo "Warning: be sure to keep a copy of your currents firewall rulesets."
+			$current_cli helper display_info "Installing nftables with APT..."
+			$current_cli helper display_info "Warning: if iptables is installed, nftables will replace it. "
+			$current_cli helper display_info "Warning: be sure to keep a copy of your currents non nftables firewall rulesets."
 			read -p "$continue_question" install_confirmation_nftables
 
 			if [ "$($current_cli helper sanitize_confirmation $install_confirmation_nftables)" = "yes" ]; then
-			# if [ "$install_confirmation_nftables" = $yes ]; then
 				apt install -y nftables
 				systemctl enable nftables.service
-				systemctl restart nftables.service
+				restart_firewall
 			else
 				# Exit to avoid doing anything else with this script without nftables installed
 				exit
@@ -78,29 +158,6 @@ install_firewall() {
 	
 # Configure the firewall
 create_firewall() {
-	
-	# now=$(date +%y-%m-%d_%H-%M-%S)
-	nftables_file="/etc/nftables.conf"
-	nftables_dir="/etc/bashpack/firewall/"
-	nftables_file_backup=$nftables_dir"nftables.conf_backup_$now"
-
-
-	# # Making sure to use nftables
-	# apt install -y nftables
-	# systemctl enable nftables.service
-	# systemctl restart nftables.service
-
-	# Making sure the nftables.conf file exists
-	nft list ruleset > $nftables_file
-
-	# Making a backup of your current nftables ruleset
-	mkdir -p $nftables_dir
-	chmod 755 $nftables_dir
-	cp $nftables_file $nftables_file_backup
-
-	echo ""
-	echo "A backup of your current nftables firewall ruleset has been saved to "$nftables_file_backup"."
-	echo ""
 
 	# --------------------------
 	# Here is what this script will erase and recreate :
@@ -115,6 +172,8 @@ create_firewall() {
 	# Documentation here: https://wiki.nftables.org/wiki-nftables/index.php/Netfilter_hooks
 	# --------------------------
 
+	backup_firewall
+
 	# Deleting current ruleset to get a clean firewall and avoid any issues
 	nft flush ruleset
 
@@ -126,10 +185,16 @@ create_firewall() {
 	nft add chain inet filter $NAME_UPPERCASE-PREROUTING { type filter hook prerouting priority -199\; policy drop\; }
 	nft add rule inet filter $NAME_UPPERCASE-PREROUTING ct state related,established counter accept
 	nft add rule inet filter $NAME_UPPERCASE-PREROUTING iifname lo counter accept
-	# Allowing Docker containers to see each others & to reach internet (works with or without Docker bridges) (this rule is created even if Docker is not installed to anticipate any futures Docker installations)
-	nft add rule inet filter $NAME_UPPERCASE-PREROUTING ip saddr 172.0.0.0/8 counter accept
+	
 	# Inbound customs rules below
-	#nft add rule inet filter $NAME_UPPERCASE-PREROUTING tcp dport <PORT> counter accept
+	while read -r line; do
+		local first_char="$(echo $line | cut -c1-1)"
+
+		# Avoid reading comments and empty lines
+		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
+			nft add rule inet filter $NAME_UPPERCASE-PREROUTING "$line" counter accept
+		fi	
+	done < "$firewall_config"
 
 	# Creating $NAME_UPPERCASE-POSTROUTING 
 	# Eveything is open outbound by default
@@ -137,29 +202,42 @@ create_firewall() {
 
 
 	# Saving the new nftables ruleset
-	nft list ruleset > $nftables_file
+	nft list ruleset > "$nftables_file"
 
 	# Restarting firewall
-	systemctl restart nftables.service
+	restart_firewall
 
-	# Restarting Docker (if Docker is installed) to force it using nftables instead of iptables
+	# Restarting Docker (if installed) to force it using nftables instead of iptables
 	if [ "$($current_cli helper exists_command "docker")" = "exists" ]; then
 		systemctl restart docker.service
 	fi
 
 
 	$current_cli helper display_success "new firewall configured."
-
-
 }
 
 
-if [ "$firewall_allowed" = "1" ] || [ "$firewall_allowed" = "2" ]; then
-	install_firewall
-	create_firewall
-else 
-	$current_cli helper display_error "firewall management is disabled or misconfigured in $file_config"
-fi
 
+
+
+case "$function_to_launch" in
+	display)	display_firewall ;;
+	restart)	restart_firewall ;;
+	install)
+				if [ "$firewall_allowed" = "1" ] || [ "$firewall_allowed" = "2" ]; then
+					install_firewall
+					create_firewall
+				else 
+					$current_cli helper display_error "firewall management is disabled or misconfigured in $file_config"
+				fi ;;
+	disable)	disable_firewall ;;
+	restore)	restore_firewall ;;
+	*) exit ;;
+esac
+
+
+
+# Properly exit
+exit
 
 #EOF

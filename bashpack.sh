@@ -50,8 +50,8 @@ dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
 dir_systemd="/lib/systemd/system"
 
-dir_config="/etc/$NAME_LOWERCASE"
-dir_log="/var/log/$NAME_LOWERCASE"
+export dir_config="/etc/$NAME_LOWERCASE"
+export dir_log="/var/log/$NAME_LOWERCASE"
 dir_src_cli="/opt/$NAME_LOWERCASE"
 
 # Automatically detect the best PATH for the installation 
@@ -320,12 +320,11 @@ exists_command() {
 # Getting values stored in configuration files.
 # Usage: get_config_value "<file>" "<option>"
 get_config_value() {
-	local file=${1}
-	local option=${2}
+	local file="${1}"
+	local option="${2}"
 
 	while read -r line; do
-		# local first_char=`echo $line | cut -c1-1`
-		local first_char=$(echo $line | cut -c1-1)
+		local first_char="$(echo $line | cut -c1-1)"
 
 		# Avoid reading comments and empty lines
 		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
@@ -1125,7 +1124,11 @@ case "$1" in
 			exec $file_COMMAND_FIREWALL
 		else
 			case "$2" in
-				-r|--restart)	exec $file_COMMAND_FIREWALL ;;
+				-i|--install)	export function_to_launch="install" && exec $file_COMMAND_FIREWALL ;;
+				-d|--display)	export function_to_launch="display" && exec $file_COMMAND_FIREWALL ;;
+				-r|--restart)	export function_to_launch="restart" && exec $file_COMMAND_FIREWALL ;;
+				--disable)		export function_to_launch="disable" && exec $file_COMMAND_FIREWALL ;;
+				--restore)		export function_to_launch="restore" && exec $file_COMMAND_FIREWALL ;;
 				*)				display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
