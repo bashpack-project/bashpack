@@ -111,7 +111,7 @@ restore_firewall() {
 	# Ask user to select a file from the backup list
 	ls -l "$nftables_dir"
 	local restoration_file
-	read -p "Enter the file name to restore: " restoration_file
+	read -e -p "Enter the file name to restore: " restoration_file
 
 	cp "$nftables_dir/$restoration_file" $nftables_file
 	

@@ -163,6 +163,24 @@ else
 				&&		exit ;;
 			esac
 		;;
+		firewall)
+			case "$2" in
+				--help) echo "$USAGE" \
+				&&		echo "" \
+				&&		echo "Configure the firewall on your system." \
+				&&		echo "Customs rules can be added from '$dir_config'." \
+				&&		echo "" \
+				&&		echo "Options:" \
+				&&		echo " -i, --install				install the ruleset (the current ruleset will be automatically backuped)." \
+				&&		echo " -d, --display				display the current ruleset." \
+				&&		echo " -r, --restart				restart the firewall." \
+				&&		echo "     --disable				disable the firewall." \
+				&&		echo "     --restore				rollback a previous ruleset version." \
+				&&		echo "" \
+				&&		echo "$NAME $VERSION" \
+				&&		exit ;;
+			esac
+		;;
 		--help) echo "$USAGE" \
 		&&		echo "" \
 		&&		echo "Options:" \
@@ -926,8 +944,8 @@ create_cli() {
 		# Install autocompletion only if the directory has been found.
 		if [ -n "$dir_autocompletion" ]; then
 			display_info "installing autocompletion."
-			cp "$archive_dir_tmp/bash_completion" $file_autocompletion_1
-			cp "$archive_dir_tmp/bash_completion" $file_autocompletion_2
+			cp "$archive_dir_tmp/completion" $file_autocompletion_1
+			cp "$archive_dir_tmp/completion" $file_autocompletion_2
 		fi
 
 		
