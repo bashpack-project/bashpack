@@ -7,14 +7,14 @@ It can be used for deployment purposes, or even by novices users (it doesn't req
 <br>
 
 ## Features
-* Unified Linux updates \
+**Unified Linux updates** \
 _one command to conntrol them all_
     - [APT](https://wiki.debian.org/Apt)
     - [DNF](https://rpm-software-management.github.io/)
     - [YUM](http://yum.baseurl.org/)
     - [Snap](https://snapcraft.io/)
     - [fwupd](https://github.com/fwupd/fwupd) (firmwares)
-* Secured Linux firewall \
+**Secured Linux firewall** \
 _block inbound and simplify rule creation_
     - [nftables](https://wiki.nftables.org/wiki-nftables/index.php/Main_Page)
 
