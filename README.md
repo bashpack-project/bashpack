@@ -92,11 +92,10 @@ sudo bp firewall --disable
 <br>
 
 ## FAQ
-* Bashpack itself is POSIX, meaning it can be installed on any POSIX system. That being said, every specific distro software support needs to be added one by one in the sub commands.
+* Bashpack itself is POSIX, meaning it can be installed on any POSIX system (it was first written in [Bash](https://en.wikipedia.org/wiki/Bash_(Unix_shell)), but is now written in [Bourne shell](https://en.wikipedia.org/wiki/Bourne_shell)). That being said, every specific distro software support needs to be added one by one in the sub commands.
 * Root/sudo access is required.
 * [Systemd](https://systemd.io/) is highly recommanded to benefit all the automations.
 * Bashpack will automatically update itself ([Systemd](https://systemd.io/) installations only).
 * [fwupd](https://github.com/fwupd/fwupd) is installed only if your system is bare-metal (only [Systemd](https://systemd.io/) installations can detect it).
 * Multiple repositories exists, for production usage only the [main](https://github.com/bashpack-project/bashpack) one should be used.
-* Bashpack was first written in [Bash](https://en.wikipedia.org/wiki/Bash_(Unix_shell)), but is now written in [Bourne shell](https://en.wikipedia.org/wiki/Bourne_shell).
 * Just a funny command: bp man
