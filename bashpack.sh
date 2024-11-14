@@ -134,6 +134,7 @@ else
 				&&		echo "" \
 				&&		echo "Supported package managers:" \
 				&&		echo " - APT (https://wiki.debian.org/Apt)" \
+				&&		echo " - DNF (https://rpm-software-management.github.io/)" \
 				&&		echo " - YUM (http://yum.baseurl.org/)" \
 				&&		echo " - Canonical Snapcraft (https://snapcraft.io)" \
 				&&		echo " - Firmwares with fwupd (https://github.com/fwupd/fwupd)" \
@@ -141,8 +142,8 @@ else
 				&&		echo "Options:" \
 				&&		echo " -y, --assume-yes 	enable automatic installations without asking during the execution." \
 				&&		echo "     --ask    		ask to manually write your choice about updates installations confirmations." \
-				&&		echo "     --get-logs		display systemd logs." \
-				&&		echo "     --when   		display systemd next service cycle." \
+				&&		echo "     --get-logs		display logs." \
+				&&		echo "     --when   		display next update cycle." \
 				&&		echo "" \
 				&&		echo "$NAME $VERSION" \
 				&&		exit ;;
@@ -155,9 +156,9 @@ else
 				&&		echo "Verify current $NAME installation on your system." \
 				&&		echo "" \
 				&&		echo "Options:" \
-				&&		echo " -f, --files				check that all required files are available." \
-				&&		echo " -c, --commands				check that required commands are available." \
-				&&		echo " -r, --repository-reachability		check that remote repository is reachable." \
+				&&		echo " -f, --files			check that all required files are available." \
+				&&		echo " -c, --commands			check that required commands are available." \
+				&&		echo " -r, --repository-reachability	check that remote repository is reachable." \
 				&&		echo "" \
 				&&		echo "$NAME $VERSION" \
 				&&		exit ;;
@@ -167,15 +168,15 @@ else
 			case "$2" in
 				--help) echo "$USAGE" \
 				&&		echo "" \
-				&&		echo "Configure the firewall on your system." \
-				&&		echo "Customs rules can be added from '$dir_config'." \
+				&&		echo "Configure the firewall of your system." \
+				&&		echo "Custom rules can be added from '$dir_config'." \
 				&&		echo "" \
 				&&		echo "Options:" \
-				&&		echo " -i, --install				install the ruleset (the current ruleset will be automatically backuped)." \
-				&&		echo " -d, --display				display the current ruleset." \
-				&&		echo " -r, --restart				restart the firewall." \
-				&&		echo "     --disable				disable the firewall." \
-				&&		echo "     --restore				rollback a previous ruleset version." \
+				&&		echo " -i, --install	install the ruleset (the current ruleset will be automatically backuped)." \
+				&&		echo " -d, --display	display the current ruleset." \
+				&&		echo " -r, --restart	restart the firewall." \
+				&&		echo "     --disable	disable the firewall." \
+				&&		echo "     --restore	rollback a previous ruleset version." \
 				&&		echo "" \
 				&&		echo "$NAME $VERSION" \
 				&&		exit ;;
@@ -185,14 +186,15 @@ else
 		&&		echo "" \
 		&&		echo "Options:" \
 		&&		echo " -i, --self-install	install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
-		&&		echo " -u, --self-update	update your current $NAME installation to the latest available version on the chosen publication (-f or --force are available)." \
+		&&		echo " -u, --self-update	update $NAME to the latest available version on the chosen publication (--force option available)." \
 		&&		echo "     --self-delete	delete $NAME from your system." \
 		&&		echo "     --get-logs		display logs." \
 		&&		echo "     --help   		display this information." \
-		&&		echo " -p, --publication	display your current $NAME installation publication stage (main, unstable, dev)." \
+		&&		echo " -p, --publication	display the current installed $NAME publication stage (main, unstable, dev)." \
 		&&		echo "     --version		display version." \
 		&&		echo "" \
 		&&		echo "Commands (--help for commands options):" \
+		&&		echo " firewall [OPTION]	configure the firewall of your system." \
 		&&		echo " update [OPTION]	update everything on your system." \
 		&&		echo " verify [OPTION]	verify the current $NAME installation health." \
 		&&		echo "" \
