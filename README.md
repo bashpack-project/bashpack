@@ -97,5 +97,5 @@ sudo bp firewall --disable
 * [Systemd](https://systemd.io/) is highly recommanded to benefit all the automations.
 * Bashpack will automatically update itself ([Systemd](https://systemd.io/) installations only).
 * [fwupd](https://github.com/fwupd/fwupd) is installed only if your system is bare-metal (only [Systemd](https://systemd.io/) installations can detect it).
-* Multiple repositories exists, for production usage only the [main](https://github.com/bashpack-project/bashpack) one should be used.
+* Multiple repositories exists. For production usage, only the [main](https://github.com/bashpack-project/bashpack) one should be used.
 * Just a funny command: bp man
