@@ -7,8 +7,8 @@ It can be used for deployment purposes, or even by novices users (it doesn't req
 <br>
 
 ## Features
-* Unified Linux updates
-    _one command to conntrol them all_
+* Unified Linux updates \
+_one command to conntrol them all_
     - [APT](https://wiki.debian.org/Apt)
     - [DNF](https://rpm-software-management.github.io/)
     - [YUM](http://yum.baseurl.org/)
