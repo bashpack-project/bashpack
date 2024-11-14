@@ -15,7 +15,7 @@ _one command to conntrol them all_
     - [Snap](https://snapcraft.io/)
     - [fwupd](https://github.com/fwupd/fwupd) (firmwares)
 * Secured Linux firewall \
-_block inbounds and simplify rule creation_
+_block inbound and simplify rule creation_
     - [nftables](https://wiki.nftables.org/wiki-nftables/index.php/Main_Page)
 
 <br>
