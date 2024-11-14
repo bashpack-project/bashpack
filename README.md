@@ -8,13 +8,15 @@ It can be used for deployment purposes, or even by novices users (it doesn't req
 
 ## Features
 * Unified Linux updates
+_one command to conntrol them all_
     - [APT](https://wiki.debian.org/Apt)
     - [DNF](https://rpm-software-management.github.io/)
     - [YUM](http://yum.baseurl.org/)
     - [Snap](https://snapcraft.io/)
-    - Firmwares with [fwupd](https://github.com/fwupd/fwupd)
-* Secured Linux firewall (block inbounds and simplify rule creation)
-    - [nftables](https://wiki.nftables.org/wiki-nftables/index.php/Main_Page).
+    - [fwupd](https://github.com/fwupd/fwupd) (firmwares)
+* Secured Linux firewall
+_block inbounds and simplify rule creation_
+    - [nftables](https://wiki.nftables.org/wiki-nftables/index.php/Main_Page)
 
 <br>
 
@@ -52,7 +54,7 @@ bp --help
 
 ### Command examples
 
-###### Unified Linux updates
+#### Unified Linux updates
 Launch a pre-validated update of everything on your system:
 ```javascript
 sudo bp update -y
@@ -70,7 +72,7 @@ sudo bp update --get-logs
 <br>
 
 
-###### Secured Linux firewall
+#### Secured Linux firewall
 **Install** a ruleset
 ```javascript
 sudo bp firewall -i
