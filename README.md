@@ -56,16 +56,16 @@ bp --help
 ### Command examples
 
 #### Unified Linux updates
-Launch a pre-validated update of everything on your system:
+Launch a pre-validated update of everything on your system
 ```javascript
 sudo bp update -y
 ```
 
-Check next update ([Systemd](https://systemd.io/) installations **only**):
+Check next update ([Systemd](https://systemd.io/) installations **only**)
 ```javascript
 sudo bp update --when
 ```
-Get logs from last update ([Systemd](https://systemd.io/) installations **only**):
+Get logs from last update ([Systemd](https://systemd.io/) installations **only**)
 ```javascript
 sudo bp update --get-logs
 ```
