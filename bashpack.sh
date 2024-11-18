@@ -247,6 +247,43 @@ display_info() {
 
 
 
+# Send used command out in logs
+# Usage: append_log <command> 
+append_log() {
+
+	local file_log_tmp="$dir_tmp/$NAME_LOWERCASE-$now.log"
+	
+
+	# Get process name to write it in log file
+	${1} & local pid=$!
+	# local process="$(ps -o cmd -fp $pid)"
+	# local process_name="$(echo $process | cut -d " " -f 2)"
+	local process_name="$(ps -o cmd -fp $pid | cut -d " " -f 1 -s)"
+	
+
+
+	# Dump logs in tmp file
+	${1} 2>&1 | tee -a "$file_log_tmp"
+
+
+	# Copy each lines of the tmp file in the log file one by one to be able add the log format
+	while read -r line; do
+		local first_char="$(echo $line | cut -c1-1)"
+
+		# Avoid empty lines
+		if [ "$first_char" != "" ]; then
+			echo "$now system:  [$process_name] $line" | tee -a "$file_log" 2>&1 > /dev/null
+		fi	
+	done < "$file_log_tmp"
+
+
+	# Delete tmp file
+	rm -f $file_log_tmp
+}
+
+
+
+
 # Loading animation so we know the process has not crashed.
 # Usage: loading "<command that takes time>"
 loading() {
@@ -1179,6 +1216,7 @@ case "$1" in
 					display_success)					display_success "$3" ;;
 					display_error)						display_error "$3" ;;
 					display_info)						display_info "$3" ;;
+					append_log)							append_log "$3" ;;
 					exists_command)						exists_command "$3" ;;
 					sanitize_confirmation)				sanitize_confirmation "$3" ;;
 					get_config_value)					get_config_value "$3" "$4" ;;

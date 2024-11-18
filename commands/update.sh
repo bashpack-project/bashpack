@@ -114,17 +114,30 @@ if [ "$($current_cli helper exists_command "apt")" = "exists" ]; then
 	$current_cli helper display_info "updating with APT."
 
 	if [ "$($current_cli helper exists_command "dpkg")" = "exists" ]; then
-		dpkg --configure -a
+		# dpkg --configure -a
+		$current_cli helper append_log "dpkg --configure -a"
 	fi
-	apt update
-	apt install --fix-broken $install_confirmation
-	apt full-upgrade $install_confirmation
+
+	$current_cli helper append_log "apt update"
+	$current_cli helper append_log "apt install --fix-broken $install_confirmation"
+	$current_cli helper append_log "apt full-upgrade $install_confirmation"
 
 	# Ensure to delete all old packages & their configurations
-	apt autopurge $install_confirmation
+	$current_cli helper append_log "apt autopurge $install_confirmation"
 	
 	# Just repeat to check if everything is ok
-	apt full-upgrade $install_confirmation
+	$current_cli helper append_log "apt full-upgrade $install_confirmation"
+
+
+	# apt update
+	# apt install --fix-broken $install_confirmation
+	# apt full-upgrade $install_confirmation
+
+	# # Ensure to delete all old packages & their configurations
+	# apt autopurge $install_confirmation
+	
+	# # Just repeat to check if everything is ok
+	# apt full-upgrade $install_confirmation
 
 	echo ""
 	echo ""
