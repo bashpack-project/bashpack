@@ -32,6 +32,7 @@ continue_question="Do you want to continue? [y/N] "
 
 
 
+
 # # Usage : text_error_cant_install <manager>
 # install_package_error() {
 # 	echo "Error: could not be installed with ${1}."
@@ -111,22 +112,22 @@ fi
 
 # Update APT packages
 if [ "$($current_cli helper exists_command "apt")" = "exists" ]; then
-	$current_cli helper display_info "updating with APT."
+
+	$current_cli helper display_info "updating with APT." "$file_log_update"
 
 	if [ "$($current_cli helper exists_command "dpkg")" = "exists" ]; then
-		# dpkg --configure -a
-		$current_cli helper append_log "dpkg --configure -a"
+		dpkg --configure -a								| $current_cli helper append_log "$file_log_update"
 	fi
 
-	$current_cli helper append_log "apt update"
-	$current_cli helper append_log "apt install --fix-broken $install_confirmation"
-	$current_cli helper append_log "apt full-upgrade $install_confirmation"
+	apt update											| $current_cli helper append_log "$file_log_update"
+	apt install --fix-broken $install_confirmation		| $current_cli helper append_log "$file_log_update"
+	apt full-upgrade $install_confirmation				| $current_cli helper append_log "$file_log_update"
 
 	# Ensure to delete all old packages & their configurations
-	$current_cli helper append_log "apt autopurge $install_confirmation"
-	
+	apt autopurge $install_confirmation					| $current_cli helper append_log "$file_log_update"
+
 	# Just repeat to check if everything is ok
-	$current_cli helper append_log "apt full-upgrade $install_confirmation"
+	apt full-upgrade $install_confirmation				| $current_cli helper append_log "$file_log_update"
 
 
 	# apt update
@@ -153,22 +154,27 @@ upgrade_with_snapcraft() {
 	if [ "$(snap refresh --list | grep -v "All snaps up to date.")" ]; then
 
 		snap refresh --list
+		# snap refresh --list | $current_cli helper append_log "$file_log_update"
 
 		if [ "${1}" = "-y" ]; then
 			snap refresh
+			# snap refresh | $current_cli helper append_log "$file_log_update"
 		else
 			read -p "$continue_question" install_confirmation_snapcraft
 
 			if [ "$install_confirmation_snapcraft" = "$yes" ]; then
 				snap refresh
+				# snap refresh | $current_cli helper append_log "$file_log_update"
+
 			fi
 		fi
 	fi
 }
 
 if [ "$($current_cli helper exists_command "snap")" = "exists" ]; then
-	$current_cli helper display_info "updating with Snap."
-	upgrade_with_snapcraft $install_confirmation
+	$current_cli helper display_info "updating with Snap." "$file_log_update"
+	# upgrade_with_snapcraft $install_confirmation
+	upgrade_with_snapcraft $install_confirmation | $current_cli helper append_log "$file_log_update"
 fi
 
 
@@ -176,14 +182,18 @@ fi
 
 # Update DNF packages (using YUM as fallback if DNF doesn't exist)
 if [ "$($current_cli helper exists_command "dnf")" = "exists" ]; then
-	$current_cli helper display_info "updating with DNF."
+	$current_cli helper display_info "updating with DNF." "$file_log_update"
 
-	dnf upgrade $install_confirmation
+	# dnf upgrade $install_confirmation
+	dnf upgrade $install_confirmation | $current_cli helper append_log "$file_log_update"
+
 
 elif [ "$($current_cli helper exists_command "yum")" = "exists" ]; then
-	$current_cli helper display_info "updating with YUM."
+	$current_cli helper display_info "updating with YUM." "$file_log_update"
 
-	yum upgrade $install_confirmation
+	# yum upgrade $install_confirmation
+	yum upgrade $install_confirmation | $current_cli helper append_log "$file_log_update"
+
 fi
 
 

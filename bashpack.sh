@@ -101,7 +101,8 @@ file_current_publication="$dir_config/.current_publication"
 if [ ! -d "$dir_log" ]; then
 	mkdir -p "$dir_log"
 fi
-file_log="$dir_log/main.log"
+export file_log_main="$dir_log/main.log"
+export file_log_update="$dir_log/updates.log"
 
 
 
@@ -222,64 +223,76 @@ fi
 
 # Display always the same message in error messages.
 # Usage: display_error <message>
+# Usage: display_error <message> <log file>
 display_error() {
-	echo "$now error:   ${1}" | tee -a "$file_log"
+
+	local format="$now error:     ${1}"
+
+	if [ -n "${2}" ]; then
+		echo "$format" | tee -a "$file_log_main" "${2}"
+	else
+		echo "$format" | tee -a "$file_log_main"
+	fi
 }
 
 
 
 
 # Display always the same message in success messages.
-# Usage: display_success <message> 
+# Usage: display_success <message>
+# Usage: display_success <message> <log file>
 display_success() {
-	echo "$now success: ${1}" | tee -a "$file_log"
+
+	local format="$now success:   ${1}"
+
+	if [ -n "${2}" ]; then
+		echo "$format" | tee -a "$file_log_main" "${2}"
+	else
+		echo "$format" | tee -a "$file_log_main"
+	fi
 }
 
 
 
 
 # Display always the same message in info messages.
-# Usage: display_info <message> 
+# Usage: display_info <message>
+# Usage: display_info <message> <log file>
 display_info() {
-	echo "$now info:    ${1}" | tee -a "$file_log"
+
+	local format="$now info:      ${1}"
+
+	if [ -n "${2}" ]; then
+		echo "$format" | tee -a "$file_log_main" "${2}"
+	else
+		echo "$format" | tee -a "$file_log_main"
+	fi
 }
 
 
 
 
-# Send used command out in logs
-# Usage: append_log <command> 
+# Write output of a command in logs
+# Usage: <command> | append_log
+# Usage: <command> | append_log <log file>
 append_log() {
 
-	local file_log_tmp="$dir_tmp/$NAME_LOWERCASE-$now.log"
+	local file_log="${1}"
 	
-
-	# Get process name to write it in log file
-	${1} & local pid=$!
-	# local process="$(ps -o cmd -fp $pid)"
-	# local process_name="$(echo $process | cut -d " " -f 2)"
-	local process_name="$(ps -o cmd -fp $pid | cut -d " " -f 1 -s)"
-	
-
-	display_info "launching: ${1}"
-
-	# Dump logs in tmp file
-	${1} 2>&1 | tee -a "$file_log_tmp"
+	# # Get process name to write it in log file
+	# local command="${0}"
+	# $command & local pid=$!
+	# local process_name="$(ps -o cmd -fp $pid | cut -d " " -f 1 -s)"
+	# display_info "launching: $command"
 
 
-	# Copy each lines of the tmp file in the log file one by one to be able add the log format
-	while read -r line; do
-		local first_char="$(echo $line | cut -c1-1)"
+	# Set the log format on the command and append it to the selected file
+	if [ -n "$file_log" ]; then
+		sed "s/^/$now op.sys:    /" | tee -a "$file_log"
+	else
+		sed "s/^/$now op.sys:    /" | tee -a "$file_log_main"
+	fi
 
-		# Avoid empty lines
-		if [ "$first_char" != "" ]; then
-			echo "$now system:  [$process_name] $line" | tee -a "$file_log" 2>&1 > /dev/null
-		fi	
-	done < "$file_log_tmp"
-
-
-	# Delete tmp file
-	rm -f $file_log_tmp
 }
 
 
@@ -1164,7 +1177,7 @@ case "$1" in
 		fi ;;
 	--self-delete)				loading "delete_all" ;;
 	-p|--publication)			loading "detect_publication" ;;
-	--get-logs)					get_logs $file_log ;;
+	--get-logs)					get_logs $file_log_main ;;
 	man)						loading "$file_COMMAND_MAN" ;;
 	verify)
 		if [ -z "$2" ]; then
@@ -1198,7 +1211,7 @@ case "$1" in
 				-y|--assume-yes)	export install_confirmation="yes" && exec $file_COMMAND_UPDATE ;;
 				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $file_COMMAND_UPDATE ;;
 				--when)				$COMMAND_UPDATE_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
-				--get-logs)			$COMMAND_UPDATE_SYSTEMD_LOGS ;;
+				--get-logs)			get_logs $file_log_update ;;
 				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
@@ -1214,9 +1227,9 @@ case "$1" in
 			else
 				case "$2" in
 					loading)							loading "$3" ;;
-					display_success)					display_success "$3" ;;
-					display_error)						display_error "$3" ;;
-					display_info)						display_info "$3" ;;
+					display_success)					display_success "$3" "$4" ;;
+					display_error)						display_error "$3" "$4" ;;
+					display_info)						display_info "$3" "$4" ;;
 					append_log)							append_log "$3" ;;
 					exists_command)						exists_command "$3" ;;
 					sanitize_confirmation)				sanitize_confirmation "$3" ;;
