@@ -172,7 +172,7 @@ else
 				&&		echo "Custom rules can be added from '$dir_config'." \
 				&&		echo "" \
 				&&		echo "Options:" \
-				&&		echo " -i, --install	install the ruleset (the current ruleset will be automatically backuped)." \
+				&&		echo " -i, --install	install the ruleset." \
 				&&		echo " -d, --display	display the current ruleset." \
 				&&		echo " -r, --restart	restart the firewall." \
 				&&		echo "     --disable	disable the firewall." \
