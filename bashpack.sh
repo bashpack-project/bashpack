@@ -261,6 +261,7 @@ append_log() {
 	local process_name="$(ps -o cmd -fp $pid | cut -d " " -f 1 -s)"
 	
 
+	display_info "launching: ${1}"
 
 	# Dump logs in tmp file
 	${1} 2>&1 | tee -a "$file_log_tmp"
