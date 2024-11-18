@@ -150,25 +150,30 @@ fi
 # Update Snapcraft packages
 # Usage : upgrade_with_snapcraft <-y>
 upgrade_with_snapcraft() {
-	# List available updates & ask for update if found any (or auto update if <-y>).
-	if [ "$(snap refresh --list | grep -v "All snaps up to date.")" ]; then
 
-		snap refresh --list
-		# snap refresh --list | $current_cli helper append_log "$file_log_update"
+	local file_tmp_updates_available="$dir_tmp/$NAME_LOWERCASE-snap"
+
+	# Send Snap output in file to avoid some display issues
+	snap refresh --list > $file_tmp_updates_available 2>&1
+	cat $file_tmp_updates_available
+
+	# List available updates & ask for update if found any (or auto update if <-y>).
+	if [ "$(cat $file_tmp_updates_available | grep -v "All snaps up to date.")" ]; then
+
+		# snap refresh --list
 
 		if [ "${1}" = "-y" ]; then
 			snap refresh
-			# snap refresh | $current_cli helper append_log "$file_log_update"
 		else
 			read -p "$continue_question" install_confirmation_snapcraft
 
 			if [ "$install_confirmation_snapcraft" = "$yes" ]; then
 				snap refresh
-				# snap refresh | $current_cli helper append_log "$file_log_update"
-
 			fi
 		fi
 	fi
+
+	rm -f $file_tmp_updates_available
 }
 
 if [ "$($current_cli helper exists_command "snap")" = "exists" ]; then
