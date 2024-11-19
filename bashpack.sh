@@ -24,7 +24,6 @@
 
 
 
-
 # Uncomment for debug
 # set -x
 
@@ -1065,8 +1064,8 @@ create_cli() {
 		fi
 		
 
-		# Creating a file that permit to know what is the current installed publication
-		echo "$PUBLICATION" > $file_current_publication
+		# # Creating a file that permit to know what is the current installed publication
+		# echo "$PUBLICATION" > $file_current_publication
 
 
 		# Allow users to edit the configuration
@@ -1175,17 +1174,23 @@ install_cli() {
 		if [ "$chosen_publication" = "" ] || [ "$chosen_publication" = "main" ] ; then
 			# Download tarball archive with the default way
 			download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
+
+			echo "$PUBLICATION" > $file_current_publication
 		else
 			# Force using chosen publication, unless it always will be installed under the main publication
 			set_config_value "$file_config" "publication" "$chosen_publication"
 
 			# Download tarball archive from the given publication
 			download_cli "$HOST_URL_ARCH/$NAME_LOWERCASE-$chosen_publication/tarball/$VERSION" $archive_tmp $archive_dir_tmp
+
+			echo "$chosen_publication" > $file_current_publication
 		fi
 
 
 		# Install new files
 		create_cli
+		
+
 
 		# Clear temporary files & directories
 		rm -rf $dir_tmp/$NAME_LOWERCASE*
