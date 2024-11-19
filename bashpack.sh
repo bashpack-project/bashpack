@@ -573,7 +573,7 @@ else
 	PUBLICATION="main"
 fi
 
-case $PUBLICATION in
+case "$PUBLICATION" in
 	unstable|dev)
 		URL_ARCH="$HOST_URL_ARCH/$NAME_LOWERCASE-$PUBLICATION"
 		URL_FILE="$HOST_URL_FILE/$NAME_LOWERCASE-$PUBLICATION"
@@ -600,9 +600,9 @@ file_COMMAND_FIREWALL="$dir_commands/firewall.sh"
 if [ "$(exists_command "systemctl")" = "exists" ]; then
 	COMMAND_UPDATE_SYSTEMD_STATUS="systemctl status $NAME_LOWERCASE-updates.timer"
 	
-	if [ "$(exists_command "journalctl")" = "exists" ]; then
-		COMMAND_UPDATE_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $NAME_LOWERCASE-updates.service`"
-	fi
+	# if [ "$(exists_command "journalctl")" = "exists" ]; then
+	# 	COMMAND_UPDATE_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $NAME_LOWERCASE-updates.service`"
+	# fi
 fi
 
 
@@ -717,7 +717,7 @@ delete_all() {
 detect_cli() {
 	if [ "$(exists_command "$NAME_LOWERCASE")" = "exists" ]; then
 		if [ -n "$($NAME_LOWERCASE --version)" ]; then
-			display_info "$NAME $($NAME_ALIAS --version) detected at $(posix_which $NAME_LOWERCASE)"
+			display_info "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) detected at $(posix_which $NAME_LOWERCASE)"
 		fi
 	fi
 }
@@ -1165,13 +1165,17 @@ install_cli() {
 		detect_cli
 
 
+		# Just a log message
+		if [ -n "$chosen_publication" ]; then
+			display_info "publication '$chosen_publication' entered manually."
+		fi
+
+
 		# Check if a publication has been chosen
-		if [ "$chosen_publication" = "" ]; then
+		if [ "$chosen_publication" = "" ] || [ "$chosen_publication" = "main" ] ; then
 			# Download tarball archive with the default way
 			download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 		else
-			display_info "$chosen_publication manually called."
-
 			# Force using chosen publication, unless it always will be installed under the main publication
 			set_config_value "$file_config" "publication" "$chosen_publication"
 
