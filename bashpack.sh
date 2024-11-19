@@ -410,6 +410,23 @@ get_config_value() {
 
 
 
+# Setting values in configuration file during script execution
+# Usage: set_config_value "<file>" "<option>" "<new value>"
+set_config_value() {
+
+	local file="${1}"
+	local option="${2}"
+	local value_new="${3}"
+	local value_old="$(get_config_value $file $option)"
+
+	display_info "set '$option' from '$value_old' to '$value_new'."
+
+	sed -i "s/$option $value_old/$option $value_new/g" "$file"
+}
+
+
+
+
 # Get user a confirmation that accepts differents answers and returns always the same value
 # Usage: sanitize_confirmation <yes|Yes|yEs|yeS|YEs|YeS|yES|YES|y|Y>
 sanitize_confirmation() {
@@ -651,34 +668,30 @@ delete_cli() {
 # Delete the installed systemd units from the system
 delete_systemd() {
 
-	if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
-		echo "$NAME $VERSION is not installed on your system."
-	else
-		if [ "$(exists_command "systemctl")" = "exists" ]; then
+	if [ "$(exists_command "$NAME_ALIAS")" = "exists" ] && [ "$(exists_command "systemctl")" = "exists" ]; then
 
-			# Stop, disable and delete all systemd units
-			for file in $(ls $dir_systemd/$NAME_LOWERCASE* | grep ".timer"); do
+		# Stop, disable and delete all systemd units
+		for file in $(ls $dir_systemd/$NAME_LOWERCASE* | grep ".timer"); do
+			if [ -f $file ]; then
+				display_info "$file found."
+
+				local unit="$(basename "$file")"
+
+				systemctl stop $unit
+				systemctl disable $unit
+				rm -f $file
+
 				if [ -f $file ]; then
-					display_info "$file found."
-
-					local unit="$(basename "$file")"
-
-					systemctl stop $unit
-					systemctl disable $unit
-					rm -f $file
-
-					if [ -f $file ]; then
-						display_error "$file has not been removed."
-					else
-						display_success "$file has been removed."
-					fi
+					display_error "$file has not been removed."
 				else
-					display_error "$file not found."
+					display_success "$file has been removed."
 				fi
-			done
+			else
+				display_error "$file not found."
+			fi
+		done
 
-			systemctl daemon-reload
-		fi
+		systemctl daemon-reload
 	fi
 }
 
@@ -940,7 +953,7 @@ install_new_config_file() {
 	local file_config_tmp="$archive_dir_tmp/config/$NAME_LOWERCASE.conf"
 
 	while read -r line; do
-		local first_char=`echo $line | cut -c1-1`
+		local first_char="$(echo $line | cut -c1-1)"
 
 		# Avoid reading comments and empty lines
 		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
@@ -1042,7 +1055,8 @@ create_cli() {
 		# Must testing if config file exists to avoid overwrite user customizations 
 		if [ ! -f "$file_config" ]; then
 			display_info "$file_config not found, creating it. "
-			cp "$archive_dir_tmp/config/$file_config" "$file_config"
+			# cp "$archive_dir_tmp/config/$file_config" "$file_config"
+			cp "$archive_dir_tmp/config/$NAME_LOWERCASE.conf" "$file_config"
 
 		else
 			display_info "$file_config already exists, installing new file and inserting current configured options."
@@ -1086,7 +1100,7 @@ create_cli() {
 update_cli() {
 
 	local downloaded_cli="$dir_tmp/$NAME_LOWERCASE.sh"
-	local remote_file="$URL_ARCH/releases/latest"
+	local remote_archive="$URL_ARCH/releases/latest"
 	local force="${1}"
 
 	update_process() {
@@ -1113,10 +1127,10 @@ update_cli() {
 		update_process
 	else
 		# Testing if a new version exists on the current publication to avoid reinstall if not.
-		if [ "$(exists_command "curl")" = "exists" ] && [ "$(curl -s "$remote_file" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
+		if [ "$(exists_command "curl")" = "exists" ] && [ "$(curl -s "$remote_archive" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
 			display_info "latest version is already installed ($VERSION-$(detect_publication) detected with curl)."
 
-		elif [ "$(exists_command "wget")" = "exists" ] && [ "$(wget -q -O- "$remote_file" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
+		elif [ "$(exists_command "wget")" = "exists" ] && [ "$(wget -q -O- "$remote_archive" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
 			display_info "latest version is already installed ($VERSION-$(detect_publication) detected with wget)."
 
 		else
@@ -1136,7 +1150,12 @@ update_cli() {
 #
 # /!\	This function must work everytime a modification is made in the code. 
 #		Because it's called by the update function.
+# Usages: 
+#  install_cli
+#  install_cli <chosen publication>
 install_cli() {
+
+	local chosen_publication="${1}"
 
 	# Test if all required commands are on the system before install anything
 	if [ "$(verify_cli_commands "print-missing-required-command-only")" = "0" ]; then
@@ -1144,8 +1163,20 @@ install_cli() {
 		display_info "starting installation."
 		detect_cli
 
-		# Download tarball archive
-		download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
+
+		# Check if a publication has been chosen
+		if [ "$chosen_publication" = "" ]; then
+			# Download tarball archive with the default way
+			download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
+		else
+			display_info "$chosen_publication manually called."
+			# Force using chosen publication, unless it always will be installed under the main publication
+			set_config_value "$file_config" "publication" "$chosen_publication"
+
+			# Download tarball archive from the given publication
+			download_cli "$HOST_URL_ARCH/$NAME_LOWERCASE-$chosen_publication/tarball/$VERSION" $archive_tmp $archive_dir_tmp
+		fi
+
 
 		# Install new files
 		create_cli
@@ -1166,7 +1197,7 @@ install_cli() {
 
 # The options (except --help) must be called with root
 case "$1" in
-	-i|--self-install)		loading "install_cli" ;;		# Critical option, see the comments at function declaration for more info
+	-i|--self-install)		loading "install_cli $2" ;;		# Critical option, see the comments at function declaration for more info	
 	-u|--self-update)
 		if [ -z "$2" ]; then
 							loading "update_cli"			# Critical option, see the comments at function declaration for more info
@@ -1177,7 +1208,7 @@ case "$1" in
 		fi ;;
 	--self-delete)				loading "delete_all" ;;
 	-p|--publication)			loading "detect_publication" ;;
-	--get-logs)					get_logs $file_log_main ;;
+	--get-logs)					get_logs "$file_log_main" ;;
 	man)						loading "$file_COMMAND_MAN" ;;
 	verify)
 		if [ -z "$2" ]; then
