@@ -30,7 +30,7 @@
 
 
 
-export VERSION="2.0.0"
+export VERSION="2.1.0"
 
 export NAME="Bashpack"
 export NAME_LOWERCASE="$(echo "$NAME" | tr A-Z a-z)"
@@ -50,8 +50,8 @@ dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
 dir_systemd="/lib/systemd/system"
 
-dir_config="/etc/$NAME_LOWERCASE"
-dir_log="/var/log/$NAME_LOWERCASE"
+export dir_config="/etc/$NAME_LOWERCASE"
+export dir_log="/var/log/$NAME_LOWERCASE"
 dir_src_cli="/opt/$NAME_LOWERCASE"
 
 # Automatically detect the best PATH for the installation 
@@ -101,7 +101,8 @@ file_current_publication="$dir_config/.current_publication"
 if [ ! -d "$dir_log" ]; then
 	mkdir -p "$dir_log"
 fi
-file_log="$dir_log/main.log"
+export file_log_main="$dir_log/main.log"
+export file_log_update="$dir_log/updates.log"
 
 
 
@@ -134,6 +135,7 @@ else
 				&&		echo "" \
 				&&		echo "Supported package managers:" \
 				&&		echo " - APT (https://wiki.debian.org/Apt)" \
+				&&		echo " - DNF (https://rpm-software-management.github.io/)" \
 				&&		echo " - YUM (http://yum.baseurl.org/)" \
 				&&		echo " - Canonical Snapcraft (https://snapcraft.io)" \
 				&&		echo " - Firmwares with fwupd (https://github.com/fwupd/fwupd)" \
@@ -141,8 +143,8 @@ else
 				&&		echo "Options:" \
 				&&		echo " -y, --assume-yes 	enable automatic installations without asking during the execution." \
 				&&		echo "     --ask    		ask to manually write your choice about updates installations confirmations." \
-				&&		echo "     --get-logs		display systemd logs." \
-				&&		echo "     --when   		display systemd next service cycle." \
+				&&		echo "     --get-logs		display logs." \
+				&&		echo "     --when   		display next update cycle." \
 				&&		echo "" \
 				&&		echo "$NAME $VERSION" \
 				&&		exit ;;
@@ -155,9 +157,27 @@ else
 				&&		echo "Verify current $NAME installation on your system." \
 				&&		echo "" \
 				&&		echo "Options:" \
-				&&		echo " -f, --files				check that all required files are available." \
-				&&		echo " -c, --commands				check that required commands are available." \
-				&&		echo " -r, --repository-reachability		check that remote repository is reachable." \
+				&&		echo " -f, --files			check that all required files are available." \
+				&&		echo " -c, --commands			check that required commands are available." \
+				&&		echo " -r, --repository-reachability	check that remote repository is reachable." \
+				&&		echo "" \
+				&&		echo "$NAME $VERSION" \
+				&&		exit ;;
+			esac
+		;;
+		firewall)
+			case "$2" in
+				--help) echo "$USAGE" \
+				&&		echo "" \
+				&&		echo "Configure the firewall of your system." \
+				&&		echo "Custom rules can be added from '$dir_config'." \
+				&&		echo "" \
+				&&		echo "Options:" \
+				&&		echo " -i, --install	install the ruleset." \
+				&&		echo " -d, --display	display the current ruleset." \
+				&&		echo " -r, --restart	restart the firewall." \
+				&&		echo "     --disable	disable the firewall." \
+				&&		echo "     --restore	rollback a previous ruleset version." \
 				&&		echo "" \
 				&&		echo "$NAME $VERSION" \
 				&&		exit ;;
@@ -167,14 +187,15 @@ else
 		&&		echo "" \
 		&&		echo "Options:" \
 		&&		echo " -i, --self-install	install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
-		&&		echo " -u, --self-update	update your current $NAME installation to the latest available version on the chosen publication (-f or --force are available)." \
+		&&		echo " -u, --self-update	update $NAME to the latest available version on the chosen publication (--force option available)." \
 		&&		echo "     --self-delete	delete $NAME from your system." \
 		&&		echo "     --get-logs		display logs." \
 		&&		echo "     --help   		display this information." \
-		&&		echo " -p, --publication	display your current $NAME installation publication stage (main, unstable, dev)." \
+		&&		echo " -p, --publication	display the current installed $NAME publication stage (main, unstable, dev)." \
 		&&		echo "     --version		display version." \
 		&&		echo "" \
 		&&		echo "Commands (--help for commands options):" \
+		&&		echo " firewall [OPTION]	configure the firewall of your system." \
 		&&		echo " update [OPTION]	update everything on your system." \
 		&&		echo " verify [OPTION]	verify the current $NAME installation health." \
 		&&		echo "" \
@@ -202,26 +223,76 @@ fi
 
 # Display always the same message in error messages.
 # Usage: display_error <message>
+# Usage: display_error <message> <log file>
 display_error() {
-	echo "$now error:   ${1}" | tee -a "$file_log"
+
+	local format="$now error:     ${1}"
+
+	if [ -n "${2}" ]; then
+		echo "$format" | tee -a "$file_log_main" "${2}"
+	else
+		echo "$format" | tee -a "$file_log_main"
+	fi
 }
 
 
 
 
 # Display always the same message in success messages.
-# Usage: display_success <message> 
+# Usage: display_success <message>
+# Usage: display_success <message> <log file>
 display_success() {
-	echo "$now success: ${1}" | tee -a "$file_log"
+
+	local format="$now success:   ${1}"
+
+	if [ -n "${2}" ]; then
+		echo "$format" | tee -a "$file_log_main" "${2}"
+	else
+		echo "$format" | tee -a "$file_log_main"
+	fi
 }
 
 
 
 
 # Display always the same message in info messages.
-# Usage: display_info <message> 
+# Usage: display_info <message>
+# Usage: display_info <message> <log file>
 display_info() {
-	echo "$now info:    ${1}" | tee -a "$file_log"
+
+	local format="$now info:      ${1}"
+
+	if [ -n "${2}" ]; then
+		echo "$format" | tee -a "$file_log_main" "${2}"
+	else
+		echo "$format" | tee -a "$file_log_main"
+	fi
+}
+
+
+
+
+# Write output of a command in logs
+# Usage: <command> | append_log
+# Usage: <command> | append_log <log file>
+append_log() {
+
+	local file_log="${1}"
+	
+	# # Get process name to write it in log file
+	# local command="${0}"
+	# $command & local pid=$!
+	# local process_name="$(ps -o cmd -fp $pid | cut -d " " -f 1 -s)"
+	# display_info "launching: $command"
+
+
+	# Set the log format on the command and append it to the selected file
+	if [ -n "$file_log" ]; then
+		sed "s/^/$now op.sys:    /" | tee -a "$file_log"
+	else
+		sed "s/^/$now op.sys:    /" | tee -a "$file_log_main"
+	fi
+
 }
 
 
@@ -320,12 +391,11 @@ exists_command() {
 # Getting values stored in configuration files.
 # Usage: get_config_value "<file>" "<option>"
 get_config_value() {
-	local file=${1}
-	local option=${2}
+	local file="${1}"
+	local option="${2}"
 
 	while read -r line; do
-		# local first_char=`echo $line | cut -c1-1`
-		local first_char=$(echo $line | cut -c1-1)
+		local first_char="$(echo $line | cut -c1-1)"
 
 		# Avoid reading comments and empty lines
 		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
@@ -335,6 +405,23 @@ get_config_value() {
 			fi
 		fi	
 	done < "$file"
+}
+
+
+
+
+# Setting values in configuration file during script execution
+# Usage: set_config_value "<file>" "<option>" "<new value>"
+set_config_value() {
+
+	local file="${1}"
+	local option="${2}"
+	local value_new="${3}"
+	local value_old="$(get_config_value $file $option)"
+
+	display_info "set '$option' from '$value_old' to '$value_new'."
+
+	sed -i "s/$option $value_old/$option $value_new/g" "$file"
 }
 
 
@@ -374,9 +461,9 @@ verify_repository_reachability() {
 	local url="${1}"
 
 	if [ "$(exists_command "curl")" = "exists" ]; then
-		http_code="$(curl -s -I "$url" | awk '/^HTTP/{print $2}')"
+		http_code="$(curl -s -L -I -o /dev/null -w %{response_code} $url)"
 	elif [ "$(exists_command "wget")" = "exists" ]; then
-		http_code="$(wget --spider --server-response "$url" 2>&1 | awk '/^  HTTP/{print $2}' | head -n 1)"
+		http_code="$(wget --spider --server-response "$url" 2>&1 | awk '/^  HTTP/{print $2}' | tail -n 1)"
 	else
 		display_error "can't get HTTP code with curl or wget."
 	fi
@@ -486,7 +573,7 @@ else
 	PUBLICATION="main"
 fi
 
-case $PUBLICATION in
+case "$PUBLICATION" in
 	unstable|dev)
 		URL_ARCH="$HOST_URL_ARCH/$NAME_LOWERCASE-$PUBLICATION"
 		URL_FILE="$HOST_URL_FILE/$NAME_LOWERCASE-$PUBLICATION"
@@ -513,9 +600,9 @@ file_COMMAND_FIREWALL="$dir_commands/firewall.sh"
 if [ "$(exists_command "systemctl")" = "exists" ]; then
 	COMMAND_UPDATE_SYSTEMD_STATUS="systemctl status $NAME_LOWERCASE-updates.timer"
 	
-	if [ "$(exists_command "journalctl")" = "exists" ]; then
-		COMMAND_UPDATE_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $NAME_LOWERCASE-updates.service`"
-	fi
+	# if [ "$(exists_command "journalctl")" = "exists" ]; then
+	# 	COMMAND_UPDATE_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $NAME_LOWERCASE-updates.service`"
+	# fi
 fi
 
 
@@ -581,34 +668,30 @@ delete_cli() {
 # Delete the installed systemd units from the system
 delete_systemd() {
 
-	if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
-		echo "$NAME $VERSION is not installed on your system."
-	else
-		if [ "$(exists_command "systemctl")" = "exists" ]; then
+	if [ "$(exists_command "$NAME_ALIAS")" = "exists" ] && [ "$(exists_command "systemctl")" = "exists" ]; then
 
-			# Stop, disable and delete all systemd units
-			for file in $(ls $dir_systemd/$NAME_LOWERCASE* | grep ".timer"); do
+		# Stop, disable and delete all systemd units
+		for file in $(ls $dir_systemd/$NAME_LOWERCASE* | grep ".timer"); do
+			if [ -f $file ]; then
+				display_info "$file found."
+
+				local unit="$(basename "$file")"
+
+				systemctl stop $unit
+				systemctl disable $unit
+				rm -f $file
+
 				if [ -f $file ]; then
-					display_info "$file found."
-
-					local unit="$(basename "$file")"
-
-					systemctl stop $unit
-					systemctl disable $unit
-					rm -f $file
-
-					if [ -f $file ]; then
-						display_error "$file has not been removed."
-					else
-						display_success "$file has been removed."
-					fi
+					display_error "$file has not been removed."
 				else
-					display_error "$file not found."
+					display_success "$file has been removed."
 				fi
-			done
+			else
+				display_error "$file not found."
+			fi
+		done
 
-			systemctl daemon-reload
-		fi
+		systemctl daemon-reload
 	fi
 }
 
@@ -634,7 +717,7 @@ delete_all() {
 detect_cli() {
 	if [ "$(exists_command "$NAME_LOWERCASE")" = "exists" ]; then
 		if [ -n "$($NAME_LOWERCASE --version)" ]; then
-			display_info "$NAME $($NAME_ALIAS --version) detected at $(posix_which $NAME_LOWERCASE)"
+			display_info "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) detected at $(posix_which $NAME_LOWERCASE)"
 		fi
 	fi
 }
@@ -644,8 +727,8 @@ detect_cli() {
 
 # Detect what is the current publication installed
 detect_publication() {
-	if [ -f $file_current_publication ]; then
-		cat $file_current_publication
+	if [ -f "$file_current_publication" ]; then
+		cat "$file_current_publication"
 	else
 		display_error "publication not found."
 	fi
@@ -783,6 +866,7 @@ verify_cli_commands() {
 		awk
 		find
 		grep
+		tail
 		chmod
 		mkdir
 		mv
@@ -870,7 +954,7 @@ install_new_config_file() {
 	local file_config_tmp="$archive_dir_tmp/config/$NAME_LOWERCASE.conf"
 
 	while read -r line; do
-		local first_char=`echo $line | cut -c1-1`
+		local first_char="$(echo $line | cut -c1-1)"
 
 		# Avoid reading comments and empty lines
 		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
@@ -927,8 +1011,8 @@ create_cli() {
 		# Install autocompletion only if the directory has been found.
 		if [ -n "$dir_autocompletion" ]; then
 			display_info "installing autocompletion."
-			cp "$archive_dir_tmp/bash_completion" $file_autocompletion_1
-			cp "$archive_dir_tmp/bash_completion" $file_autocompletion_2
+			cp "$archive_dir_tmp/completion" $file_autocompletion_1
+			cp "$archive_dir_tmp/completion" $file_autocompletion_2
 		fi
 
 		
@@ -972,7 +1056,8 @@ create_cli() {
 		# Must testing if config file exists to avoid overwrite user customizations 
 		if [ ! -f "$file_config" ]; then
 			display_info "$file_config not found, creating it. "
-			cp "$archive_dir_tmp/config/$file_config" "$file_config"
+			# cp "$archive_dir_tmp/config/$file_config" "$file_config"
+			cp "$archive_dir_tmp/config/$NAME_LOWERCASE.conf" "$file_config"
 
 		else
 			display_info "$file_config already exists, installing new file and inserting current configured options."
@@ -994,7 +1079,7 @@ create_cli() {
 
 		# Success message
 		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
-			display_success "$NAME $($NAME_ALIAS --version) ($(detect_publication)) has been installed."
+			display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) has been installed."
 		else
 			display_error "$NAME installation failed."
 		fi
@@ -1016,7 +1101,7 @@ create_cli() {
 update_cli() {
 
 	local downloaded_cli="$dir_tmp/$NAME_LOWERCASE.sh"
-	local remote_file="$URL_ARCH/releases/latest"
+	local remote_archive="$URL_ARCH/releases/latest"
 	local force="${1}"
 
 	update_process() {
@@ -1043,10 +1128,10 @@ update_cli() {
 		update_process
 	else
 		# Testing if a new version exists on the current publication to avoid reinstall if not.
-		if [ "$(exists_command "curl")" = "exists" ] && [ "$(curl -s "$remote_file" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
+		if [ "$(exists_command "curl")" = "exists" ] && [ "$(curl -s "$remote_archive" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
 			display_info "latest version is already installed ($VERSION-$(detect_publication) detected with curl)."
 
-		elif [ "$(exists_command "wget")" = "exists" ] && [ "$(wget -q -O- "$remote_file" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
+		elif [ "$(exists_command "wget")" = "exists" ] && [ "$(wget -q -O- "$remote_archive" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
 			display_info "latest version is already installed ($VERSION-$(detect_publication) detected with wget)."
 
 		else
@@ -1066,7 +1151,12 @@ update_cli() {
 #
 # /!\	This function must work everytime a modification is made in the code. 
 #		Because it's called by the update function.
+# Usages: 
+#  install_cli
+#  install_cli <chosen publication>
 install_cli() {
+
+	local chosen_publication="${1}"
 
 	# Test if all required commands are on the system before install anything
 	if [ "$(verify_cli_commands "print-missing-required-command-only")" = "0" ]; then
@@ -1074,8 +1164,25 @@ install_cli() {
 		display_info "starting installation."
 		detect_cli
 
-		# Download tarball archive
-		download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
+
+		# Just a log message
+		if [ -n "$chosen_publication" ]; then
+			display_info "publication '$chosen_publication' entered manually."
+		fi
+
+
+		# Check if a publication has been chosen
+		if [ "$chosen_publication" = "" ] || [ "$chosen_publication" = "main" ] ; then
+			# Download tarball archive with the default way
+			download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
+		else
+			# Force using chosen publication, unless it always will be installed under the main publication
+			set_config_value "$file_config" "publication" "$chosen_publication"
+
+			# Download tarball archive from the given publication
+			download_cli "$HOST_URL_ARCH/$NAME_LOWERCASE-$chosen_publication/tarball/$VERSION" $archive_tmp $archive_dir_tmp
+		fi
+
 
 		# Install new files
 		create_cli
@@ -1096,7 +1203,7 @@ install_cli() {
 
 # The options (except --help) must be called with root
 case "$1" in
-	-i|--self-install)		loading "install_cli" ;;		# Critical option, see the comments at function declaration for more info
+	-i|--self-install)		loading "install_cli $2" ;;		# Critical option, see the comments at function declaration for more info	
 	-u|--self-update)
 		if [ -z "$2" ]; then
 							loading "update_cli"			# Critical option, see the comments at function declaration for more info
@@ -1107,7 +1214,7 @@ case "$1" in
 		fi ;;
 	--self-delete)				loading "delete_all" ;;
 	-p|--publication)			loading "detect_publication" ;;
-	--get-logs)					get_logs $file_log ;;
+	--get-logs)					get_logs "$file_log_main" ;;
 	man)						loading "$file_COMMAND_MAN" ;;
 	verify)
 		if [ -z "$2" ]; then
@@ -1125,7 +1232,11 @@ case "$1" in
 			exec $file_COMMAND_FIREWALL
 		else
 			case "$2" in
-				-r|--restart)	exec $file_COMMAND_FIREWALL ;;
+				-i|--install)	export function_to_launch="install" && exec $file_COMMAND_FIREWALL ;;
+				-d|--display)	export function_to_launch="display" && exec $file_COMMAND_FIREWALL ;;
+				-r|--restart)	export function_to_launch="restart" && exec $file_COMMAND_FIREWALL ;;
+				--disable)		export function_to_launch="disable" && exec $file_COMMAND_FIREWALL ;;
+				--restore)		export function_to_launch="restore" && exec $file_COMMAND_FIREWALL ;;
 				*)				display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
@@ -1137,7 +1248,7 @@ case "$1" in
 				-y|--assume-yes)	export install_confirmation="yes" && exec $file_COMMAND_UPDATE ;;
 				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $file_COMMAND_UPDATE ;;
 				--when)				$COMMAND_UPDATE_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
-				--get-logs)			$COMMAND_UPDATE_SYSTEMD_LOGS ;;
+				--get-logs)			get_logs $file_log_update ;;
 				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
@@ -1153,9 +1264,10 @@ case "$1" in
 			else
 				case "$2" in
 					loading)							loading "$3" ;;
-					display_success)					display_success "$3" ;;
-					display_error)						display_error "$3" ;;
-					display_info)						display_info "$3" ;;
+					display_success)					display_success "$3" "$4" ;;
+					display_error)						display_error "$3" "$4" ;;
+					display_info)						display_info "$3" "$4" ;;
+					append_log)							append_log "$3" ;;
 					exists_command)						exists_command "$3" ;;
 					sanitize_confirmation)				sanitize_confirmation "$3" ;;
 					get_config_value)					get_config_value "$3" "$4" ;;

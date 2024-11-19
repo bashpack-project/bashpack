@@ -24,12 +24,12 @@
 
 
 
-# . "core/helper.sh"
 export allow_helper_functions="true"
 
 
 
 continue_question="Do you want to continue? [y/N] "
+
 
 
 
@@ -112,20 +112,33 @@ fi
 
 # Update APT packages
 if [ "$($current_cli helper exists_command "apt")" = "exists" ]; then
-	$current_cli helper display_info "updating with APT."
+
+	$current_cli helper display_info "updating with APT." "$file_log_update"
 
 	if [ "$($current_cli helper exists_command "dpkg")" = "exists" ]; then
-		dpkg --configure -a
+		dpkg --configure -a								| $current_cli helper append_log "$file_log_update"
 	fi
-	apt update
-	apt install --fix-broken $install_confirmation
-	apt full-upgrade $install_confirmation
+
+	apt update											| $current_cli helper append_log "$file_log_update"
+	apt install --fix-broken $install_confirmation		| $current_cli helper append_log "$file_log_update"
+	apt full-upgrade $install_confirmation				| $current_cli helper append_log "$file_log_update"
 
 	# Ensure to delete all old packages & their configurations
-	apt autopurge $install_confirmation
-	
+	apt autopurge $install_confirmation					| $current_cli helper append_log "$file_log_update"
+
 	# Just repeat to check if everything is ok
-	apt full-upgrade $install_confirmation
+	apt full-upgrade $install_confirmation				| $current_cli helper append_log "$file_log_update"
+
+
+	# apt update
+	# apt install --fix-broken $install_confirmation
+	# apt full-upgrade $install_confirmation
+
+	# # Ensure to delete all old packages & their configurations
+	# apt autopurge $install_confirmation
+	
+	# # Just repeat to check if everything is ok
+	# apt full-upgrade $install_confirmation
 
 	echo ""
 	echo ""
@@ -137,10 +150,17 @@ fi
 # Update Snapcraft packages
 # Usage : upgrade_with_snapcraft <-y>
 upgrade_with_snapcraft() {
-	# List available updates & ask for update if found any (or auto update if <-y>).
-	if [ "$(snap refresh --list | grep -v "All snaps up to date.")" ]; then
 
-		snap refresh --list
+	local file_tmp_updates_available="$dir_tmp/$NAME_LOWERCASE-snap"
+
+	# Send Snap output in file to avoid some display issues
+	snap refresh --list > $file_tmp_updates_available 2>&1
+	cat $file_tmp_updates_available
+
+	# List available updates & ask for update if found any (or auto update if <-y>).
+	if [ "$(cat $file_tmp_updates_available | grep -v "All snaps up to date.")" ]; then
+
+		# snap refresh --list
 
 		if [ "${1}" = "-y" ]; then
 			snap refresh
@@ -152,11 +172,14 @@ upgrade_with_snapcraft() {
 			fi
 		fi
 	fi
+
+	rm -f $file_tmp_updates_available
 }
 
 if [ "$($current_cli helper exists_command "snap")" = "exists" ]; then
-	$current_cli helper display_info "updating with Snap."
-	upgrade_with_snapcraft $install_confirmation
+	$current_cli helper display_info "updating with Snap." "$file_log_update"
+	# upgrade_with_snapcraft $install_confirmation
+	upgrade_with_snapcraft $install_confirmation | $current_cli helper append_log "$file_log_update"
 fi
 
 
@@ -164,14 +187,18 @@ fi
 
 # Update DNF packages (using YUM as fallback if DNF doesn't exist)
 if [ "$($current_cli helper exists_command "dnf")" = "exists" ]; then
-	$current_cli helper display_info "updating with DNF."
+	$current_cli helper display_info "updating with DNF." "$file_log_update"
 
-	dnf upgrade $install_confirmation
+	# dnf upgrade $install_confirmation
+	dnf upgrade $install_confirmation | $current_cli helper append_log "$file_log_update"
+
 
 elif [ "$($current_cli helper exists_command "yum")" = "exists" ]; then
-	$current_cli helper display_info "updating with YUM."
+	$current_cli helper display_info "updating with YUM." "$file_log_update"
 
-	yum upgrade $install_confirmation
+	# yum upgrade $install_confirmation
+	yum upgrade $install_confirmation | $current_cli helper append_log "$file_log_update"
+
 fi
 
 
