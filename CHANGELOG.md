@@ -3,20 +3,22 @@
 The released versions changelogs below are only about the main repository.
 
 ### 2.0.0
-*incoming release date*
+*2024/11/19*
 ##### Added
 - Log support in /var/log/bashpack/ and "--get-logs" option
 - Sub command "update" support of DNF (and YUM fallback)
-- (WIP) Sub command "firewall" for firewall management (nftables only for now)
+- Sub command "firewall" for firewall management (nftables only for now)
 - This changelog file :D
 
 ##### Modified
 - Entirely rewritten to be compliant with POSIX systems
-- Update process improved to avoid downloading too much files
-- Installation process improved by automatically detect the better $PATH
+- Self update improved to avoid downloading too much files
+- Self update can now be forced with "-u --force" option 
+- Self installation improved by automatically detect the better $PATH
+- Self installation can now read a given publication with "-i publication_name" 
 - Sub command "verify" is now more used in installation process
 - Sub command "verify" can now detect presence of required commands
-- Config file rename from bashpack_config to bashpack.conf
+- Config file renamed from bashpack_config to bashpack.conf
 - Detection of systemd improved to be able to install on compatible systems only
 - Detection of pkg-config improved to be able to install on compatible systems only
 - Moving sources from /usr/local/src/ to /opt/
@@ -32,8 +34,8 @@ The released versions changelogs below are only about the main repository.
 - Sub command "verify" can now test repository reachability and test releases download/extraction
 
 ##### Modified
-- Update process is now taking in account the configuration file and the user custom values
-- Update process is now avoiding undesirables uninstallations
+- Self update is now taking in account the configuration file and the user custom values
+- Self update is now avoiding undesirables uninstallations
 
 ------------
 ### 1.0.4
