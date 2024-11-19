@@ -1181,6 +1181,8 @@ install_cli() {
 
 			# Download tarball archive from the given publication
 			download_cli "$HOST_URL_ARCH/$NAME_LOWERCASE-$chosen_publication/tarball/$VERSION" $archive_tmp $archive_dir_tmp
+
+			echo "$chosen_publication" > $file_current_publication
 		fi
 
 
