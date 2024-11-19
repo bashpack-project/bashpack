@@ -1065,8 +1065,8 @@ create_cli() {
 		fi
 		
 
-		# Creating a file that permit to know what is the current installed publication
-		echo "$PUBLICATION" > $file_current_publication
+		# # Creating a file that permit to know what is the current installed publication
+		# echo "$PUBLICATION" > $file_current_publication
 
 
 		# Allow users to edit the configuration
@@ -1182,12 +1182,17 @@ install_cli() {
 			# Download tarball archive from the given publication
 			download_cli "$HOST_URL_ARCH/$NAME_LOWERCASE-$chosen_publication/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
-			echo "$chosen_publication" > $file_current_publication
+			# echo "$chosen_publication" > $file_current_publication
 		fi
 
 
 		# Install new files
 		create_cli
+		
+
+		# Creating a file that permit to know what is the current installed publication
+		echo "$PUBLICATION" > $file_current_publication
+
 
 		# Clear temporary files & directories
 		rm -rf $dir_tmp/$NAME_LOWERCASE*
