@@ -727,8 +727,8 @@ detect_cli() {
 
 # Detect what is the current publication installed
 detect_publication() {
-	if [ -f $file_current_publication ]; then
-		cat $file_current_publication
+	if [ -f "$file_current_publication" ]; then
+		cat "$file_current_publication"
 	else
 		display_error "publication not found."
 	fi
@@ -1078,7 +1078,7 @@ create_cli() {
 
 		# Success message
 		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
-			display_success "$NAME $($NAME_ALIAS --version) ($(detect_publication)) has been installed."
+			display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) has been installed."
 		else
 			display_error "$NAME installation failed."
 		fi
@@ -1170,6 +1170,7 @@ install_cli() {
 			download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 		else
 			display_info "$chosen_publication manually called."
+
 			# Force using chosen publication, unless it always will be installed under the main publication
 			set_config_value "$file_config" "publication" "$chosen_publication"
 
