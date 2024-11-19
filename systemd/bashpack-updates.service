@@ -1,5 +1,5 @@
 [Unit]
-Description=Bashpack update (itself & update command)
+Description=Bashpack update (itself & system)
 
 [Service]
 ExecStartPre=bashpack --self-update

@@ -1,5 +1,5 @@
 [Unit]
-Description=Bashpack updates (itself & update command)
+Description=Bashpack update (itself & system)
 
 [Timer]
 OnStartupSec=5min

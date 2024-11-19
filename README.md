@@ -1,31 +1,29 @@
 # Bashpack
 
-Bashpack is a **user-friendly Linux toolbox**.
+Bashpack is a **user-friendly** Linux toolbox that has been designed to **quickly secure any Linux distro**.
 
-It has been designed for helping **Linux** users on their **day to day tasks**.
-It can also be useful for IT teams who needs to ensure security on their Linux park.
-
-You can easily setup **automations** with the differents **options**.
+It can be used for deployment purposes, or even by novices users (it doesn't require any specific knowledge).
 
 <br>
 
 ## Features
-* Unified Linux updates ([APT](https://fr.wikipedia.org/wiki/Advanced_Packaging_Tool), [Snapcraft](https://snapcraft.io/)* & firmwares with [fwupd](https://github.com/fwupd/fwupd)*).
-* (incoming)     Secured Linux firewall (close ports with [nftables](https://wiki.nftables.org/wiki-nftables/index.php/Main_Page) ([Docker](https://www.docker.com/) compatible)).
-* (incoming)     Routes over VPN to one or many points ([OpenVPN](https://openvpn.net/) compatible).
+* Unified Linux updates \
+_one command to control them all_
+	- [APT](https://wiki.debian.org/Apt)
+	- [DNF](https://rpm-software-management.github.io/)
+	- [YUM](http://yum.baseurl.org/)
+	- [Snap](https://snapcraft.io/)
+	- [fwupd](https://github.com/fwupd/fwupd) (firmwares)
+
+* Secured Linux firewall \
+_block inbound and simplify rule creation_
+	- [nftables](https://wiki.nftables.org/wiki-nftables/index.php/Main_Page)
 
 <br>
 
-\* _Snapcraft is not installed with this script, it's just handled if already used._
-
-\* _fwupd is installed only if your system is bare-metal._
-
-<br>
 
 ## Quick start
 Copy/paste the following command blocks on your Linux terminal to manage your Bashpack installation.
-* _You must be sudo._
-* _Once installed, Bashpack will automatically update itself once a day ([Systemd](https://systemd.io/) installations **only**)._
 
 **Install**
 ```javascript
@@ -55,18 +53,19 @@ bp --help
 
 <br>
 
+### Command examples
 
-### Unified Linux updates
-Launch a pre-validated update of everything on your system:
+#### Unified Linux updates
+Launch a pre-validated update of everything on your system
 ```javascript
 sudo bp update -y
 ```
 
-Check next update ([Systemd](https://systemd.io/) installations **only**):
+Check next update ([Systemd](https://systemd.io/) installations **only**)
 ```javascript
 sudo bp update --when
 ```
-Get logs from last update ([Systemd](https://systemd.io/) installations **only**):
+Get logs from last update ([Systemd](https://systemd.io/) installations **only**)
 ```javascript
 sudo bp update --get-logs
 ```
@@ -74,13 +73,29 @@ sudo bp update --get-logs
 <br>
 
 
-### Secured Linux firewall
-Incoming
+#### Secured Linux firewall
+**Install** a ruleset
+```javascript
+sudo bp firewall -i
+```
+
+**Restore** a backuped ruleset (made automatically during an installation)
+```javascript
+sudo bp firewall --restore
+```
+
+**Disable** the firewall
+```javascript
+sudo bp firewall --disable
+```
 
 <br>
 
-
-### Routes over VPN
-Incoming
-
-<br>
+## FAQ
+* Bashpack itself is POSIX, meaning it can be installed on any POSIX system (it was first written in [Bash](https://en.wikipedia.org/wiki/Bash_(Unix_shell)), but is now written in [Bourne shell](https://en.wikipedia.org/wiki/Bourne_shell)). That being said, every specific distro software support needs to be added one by one in the sub commands.
+* Root/sudo access is required.
+* [Systemd](https://systemd.io/) is highly recommanded to benefit all the automations.
+* Bashpack will automatically update itself ([Systemd](https://systemd.io/) installations only).
+* [fwupd](https://github.com/fwupd/fwupd) is installed only if your system is bare-metal (only [Systemd](https://systemd.io/) installations can detect it).
+* Multiple repositories exists. For production usage, only the [main](https://github.com/bashpack-project/bashpack) one should be used.
+* Just a funny command: bp man
