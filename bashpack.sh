@@ -461,9 +461,9 @@ verify_repository_reachability() {
 	local url="${1}"
 
 	if [ "$(exists_command "curl")" = "exists" ]; then
-		http_code="$(curl -s -I "$url" | awk '/^HTTP/{print $2}')"
+		http_code="$(curl -s -L -I -o /dev/null -w %{response_code} $url)"
 	elif [ "$(exists_command "wget")" = "exists" ]; then
-		http_code="$(wget --spider --server-response "$url" 2>&1 | awk '/^  HTTP/{print $2}' | head -n 1)"
+		http_code="$(wget --spider --server-response "$url" 2>&1 | awk '/^  HTTP/{print $2}' | tail -n 1)"
 	else
 		display_error "can't get HTTP code with curl or wget."
 	fi
@@ -866,6 +866,7 @@ verify_cli_commands() {
 		awk
 		find
 		grep
+		tail
 		chmod
 		mkdir
 		mv
