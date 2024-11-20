@@ -224,7 +224,7 @@ fi
 
 # Display always the same message in error messages.
 # Usage: display_error <message>
-# Usage: display_error <message> <log file>
+# Usage: display_error <message> <log file to duplicate the message>
 display_error() {
 
 	local format="$now error:     ${1}"
@@ -241,7 +241,7 @@ display_error() {
 
 # Display always the same message in success messages.
 # Usage: display_success <message>
-# Usage: display_success <message> <log file>
+# Usage: display_success <message> <log file to duplicate the message>
 display_success() {
 
 	local format="$now success:   ${1}"
@@ -258,7 +258,7 @@ display_success() {
 
 # Display always the same message in info messages.
 # Usage: display_info <message>
-# Usage: display_info <message> <log file>
+# Usage: display_info <message> <log file to duplicate the message>
 display_info() {
 
 	local format="$now info:      ${1}"
@@ -274,8 +274,8 @@ display_info() {
 
 
 # Write output of a command in logs
-# Usage: <command> | append_log
-# Usage: <command> | append_log <log file>
+# Usage: <command> | append_log					(append to the default file)
+# Usage: <command> | append_log <log file>		(append to the given file)
 append_log() {
 
 	local file_log="${1}"
