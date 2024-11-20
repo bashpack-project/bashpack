@@ -2,6 +2,13 @@
 
 The released versions changelogs below are only about the main repository.
 
+### 2.0.1
+*Incoming release date*
+##### Fixed
+- Firewall command restoration option wasn't able to read the given file name
+- Install for the first time while specifying a publication name wasn't working due to missing destination directory
+
+------------
 ### 2.0.0
 *2024/11/19*
 ##### Added
