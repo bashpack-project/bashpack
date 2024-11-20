@@ -1092,6 +1092,8 @@ install_cli() {
 
 		# Check if a publication has been chosen
 		if [ "$chosen_publication" = "" ] || [ "$chosen_publication" = "main" ] ; then
+			display_info "using default main publication."
+
 			# Download tarball archive with the default way
 			download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
