@@ -29,7 +29,7 @@ export allow_helper_functions="true"
 
 
 firewall_config="$dir_config/firewall.conf"
-firewall_allowed="$($current_cli helper get_config_value "$file_config" "firewall")"
+firewall_allowed="$($HELPER get_config_value "$file_config" "firewall")"
 
 
 nftables_file="/etc/nftables.conf"
@@ -55,7 +55,7 @@ fi
 # Display the current ruleset
 # Usage: display_firewall
 display_firewall() {
-	if [ "$($current_cli helper exists_command "nft")" = "exists" ]; then
+	if [ "$($HELPER exists_command "nft")" = "exists" ]; then
 		nft list ruleset
 	fi
 }
@@ -66,7 +66,7 @@ display_firewall() {
 # Disable the current ruleset
 # Usage: disable_firewall
 disable_firewall() {
-	if [ "$($current_cli helper exists_command "systemctl")" = "exists" ]; then
+	if [ "$($HELPER exists_command "systemctl")" = "exists" ]; then
 		systemctl stop nftables.service
 	fi
 }
@@ -77,7 +77,7 @@ disable_firewall() {
 # Restart the current ruleset
 # Usage: restart_firewall
 restart_firewall() {
-	if [ "$($current_cli helper exists_command "systemctl")" = "exists" ]; then
+	if [ "$($HELPER exists_command "systemctl")" = "exists" ]; then
 		systemctl restart nftables.service
 		systemctl status nftables.service
 
@@ -91,13 +91,13 @@ restart_firewall() {
 # Backup the current ruleset
 # Usage: backup_firewall
 backup_firewall() {
-	if [ "$($current_cli helper exists_command "nft")" = "exists" ]; then
+	if [ "$($HELPER exists_command "nft")" = "exists" ]; then
 		# Making a backup of your current nftables ruleset
 		mkdir -p $nftables_dir
 		chmod 755 $nftables_dir
 		nft list ruleset > $nftables_file_backup
 
-		$current_cli helper display_info "A backup of your current nftables firewall ruleset has been saved to "$nftables_file_backup"."
+		$HELPER display_info "A backup of your current nftables firewall ruleset has been saved to "$nftables_file_backup"."
 	fi
 }
 
@@ -111,9 +111,9 @@ restore_firewall() {
 	# Ask user to select a file from the backup list
 	ls -l "$nftables_dir"
 	local restoration_file
-	read -e -p "Enter the file name to restore: " restoration_file
+	read -p "Enter the file name to restore: " restoration_file
 
-	cp "$nftables_dir/$restoration_file" $nftables_file
+	cp "$nftables_dir/$restoration_file" "$nftables_file"
 	
 	restart_firewall
 }
@@ -125,16 +125,16 @@ restore_firewall() {
 # Testing if nftables is installed on the system, try to install it if not, or exit.
 # Usage: install_firewall
 install_firewall() {
-	if [ "$($current_cli helper exists_command "nft")" != "exists" ]; then
-		$current_cli helper display_error "nftables not found on the system but is required to configure your firewall with $NAME."
+	if [ "$($HELPER exists_command "nft")" != "exists" ]; then
+		$HELPER display_error "nftables not found on the system but is required to configure your firewall with $NAME."
 		
-		if [ "$($current_cli helper exists_command "apt")" = "exists" ]; then
-			$current_cli helper display_info "Installing nftables with APT..."
-			$current_cli helper display_info "Warning: if iptables is installed, nftables will replace it. "
-			$current_cli helper display_info "Warning: be sure to keep a copy of your currents non nftables firewall rulesets."
+		if [ "$($HELPER exists_command "apt")" = "exists" ]; then
+			$HELPER display_info "Installing nftables with APT..."
+			$HELPER display_info "Warning: if iptables is installed, nftables will replace it. "
+			$HELPER display_info "Warning: be sure to keep a copy of your currents non nftables firewall rulesets."
 			read -p "$continue_question" install_confirmation_nftables
 
-			if [ "$($current_cli helper sanitize_confirmation $install_confirmation_nftables)" = "yes" ]; then
+			if [ "$($HELPER sanitize_confirmation $install_confirmation_nftables)" = "yes" ]; then
 				apt install -y nftables
 				systemctl enable nftables.service
 				restart_firewall
@@ -144,7 +144,7 @@ install_firewall() {
 			fi
 			
 		else
-			$current_cli helper display_error "nftables could not been installed with APT."
+			$HELPER display_error "nftables could not been installed with APT."
 
 			# Exit to avoid doing anything else with this script without nftables installed
 			exit
@@ -208,12 +208,12 @@ create_firewall() {
 	restart_firewall
 
 	# Restarting Docker (if installed) to force it using nftables instead of iptables
-	if [ "$($current_cli helper exists_command "docker")" = "exists" ]; then
+	if [ "$($HELPER exists_command "docker")" = "exists" ]; then
 		systemctl restart docker.service
 	fi
 
 
-	$current_cli helper display_success "new firewall configured."
+	$HELPER display_success "new firewall configured."
 }
 
 
@@ -228,7 +228,7 @@ case "$function_to_launch" in
 					install_firewall
 					create_firewall
 				else 
-					$current_cli helper display_error "firewall management is disabled or misconfigured in $file_config"
+					$HELPER display_error "firewall management is disabled or misconfigured in $file_config"
 				fi ;;
 	disable)	disable_firewall ;;
 	restore)	restore_firewall ;;

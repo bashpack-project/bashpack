@@ -37,14 +37,15 @@ export NAME_LOWERCASE="$(echo "$NAME" | tr A-Z a-z)"
 export NAME_UPPERCASE="$(echo "$NAME" | tr a-z A-Z)"
 export NAME_ALIAS="bp"
 
-export current_cli="$0"
+export CURRENT_CLI="$0"
+export HELPER="$CURRENT_CLI helper"
 
 # BASE_URL="https://api.github.com/repos/$NAME_LOWERCASE-project"
 REPO_URL="$NAME_LOWERCASE-project"
 HOST_URL_ARCH="https://api.github.com/repos/$REPO_URL"
 HOST_URL_FILE="https://raw.githubusercontent.com/$REPO_URL"
 
-USAGE="Usage: $current_cli [COMMAND] [OPTION] \n$current_cli --help"
+USAGE="Usage: $CURRENT_CLI [COMMAND] [OPTION] \n$CURRENT_CLI --help"
 
 dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
@@ -109,8 +110,8 @@ export file_log_update="$dir_log/updates.log"
 # Display a warning in case of using the script and not a command installed on the system
 # Export a variable that permit to avoid this message duplication (because this file is called multiple times over the differents process)
 if [ "$WARNING_ALREADY_SEND" != "true" ]; then
-	if [ "$current_cli" = "./$NAME_LOWERCASE.sh" ]; then
-		echo "Warning: you are currently using '$current_cli' which is located at $(pwd)."
+	if [ "$CURRENT_CLI" = "./$NAME_LOWERCASE.sh" ]; then
+		echo "Warning: you are currently using '$CURRENT_CLI' which is located at $(pwd)."
 		echo ""
 
 		export WARNING_ALREADY_SEND="true"
@@ -587,7 +588,7 @@ esac
 
 
 
-if [ "$current_cli" = "./$NAME_LOWERCASE.sh" ]; then
+if [ "$CURRENT_CLI" = "./$NAME_LOWERCASE.sh" ]; then
 	dir_commands="commands"
 else
 	dir_commands="$dir_src_cli/commands"
@@ -791,7 +792,7 @@ verify_cli_files() {
 				previous_path="$path_variable"
 
 			fi
-		done < "$current_cli"
+		done < "$CURRENT_CLI"
 
 
 		display_info "$found/$total paths found."
