@@ -624,6 +624,8 @@ delete_cli() {
 	if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
 		display_error "$NAME is not installed on your system."
 	else
+		display_info "found $NAME $VERSION ($(detect_publication))."
+
 		if [ "$exclude_main" = "exclude_main" ]; then
 			# Delete everything except main files and directories
 			
@@ -658,7 +660,7 @@ delete_cli() {
 				display_error "$NAME $VERSION located at $(posix_which $NAME_ALIAS) has not been uninstalled." && exit
 			fi
 		else
-			display_success "$NAME $VERSION ($(detect_publication)) has been uninstalled."
+			display_success "uninstallation completed."
 		fi
 	fi
 }
