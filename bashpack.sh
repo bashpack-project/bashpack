@@ -977,118 +977,131 @@ install_new_config_file() {
 }
 
 
+# # Config installation
+# # Usage: create_dir_config
+# create_dir_config() {
+# 	# Checking if the config directory exists and create it if doesn't exists
+# 	display_info "installing configuration."
+
+# 	if [ ! -d "$dir_config" ]; then
+# 		display_info "$dir_config not found, creating it."
+# 		mkdir $dir_config
+# 	fi
+# }
 
 
-# Create the command from the downloaded archives
-# Works together with install or update functions
-create_cli() {
 
-	# Process to the installation
-	if [ -d "$archive_dir_tmp" ]; then
+
+# # Create the command from the downloaded archives
+# # Works together with install or update functions
+# create_cli() {
+
+# 	# Process to the installation
+# 	if [ -d "$archive_dir_tmp" ]; then
 	
-		# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
-		# Remove them to allow installation of the CLI
-		if [ -f "$file_main_alias_1" ] || [ -f "$file_main_alias_2" ]; then
-			display_info "removing old aliases."
-			rm -f $file_main_alias_1
-			rm -f $file_main_alias_2
-		fi
+# 		# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
+# 		# Remove them to allow installation of the CLI
+# 		if [ -f "$file_main_alias_1" ] || [ -f "$file_main_alias_2" ]; then
+# 			display_info "removing old aliases."
+# 			rm -f $file_main_alias_1
+# 			rm -f $file_main_alias_2
+# 		fi
 
 		
-		# Sources files installation
-		display_info "installing sources."
-		cp -RT $archive_dir_tmp $dir_src_cli	# -T used to overwrite the source dir and not creating a new inside
-		chmod 555 -R $dir_src_cli				# Set everyting in read+exec by default
-		chmod 555 $file_main					# Set main file executable for everyone (autcompletion of the command itself requires it)
-		chmod 550 -R "$dir_src_cli/commands/"	# Set commands files executable for users + root
-		chmod 444 -R "$dir_src_cli/"*.md		# Set .md files read-only for everyone
+# 		# Sources files installation
+# 		display_info "installing sources."
+# 		cp -RT $archive_dir_tmp $dir_src_cli	# -T used to overwrite the source dir and not creating a new inside
+# 		chmod 555 -R $dir_src_cli				# Set everyting in read+exec by default
+# 		chmod 555 $file_main					# Set main file executable for everyone (autcompletion of the command itself requires it)
+# 		chmod 550 -R "$dir_src_cli/commands/"	# Set commands files executable for users + root
+# 		chmod 444 -R "$dir_src_cli/"*.md		# Set .md files read-only for everyone
 
 
-		# Create an alias so the listed package are clear on the system (-f to force overwrite existing)
-		display_info "installing aliases."
-		ln -sf $file_main $file_main_alias_1
-		ln -sf $file_main $file_main_alias_2
+# 		# Create an alias so the listed package are clear on the system (-f to force overwrite existing)
+# 		display_info "installing aliases."
+# 		ln -sf $file_main $file_main_alias_1
+# 		ln -sf $file_main $file_main_alias_2
 
 
-		# Autocompletion installation
-		# Install autocompletion only if the directory has been found.
-		if [ -n "$dir_autocompletion" ]; then
-			display_info "installing autocompletion."
-			cp "$archive_dir_tmp/completion" $file_autocompletion_1
-			cp "$archive_dir_tmp/completion" $file_autocompletion_2
-		fi
+# 		# Autocompletion installation
+# 		# Install autocompletion only if the directory has been found.
+# 		if [ -n "$dir_autocompletion" ]; then
+# 			display_info "installing autocompletion."
+# 			cp "$archive_dir_tmp/completion" $file_autocompletion_1
+# 			cp "$archive_dir_tmp/completion" $file_autocompletion_2
+# 		fi
 
 		
-		# Systemd services installation
-		# Checking if systemd is installed (and do nothing if not installed because it means the OS doesn't work with it)
-		if [ $(exists_command "systemctl") = "exists" ]; then
+# 		# Systemd services installation
+# 		# Checking if systemd is installed (and do nothing if not installed because it means the OS doesn't work with it)
+# 		if [ $(exists_command "systemctl") = "exists" ]; then
 		
-			display_info "installing systemd services."
+# 			display_info "installing systemd services."
 		
-			# Copy systemd services & timers to systemd directory
-			cp -R $archive_dir_tmp/systemd/* $dir_systemd
-			systemctl daemon-reload
+# 			# Copy systemd services & timers to systemd directory
+# 			cp -R $archive_dir_tmp/systemd/* $dir_systemd
+# 			systemctl daemon-reload
 
-			# Start & enable systemd timers (don't need to start systemd services because timers are made for this)
-			for file in $(ls $dir_systemd/$NAME_LOWERCASE* | grep ".timer"); do
-				if [ -f $file ]; then
-					display_info "$file found."
+# 			# Start & enable systemd timers (don't need to start systemd services because timers are made for this)
+# 			for file in $(ls $dir_systemd/$NAME_LOWERCASE* | grep ".timer"); do
+# 				if [ -f $file ]; then
+# 					display_info "$file found."
 
-					local unit="$(basename "$file")"
+# 					local unit="$(basename "$file")"
 
-					display_info "starting & enabling $unit." 
+# 					display_info "starting & enabling $unit." 
 					
-					# Call "restart" and not "start" to be sure to run the unit provided in this current version (unless the old unit will be kept as the running one)
-					systemctl restart "$unit" 
-					systemctl enable "$unit"
-				else
-					display_error "$file not found."
-				fi
-			done
-		fi
+# 					# Call "restart" and not "start" to be sure to run the unit provided in this current version (unless the old unit will be kept as the running one)
+# 					systemctl restart "$unit" 
+# 					systemctl enable "$unit"
+# 				else
+# 					display_error "$file not found."
+# 				fi
+# 			done
+# 		fi
 
 
-		# Config installation
-		# Checking if the config directory exists and create it if doesn't exists
-		display_info "installing configuration."
-		if [ ! -d "$dir_config" ]; then
-			display_info "$dir_config not found, creating it."
-			mkdir $dir_config
-		fi
+# 		# Config installation
+# 		# Checking if the config directory exists and create it if doesn't exists
+# 		display_info "installing configuration."
+# 		if [ ! -d "$dir_config" ]; then
+# 			display_info "$dir_config not found, creating it."
+# 			mkdir $dir_config
+# 		fi
 
-		# Must testing if config file exists to avoid overwrite user customizations 
-		if [ ! -f "$file_config" ]; then
-			display_info "$file_config not found, creating it. "
-			# cp "$archive_dir_tmp/config/$file_config" "$file_config"
-			cp "$archive_dir_tmp/config/$NAME_LOWERCASE.conf" "$file_config"
+# 		# Must testing if config file exists to avoid overwrite user customizations 
+# 		if [ ! -f "$file_config" ]; then
+# 			display_info "$file_config not found, creating it. "
+# 			# cp "$archive_dir_tmp/config/$file_config" "$file_config"
+# 			cp "$archive_dir_tmp/config/$NAME_LOWERCASE.conf" "$file_config"
 
-		else
-			display_info "$file_config already exists, installing new file and inserting current configured options."
-			install_new_config_file
-		fi
+# 		else
+# 			display_info "$file_config already exists, installing new file and inserting current configured options."
+# 			install_new_config_file
+# 		fi
 		
 
-		# # Creating a file that permit to know what is the current installed publication
-		# echo "$PUBLICATION" > $file_current_publication
+# 		# # Creating a file that permit to know what is the current installed publication
+# 		# echo "$PUBLICATION" > $file_current_publication
 
 
-		# Allow users to edit the configuration
-		chmod +rw -R $dir_config
+# 		# Allow users to edit the configuration
+# 		chmod +rw -R $dir_config
 
 
-		# Remove unwanted files from the installed sources (keep only main, sub commands and .md files)
-		find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -not -name "*.md" -not -name "commands" -exec rm -rf {} +
+# 		# Remove unwanted files from the installed sources (keep only main, sub commands and .md files)
+# 		find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -not -name "*.md" -not -name "commands" -exec rm -rf {} +
 
 
-		# Success message
-		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
-			display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) has been installed."
-		else
-			display_error "$NAME installation failed."
-		fi
+# 		# Success message
+# 		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
+# 			display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) has been installed."
+# 		else
+# 			display_error "$NAME installation failed."
+# 		fi
 		
-	fi
-}
+# 	fi
+# }
 
 
 
@@ -1191,10 +1204,117 @@ install_cli() {
 		fi
 
 
-		# Install new files
-		create_cli
-		
+		# # Install new files
+		# create_cli
 
+
+		
+		# Process to the installation
+		if [ -d "$archive_dir_tmp" ]; then
+		
+			# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
+			# Remove them to allow installation of the CLI
+			if [ -f "$file_main_alias_1" ] || [ -f "$file_main_alias_2" ]; then
+				display_info "removing old aliases."
+				rm -f $file_main_alias_1
+				rm -f $file_main_alias_2
+			fi
+
+			
+			# Sources files installation
+			display_info "installing sources."
+			cp -RT $archive_dir_tmp $dir_src_cli	# -T used to overwrite the source dir and not creating a new inside
+			chmod 555 -R $dir_src_cli				# Set everyting in read+exec by default
+			chmod 555 $file_main					# Set main file executable for everyone (autcompletion of the command itself requires it)
+			chmod 550 -R "$dir_src_cli/commands/"	# Set commands files executable for users + root
+			chmod 444 -R "$dir_src_cli/"*.md		# Set .md files read-only for everyone
+
+
+			# Create an alias so the listed package are clear on the system (-f to force overwrite existing)
+			display_info "installing aliases."
+			ln -sf $file_main $file_main_alias_1
+			ln -sf $file_main $file_main_alias_2
+
+
+			# Autocompletion installation
+			# Install autocompletion only if the directory has been found.
+			if [ -n "$dir_autocompletion" ]; then
+				display_info "installing autocompletion."
+				cp "$archive_dir_tmp/completion" $file_autocompletion_1
+				cp "$archive_dir_tmp/completion" $file_autocompletion_2
+			fi
+
+			
+			# Systemd services installation
+			# Checking if systemd is installed (and do nothing if not installed because it means the OS doesn't work with it)
+			if [ "$(exists_command "systemctl")" = "exists" ]; then
+			
+				display_info "installing systemd services."
+			
+				# Copy systemd services & timers to systemd directory
+				cp -R $archive_dir_tmp/systemd/* $dir_systemd
+				systemctl daemon-reload
+
+				# Start & enable systemd timers (don't need to start systemd services because timers are made for this)
+				for file in $(ls $dir_systemd/$NAME_LOWERCASE* | grep ".timer"); do
+					if [ -f $file ]; then
+						display_info "$file found."
+
+						local unit="$(basename "$file")"
+
+						display_info "starting & enabling $unit." 
+						
+						# Call "restart" and not "start" to be sure to run the unit provided in this current version (unless the old unit will be kept as the running one)
+						systemctl restart "$unit" 
+						systemctl enable "$unit"
+					else
+						display_error "$file not found."
+					fi
+				done
+			fi
+
+
+			# Config installation
+			# Checking if the config directory exists and create it if doesn't exists
+			display_info "installing configuration."
+			if [ ! -d "$dir_config" ]; then
+				display_info "$dir_config not found, creating it."
+				mkdir $dir_config
+			fi
+
+			# Must testing if config file exists to avoid overwrite user customizations 
+			if [ ! -f "$file_config" ]; then
+				display_info "$file_config not found, creating it. "
+				# cp "$archive_dir_tmp/config/$file_config" "$file_config"
+				cp "$archive_dir_tmp/config/$NAME_LOWERCASE.conf" "$file_config"
+
+			else
+				display_info "$file_config already exists, installing new file and inserting current configured options."
+				install_new_config_file
+			fi
+			
+
+			# # Creating a file that permit to know what is the current installed publication
+			# echo "$PUBLICATION" > $file_current_publication
+
+
+			# Allow users to edit the configuration
+			chmod +rw -R $dir_config
+
+
+			# Remove unwanted files from the installed sources (keep only main, sub commands and .md files)
+			find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -not -name "*.md" -not -name "commands" -exec rm -rf {} +
+
+
+			# Success message
+			if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
+				display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) has been installed."
+			else
+				display_error "$NAME installation failed."
+			fi
+			
+		fi
+		
 
 		# Clear temporary files & directories
 		rm -rf $dir_tmp/$NAME_LOWERCASE*
