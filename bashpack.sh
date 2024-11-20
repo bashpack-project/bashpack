@@ -1180,6 +1180,16 @@ install_cli() {
 		display_info "starting installation."
 		detect_cli
 
+		
+		# Config directory installation
+		# Checking if the config directory exists and create it if doesn't exists
+		# This must be the first thing to do since $chosen_publication needs to be stored in this directory but it would not exists if it's the first time the CLI is installed
+		display_info "installing configuration."
+		if [ ! -d "$dir_config" ]; then
+			display_info "$dir_config not found, creating it."
+			mkdir $dir_config
+		fi
+
 
 		# Just a log message
 		if [ -n "$chosen_publication" ]; then
@@ -1206,7 +1216,6 @@ install_cli() {
 
 		# # Install new files
 		# create_cli
-
 
 		
 		# Process to the installation
@@ -1274,13 +1283,14 @@ install_cli() {
 			fi
 
 
-			# Config installation
-			# Checking if the config directory exists and create it if doesn't exists
-			display_info "installing configuration."
-			if [ ! -d "$dir_config" ]; then
-				display_info "$dir_config not found, creating it."
-				mkdir $dir_config
-			fi
+			# # Config installation
+			# # Checking if the config directory exists and create it if doesn't exists
+			# display_info "installing configuration."
+			# if [ ! -d "$dir_config" ]; then
+			# 	display_info "$dir_config not found, creating it."
+			# 	mkdir $dir_config
+			# fi
+
 
 			# Must testing if config file exists to avoid overwrite user customizations 
 			if [ ! -f "$file_config" ]; then
@@ -1298,6 +1308,14 @@ install_cli() {
 			# echo "$PUBLICATION" > $file_current_publication
 
 
+			# # Store the adeqate publication
+			# if [ "$chosen_publication" = "" ] || [ "$chosen_publication" = "main" ] ; then
+			# 	echo "$PUBLICATION" > $file_current_publication
+			# else
+			# 	echo "$chosen_publication" > $file_current_publication
+			# fi
+
+
 			# Allow users to edit the configuration
 			chmod +rw -R $dir_config
 
@@ -1310,6 +1328,9 @@ install_cli() {
 			if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
 				display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) has been installed."
 			else
+				# Remove config dir that might have been created just to store the publication name
+				rm -rf "$dir_config"
+
 				display_error "$NAME installation failed."
 			fi
 			
