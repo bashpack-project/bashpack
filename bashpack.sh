@@ -422,7 +422,27 @@ set_config_value() {
 
 	display_info "set '$option' from '$value_old' to '$value_new'."
 
-	sed -i "s/$option $value_old/$option $value_new/g" "$file"
+	# Drop if the option or the value are not given
+	if [ -n "$option" ] || [ -n "$value_new" ]; then
+
+		# If both the file and the option exist
+		# = Replace the option old value with the new value
+		if [ -f "$file" ] && [ -n "$value_old" ]; then
+			sed -i "s/$option $value_old/$option $value_new/g" "$file"
+
+		# If the file exists but the option doesn't exist
+		# = Add the option and the value at the begin of the file (this is a curative way to just quickly get the option setted up)
+		elif [ -f "$file" ] && [ -z "$value_old" ]; then
+			sed -i "1s/^/$option $value_new/" "$file"
+
+		# If the file doesn't exist (also meaning the option can't exist)
+		# = Create the file and add the option with the value (this is a curative way to just quickly get the option setted up)
+		elif [ ! -f "$file" ] 
+			echo "$option $value_new" > "$file"
+		fi
+	else
+		display_error "missing option/value combination."
+	fi
 }
 
 
@@ -1203,6 +1223,10 @@ install_cli() {
 			download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
 			echo "$PUBLICATION" > $file_current_publication
+
+			# if [ ! -f "$file_config" ]; then
+			# 	echo "publication $PUBLICATION" > $file_config
+			# fi
 		else
 			# Force using chosen publication, unless it always will be installed under the main publication
 			set_config_value "$file_config" "publication" "$chosen_publication"
@@ -1211,6 +1235,10 @@ install_cli() {
 			download_cli "$HOST_URL_ARCH/$NAME_LOWERCASE-$chosen_publication/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
 			echo "$chosen_publication" > $file_current_publication
+
+			# if [ ! -f "$file_config" ]; then
+			# 	echo "publication $chosen_publication" > $file_config
+			# fi
 		fi
 
 
