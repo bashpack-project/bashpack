@@ -221,13 +221,23 @@ fi
 # --- --- --- --- --- --- ---
 # Helper functions - begin
 
+# Display current CLI informations
+# Usage: current_cli_info
+# /!\ This function is intended for development purpose, it's just called in logs to clarify some situations
+current_cli_info() {
+	# Uncomment to enable
+	# echo "cli:$CURRENT_CLI ver:$VERSION pub:$PUBLICATION"
+	echo ""
+}
+
+
 
 # Display always the same message in error messages.
 # Usage: display_error <message>
 # Usage: display_error <message> <log file to duplicate the message>
 display_error() {
 
-	local format="$now error:     ${1}"
+	local format="$now error:     $(current_cli_info) ${1}"
 
 	if [ -n "${2}" ]; then
 		echo "$format" | tee -a "$file_log_main" "${2}"
@@ -244,7 +254,7 @@ display_error() {
 # Usage: display_success <message> <log file to duplicate the message>
 display_success() {
 
-	local format="$now success:   ${1}"
+	local format="$now success:   $(current_cli_info) ${1}"
 
 	if [ -n "${2}" ]; then
 		echo "$format" | tee -a "$file_log_main" "${2}"
@@ -261,7 +271,7 @@ display_success() {
 # Usage: display_info <message> <log file to duplicate the message>
 display_info() {
 
-	local format="$now info:      ${1}"
+	local format="$now info:      $(current_cli_info) ${1}"
 
 	if [ -n "${2}" ]; then
 		echo "$format" | tee -a "$file_log_main" "${2}"
@@ -289,9 +299,9 @@ append_log() {
 
 	# Set the log format on the command and append it to the selected file
 	if [ -n "$file_log" ]; then
-		sed "s/^/$now op.sys:    /" | tee -a "$file_log"
+		sed "s/^/$now op.sys:    $(current_cli_info) /" | tee -a "$file_log"
 	else
-		sed "s/^/$now op.sys:    /" | tee -a "$file_log_main"
+		sed "s/^/$now op.sys:    $(current_cli_info) /" | tee -a "$file_log_main"
 	fi
 
 }
@@ -1087,17 +1097,18 @@ install_cli() {
 		# Just a log message
 		if [ -n "$chosen_publication" ]; then
 			display_info "publication '$chosen_publication' entered manually."
+		else
+			display_info "using current '$($NAME_ALIAS --publication)' publication."
 		fi
 
 
 		# Check if a publication has been chosen
-		if [ "$chosen_publication" = "" ] || [ "$chosen_publication" = "main" ] ; then
-			display_info "using default main publication."
+		if [ "$chosen_publication" = "" ] || [ "$chosen_publication" = "main" ] || [ "$chosen_publication" = "$($NAME_ALIAS --publication)" ]; then
 
 			# Download tarball archive with the default way
 			download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
-			echo "$PUBLICATION" > $file_current_publication
+			echo "$($NAME_ALIAS --publication)" > $file_current_publication
 		else
 			# Force using chosen publication, unless it always will be installed under the main publication
 			set_config_value "$file_config" "publication" "$chosen_publication"
@@ -1107,6 +1118,7 @@ install_cli() {
 
 			echo "$chosen_publication" > $file_current_publication
 		fi
+
 
 		
 		# Process to the installation
