@@ -437,7 +437,7 @@ set_config_value() {
 
 		# If the file doesn't exist (also meaning the option can't exist)
 		# = Create the file and add the option with the value (this is a curative way to just quickly get the option setted up)
-		elif [ ! -f "$file" ] 
+		elif [ ! -f "$file" ]; then
 			echo "$option $value_new" > "$file"
 		fi
 	else
