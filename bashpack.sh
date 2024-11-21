@@ -221,13 +221,37 @@ fi
 # --- --- --- --- --- --- ---
 # Helper functions - begin
 
+
+# Getting values stored in configuration files.
+# Usage: get_config_value "<file>" "<option>"
+get_config_value() {
+	local file="${1}"
+	local option="${2}"
+
+	while read -r line; do
+		local first_char="$(echo $line | cut -c1-1)"
+
+		# Avoid reading comments and empty lines
+		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
+			if [ "$(echo $line | cut -d " " -f 1)" = "$option" ]; then
+				echo $line | cut -d " " -f 2
+				break
+			fi
+		fi	
+	done < "$file"
+}
+
+
+
 # Display current CLI informations
 # Usage: current_cli_info
 # /!\ This function is intended for development purpose, it's just called in logs to clarify some situations
 current_cli_info() {
-	# Uncomment to enable
-	# echo "cli:$CURRENT_CLI ver:$VERSION pub:$PUBLICATION"
-	echo ""
+
+	if [ "$(get_config_value "$dir_config/$NAME_LOWERCASE.conf" "debug")" = "true" ]; then
+		echo "cli:$CURRENT_CLI ver:$VERSION pub:$PUBLICATION"
+	fi
+
 }
 
 
@@ -399,28 +423,6 @@ exists_command() {
 
 
 
-# Getting values stored in configuration files.
-# Usage: get_config_value "<file>" "<option>"
-get_config_value() {
-	local file="${1}"
-	local option="${2}"
-
-	while read -r line; do
-		local first_char="$(echo $line | cut -c1-1)"
-
-		# Avoid reading comments and empty lines
-		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
-			if [ "$(echo $line | cut -d " " -f 1)" = "$option" ]; then
-				echo $line | cut -d " " -f 2
-				break
-			fi
-		fi	
-	done < "$file"
-}
-
-
-
-
 # Setting values in configuration file during script execution
 # Usage: set_config_value "<file>" "<option>" "<new value>"
 set_config_value() {
@@ -479,6 +481,30 @@ get_logs() {
 		cat "${1}" | less +G
 	else
 		cat "${1}"
+	fi
+}
+
+
+
+
+# Detect if the command has been installed on the system
+detect_cli() {
+	if [ "$(exists_command "$NAME_LOWERCASE")" = "exists" ]; then
+		if [ -n "$($NAME_LOWERCASE --version)" ]; then
+			display_info "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) detected at $(posix_which $NAME_LOWERCASE)"
+		fi
+	fi
+}
+
+
+
+
+# Detect what is the current publication installed
+detect_publication() {
+	if [ -f "$file_current_publication" ]; then
+		cat "$file_current_publication"
+	else
+		display_error "publication not found."
 	fi
 }
 
@@ -654,7 +680,7 @@ delete_cli() {
 	if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
 		display_error "$NAME is not installed on your system."
 	else
-		display_info "found $NAME $VERSION ($(detect_publication))."
+		detect_cli
 
 		if [ "$exclude_main" = "exclude_main" ]; then
 			# Delete everything except main files and directories
@@ -741,30 +767,6 @@ delete_all() {
 
 	delete_systemd && delete_cli ${1}
 	# delete_cli ${1}
-}
-
-
-
-
-# Detect if the command has been installed on the system
-detect_cli() {
-	if [ "$(exists_command "$NAME_LOWERCASE")" = "exists" ]; then
-		if [ -n "$($NAME_LOWERCASE --version)" ]; then
-			display_info "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) detected at $(posix_which $NAME_LOWERCASE)"
-		fi
-	fi
-}
-
-
-
-
-# Detect what is the current publication installed
-detect_publication() {
-	if [ -f "$file_current_publication" ]; then
-		cat "$file_current_publication"
-	else
-		display_error "publication not found."
-	fi
 }
 
 
@@ -1113,8 +1115,10 @@ install_cli() {
 			# Force using chosen publication, unless it always will be installed under the main publication
 			set_config_value "$file_config" "publication" "$chosen_publication"
 
-			# Download tarball archive from the given publication
-			download_cli "$HOST_URL_ARCH/$NAME_LOWERCASE-$chosen_publication/tarball/$VERSION" $archive_tmp $archive_dir_tmp
+			update_cli
+
+			# # Download tarball archive from the given publication
+			# download_cli "$HOST_URL_ARCH/$NAME_LOWERCASE-$chosen_publication/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
 			echo "$chosen_publication" > $file_current_publication
 		fi
@@ -1281,6 +1285,16 @@ case "$1" in
 				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $file_COMMAND_UPDATE ;;
 				--when)				$COMMAND_UPDATE_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
 				--get-logs)			get_logs $file_log_update ;;
+				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
+			esac
+		fi ;;
+	install)
+		if [ -z "$2" ]; then
+			exec $file_COMMAND_INSTALL "$1" "$2"
+		else
+			case "$2" in
+				-y|--assume-yes)	export install_confirmation="yes" && exec $file_COMMAND_INSTALL ;;
+				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $file_COMMAND_INSTALL ;;
 				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
