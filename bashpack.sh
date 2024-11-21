@@ -1045,7 +1045,7 @@ update_cli() {
 		chmod +x "$downloaded_cli"
 		"$downloaded_cli" -i
 
-		display_info "end of self update."
+		display_info "end of self update or publication rotation."
 	}
 
 
@@ -1089,7 +1089,7 @@ install_cli() {
 	# Test if all required commands are on the system before install anything
 	if [ "$(verify_cli_commands "print-missing-required-command-only")" = "0" ]; then
 
-		display_info "starting installation."
+		display_info "starting self installation."
 		detect_cli
 
 		
@@ -1234,7 +1234,7 @@ install_cli() {
 		rm -rf $dir_tmp/$NAME_LOWERCASE*
 		
 
-		display_info "end of installation."
+		display_info "end of self installation."
 	else
 		verify_cli_commands
 	fi
