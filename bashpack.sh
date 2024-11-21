@@ -660,6 +660,7 @@ fi
 file_COMMAND_UPDATE="$dir_commands/update.sh"
 file_COMMAND_MAN="$dir_commands/man.sh"
 file_COMMAND_FIREWALL="$dir_commands/firewall.sh"	
+file_COMMAND_INSTALL="$dir_commands/install.sh"	
 
 if [ "$(exists_command "systemctl")" = "exists" ]; then
 	COMMAND_UPDATE_SYSTEMD_STATUS="systemctl status $NAME_LOWERCASE-updates.timer"
@@ -930,6 +931,7 @@ verify_cli_commands() {
 		read
 		cd
 		eval
+		exec
 		exit
 		export
 		case
@@ -1285,11 +1287,11 @@ case "$1" in
 		fi ;;
 	update)
 		if [ -z "$2" ]; then
-			exec $file_COMMAND_UPDATE
+			loading "exec $file_COMMAND_UPDATE"
 		else
 			case "$2" in
-				-y|--assume-yes)	export install_confirmation="yes" && exec $file_COMMAND_UPDATE ;;
-				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $file_COMMAND_UPDATE ;;
+				-y|--assume-yes)	export install_confirmation="yes" && loading "exec $file_COMMAND_UPDATE" ;;
+				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && loading "exec $file_COMMAND_UPDATE" ;;
 				--when)				$COMMAND_UPDATE_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
 				--get-logs)			get_logs $file_log_update ;;
 				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
@@ -1297,13 +1299,15 @@ case "$1" in
 		fi ;;
 	install)
 		if [ -z "$2" ]; then
-			exec $file_COMMAND_INSTALL "$1" "$2"
+			display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit
 		else
-			case "$2" in
-				-y|--assume-yes)	export install_confirmation="yes" && exec $file_COMMAND_INSTALL ;;
-				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $file_COMMAND_INSTALL ;;
-				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
-			esac
+			# loading "exec $file_COMMAND_INSTALL $2"
+			exec $file_COMMAND_INSTALL "$2"
+			# case "$2" in
+			# 	-y|--assume-yes)	export install_confirmation="yes" && exec $file_COMMAND_INSTALL ;;
+			# 	--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && exec $file_COMMAND_INSTALL ;;
+			# 	*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
+			# esac
 		fi ;;
 	# Since "export -f" is not available in Shell, the helper command below permit to use commands from this file in sub scripts
 	helper)

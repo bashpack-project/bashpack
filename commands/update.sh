@@ -217,7 +217,8 @@ if [ "$($HELPER exists_command "systemd-detect-virt")" = "exists" ]; then
 				else
 
 					$HELPER display_info "starting firmwares updates (fwupd)."
-					install_package apt fwupd
+
+					$NAME_ALIAS install fwupd
 
 					if [ "$($HELPER exists_command "fwupdmgr")" = "exists" ]; then
 						fwupdmgr upgrade $install_confirmation

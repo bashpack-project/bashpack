@@ -28,61 +28,49 @@ export allow_helper_functions="true"
 
 
 
-
-# Clear user choice to the simple "-y" option or leave it empty.
-# It will be used as-it with the differents commands.
-# Examples :
-# - user input is not required	: apt install -y
-# - user input is required		: apt install
-if [ "$($HELPER sanitize_confirmation $install_confirmation)" = "yes" ]; then
-	install_confirmation="-y"
-	$HELPER display_info "all installations will be automatically accepted."
-else
-	# Not "-y", so it means "no", and no = empty
-	install_confirmation=""
-	$HELPER display_info "installations will not be automatically accepted, you'll have to specify your choice for each steps."
-fi
-
-
-
-
-
 # Install packages on the system
-# Usage : install_package <manager> <package>
+# Usage : install_package <package>
 install_package() {
 
-	local manager="${1}"
-	local package="${2}"
-	
+	local package="${1}"
+	local manager=""
 
-	if [ "$($HELPER exists_command $manager)" = "exists" ]; then
+	# Don't do anything if the package is already installed
+	if [ "$($HELPER exists_command $package)" = "exists" ]; then
+		$HELPER display_success "package '$package' already installed."
+	else
 
-		if [ "$manager" = "apt" ]; then
-			apt install $package $install_confirmation
+		$HELPER display_info "starting package '$package' installation."
+
+		# Test every supported package managers until finding a compatible
+		if [ "$($HELPER exists_command apt)" = "exists" ]; then
+			apt install -y $package	| $HELPER append_log
+			manager="apt"
+
+		elif [ "$($HELPER exists_command dnf)" = "exists" ]; then
+			dnf install $package	| $HELPER append_log
+			manager="dnf"
+
+		elif [ "$($HELPER exists_command yum)" = "exists" ]; then
+			yum install $package	| $HELPER append_log
+			manager="yum"
+
+		elif [ "$($HELPER exists_command snap)" = "exists" ]; then
+			snap install $package	| $HELPER append_log
+			manager="snap"
+
 		fi
 
-		
-		if [ "$manager" = "dnf" ]; then
-			dnf install $package $install_confirmation
-		fi
 
-		
-		if [ "$manager" = "yum" ]; then
-			yum install $package $install_confirmation
-		fi
-
-		
-		if [ "$manager" = "snap" ]; then
-			snap install $package $install_confirmation
-		fi
-
+		# Display if package has been installed or not
 		if [ "$($HELPER exists_command $package)" = "exists" ]; then
-			display_success "package '$package' has been installed with '$manager'."
+			$HELPER display_success "package '$package' has been installed with '$manager'."
 		else
-			display_error "package '$package' has not been installed with '$manager'."
+			$HELPER display_error "package '$package' has not been installed with '$manager'."
 		fi
-
 	fi
+
+
 
 }
 
@@ -104,8 +92,9 @@ install_package() {
 
 
 
+install_package "${1}"
 
-install_package $1 $2
+# $HELPER "loading" $(install_package ${1})
 
 
 
