@@ -30,21 +30,22 @@
 
 
 
-export VERSION="2.0.0"
+export VERSION="2.0.1"
 
 export NAME="Bashpack"
 export NAME_LOWERCASE="$(echo "$NAME" | tr A-Z a-z)"
 export NAME_UPPERCASE="$(echo "$NAME" | tr a-z A-Z)"
 export NAME_ALIAS="bp"
 
-export current_cli="$0"
+export CURRENT_CLI="$0"
+export HELPER="$CURRENT_CLI helper"
 
 # BASE_URL="https://api.github.com/repos/$NAME_LOWERCASE-project"
 REPO_URL="$NAME_LOWERCASE-project"
 HOST_URL_ARCH="https://api.github.com/repos/$REPO_URL"
 HOST_URL_FILE="https://raw.githubusercontent.com/$REPO_URL"
 
-USAGE="Usage: $current_cli [COMMAND] [OPTION] \n$current_cli --help"
+USAGE="Usage: $CURRENT_CLI [COMMAND] [OPTION] \n$CURRENT_CLI --help"
 
 dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
@@ -109,8 +110,8 @@ export file_log_update="$dir_log/updates.log"
 # Display a warning in case of using the script and not a command installed on the system
 # Export a variable that permit to avoid this message duplication (because this file is called multiple times over the differents process)
 if [ "$WARNING_ALREADY_SEND" != "true" ]; then
-	if [ "$current_cli" = "./$NAME_LOWERCASE.sh" ]; then
-		echo "Warning: you are currently using '$current_cli' which is located at $(pwd)."
+	if [ "$CURRENT_CLI" = "./$NAME_LOWERCASE.sh" ]; then
+		echo "Warning: you are currently using '$CURRENT_CLI' which is located at $(pwd)."
 		echo ""
 
 		export WARNING_ALREADY_SEND="true"
@@ -221,12 +222,46 @@ fi
 # Helper functions - begin
 
 
+# Getting values stored in configuration files.
+# Usage: get_config_value "<file>" "<option>"
+get_config_value() {
+	local file="${1}"
+	local option="${2}"
+
+	while read -r line; do
+		local first_char="$(echo $line | cut -c1-1)"
+
+		# Avoid reading comments and empty lines
+		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
+			if [ "$(echo $line | cut -d " " -f 1)" = "$option" ]; then
+				echo $line | cut -d " " -f 2
+				break
+			fi
+		fi	
+	done < "$file"
+}
+
+
+
+# Display current CLI informations
+# Usage: current_cli_info
+# /!\ This function is intended for development purpose, it's just called in logs to clarify some situations
+current_cli_info() {
+
+	# "False" option doesn't really exist as described in the config file, anything other that "true" will just disable this function.
+	if [ "$(get_config_value "$dir_config/$NAME_LOWERCASE.conf" "debug")" = "true" ]; then
+		echo " cli:$CURRENT_CLI pub:$PUBLICATION ver:$VERSION   "
+	fi
+}
+
+
+
 # Display always the same message in error messages.
 # Usage: display_error <message>
-# Usage: display_error <message> <log file>
+# Usage: display_error <message> <log file to duplicate the message>
 display_error() {
 
-	local format="$now error:     ${1}"
+	local format="$now error:    $(current_cli_info) ${1}"
 
 	if [ -n "${2}" ]; then
 		echo "$format" | tee -a "$file_log_main" "${2}"
@@ -240,10 +275,10 @@ display_error() {
 
 # Display always the same message in success messages.
 # Usage: display_success <message>
-# Usage: display_success <message> <log file>
+# Usage: display_success <message> <log file to duplicate the message>
 display_success() {
 
-	local format="$now success:   ${1}"
+	local format="$now success:  $(current_cli_info) ${1}"
 
 	if [ -n "${2}" ]; then
 		echo "$format" | tee -a "$file_log_main" "${2}"
@@ -257,10 +292,10 @@ display_success() {
 
 # Display always the same message in info messages.
 # Usage: display_info <message>
-# Usage: display_info <message> <log file>
+# Usage: display_info <message> <log file to duplicate the message>
 display_info() {
 
-	local format="$now info:      ${1}"
+	local format="$now info:     $(current_cli_info) ${1}"
 
 	if [ -n "${2}" ]; then
 		echo "$format" | tee -a "$file_log_main" "${2}"
@@ -273,8 +308,8 @@ display_info() {
 
 
 # Write output of a command in logs
-# Usage: <command> | append_log
-# Usage: <command> | append_log <log file>
+# Usage: <command> | append_log					(append to the default file)
+# Usage: <command> | append_log <log file>		(append to the given file)
 append_log() {
 
 	local file_log="${1}"
@@ -288,9 +323,9 @@ append_log() {
 
 	# Set the log format on the command and append it to the selected file
 	if [ -n "$file_log" ]; then
-		sed "s/^/$now op.sys:    /" | tee -a "$file_log"
+		sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log"
 	else
-		sed "s/^/$now op.sys:    /" | tee -a "$file_log_main"
+		sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log_main"
 	fi
 
 }
@@ -388,28 +423,6 @@ exists_command() {
 
 
 
-# Getting values stored in configuration files.
-# Usage: get_config_value "<file>" "<option>"
-get_config_value() {
-	local file="${1}"
-	local option="${2}"
-
-	while read -r line; do
-		local first_char="$(echo $line | cut -c1-1)"
-
-		# Avoid reading comments and empty lines
-		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
-			if [ "$(echo $line | cut -d " " -f 1)" = "$option" ]; then
-				echo $line | cut -d " " -f 2
-				break
-			fi
-		fi	
-	done < "$file"
-}
-
-
-
-
 # Setting values in configuration file during script execution
 # Usage: set_config_value "<file>" "<option>" "<new value>"
 set_config_value() {
@@ -421,7 +434,27 @@ set_config_value() {
 
 	display_info "set '$option' from '$value_old' to '$value_new'."
 
-	sed -i "s/$option $value_old/$option $value_new/g" "$file"
+	# Drop if the option or the value are not given
+	if [ -n "$option" ] || [ -n "$value_new" ]; then
+
+		# If both the file and the option exist
+		# = Replace the option old value with the new value
+		if [ -f "$file" ] && [ -n "$value_old" ]; then
+			sed -i "s/$option $value_old/$option $value_new/g" "$file"
+
+		# If the file exists but the option doesn't exist
+		# = Add the option and the value at the begin of the file (this is a curative way to just quickly get the option setted up)
+		elif [ -f "$file" ] && [ -z "$value_old" ]; then
+			sed -i "1s/^/$option $value_new/" "$file"
+
+		# If the file doesn't exist (also meaning the option can't exist)
+		# = Create the file and add the option with the value (this is a curative way to just quickly get the option setted up)
+		elif [ ! -f "$file" ]; then
+			echo "$option $value_new" > "$file"
+		fi
+	else
+		display_error "missing option/value combination."
+	fi
 }
 
 
@@ -448,6 +481,30 @@ get_logs() {
 		cat "${1}" | less +G
 	else
 		cat "${1}"
+	fi
+}
+
+
+
+
+# Detect if the command has been installed on the system
+detect_cli() {
+	if [ "$(exists_command "$NAME_LOWERCASE")" = "exists" ]; then
+		if [ -n "$($NAME_LOWERCASE --version)" ]; then
+			display_info "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) detected at $(posix_which $NAME_LOWERCASE)"
+		fi
+	fi
+}
+
+
+
+
+# Detect what is the current publication installed
+detect_publication() {
+	if [ -f "$file_current_publication" ]; then
+		cat "$file_current_publication"
+	else
+		display_error "publication not found."
 	fi
 }
 
@@ -578,7 +635,14 @@ case "$PUBLICATION" in
 		URL_ARCH="$HOST_URL_ARCH/$NAME_LOWERCASE-$PUBLICATION"
 		URL_FILE="$HOST_URL_FILE/$NAME_LOWERCASE-$PUBLICATION"
 		;;
+	main)
+		URL_ARCH="$HOST_URL_ARCH/$NAME_LOWERCASE"
+		URL_FILE="$HOST_URL_FILE/$NAME_LOWERCASE"
+		;;
 	*)
+		display_info "publication '$PUBLICATION' not found, using default 'main'."
+		PUBLICATION="main"
+		echo "main" > $file_current_publication
 		URL_ARCH="$HOST_URL_ARCH/$NAME_LOWERCASE"
 		URL_FILE="$HOST_URL_FILE/$NAME_LOWERCASE"
 		;;
@@ -587,7 +651,7 @@ esac
 
 
 
-if [ "$current_cli" = "./$NAME_LOWERCASE.sh" ]; then
+if [ "$CURRENT_CLI" = "./$NAME_LOWERCASE.sh" ]; then
 	dir_commands="commands"
 else
 	dir_commands="$dir_src_cli/commands"
@@ -623,6 +687,8 @@ delete_cli() {
 	if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
 		display_error "$NAME is not installed on your system."
 	else
+		detect_cli
+
 		if [ "$exclude_main" = "exclude_main" ]; then
 			# Delete everything except main files and directories
 			
@@ -657,7 +723,7 @@ delete_cli() {
 				display_error "$NAME $VERSION located at $(posix_which $NAME_ALIAS) has not been uninstalled." && exit
 			fi
 		else
-			display_success "$NAME $VERSION ($(detect_publication)) has been uninstalled."
+			display_success "uninstallation completed."
 		fi
 	fi
 }
@@ -708,30 +774,6 @@ delete_all() {
 
 	delete_systemd && delete_cli ${1}
 	# delete_cli ${1}
-}
-
-
-
-
-# Detect if the command has been installed on the system
-detect_cli() {
-	if [ "$(exists_command "$NAME_LOWERCASE")" = "exists" ]; then
-		if [ -n "$($NAME_LOWERCASE --version)" ]; then
-			display_info "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) detected at $(posix_which $NAME_LOWERCASE)"
-		fi
-	fi
-}
-
-
-
-
-# Detect what is the current publication installed
-detect_publication() {
-	if [ -f "$file_current_publication" ]; then
-		cat "$file_current_publication"
-	else
-		display_error "publication not found."
-	fi
 }
 
 
@@ -791,7 +833,7 @@ verify_cli_files() {
 				previous_path="$path_variable"
 
 			fi
-		done < "$current_cli"
+		done < "$CURRENT_CLI"
 
 
 		display_info "$found/$total paths found."
@@ -976,120 +1018,6 @@ install_new_config_file() {
 
 
 
-# Create the command from the downloaded archives
-# Works together with install or update functions
-create_cli() {
-
-	# Process to the installation
-	if [ -d "$archive_dir_tmp" ]; then
-	
-		# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
-		# Remove them to allow installation of the CLI
-		if [ -f "$file_main_alias_1" ] || [ -f "$file_main_alias_2" ]; then
-			display_info "removing old aliases."
-			rm -f $file_main_alias_1
-			rm -f $file_main_alias_2
-		fi
-
-		
-		# Sources files installation
-		display_info "installing sources."
-		cp -RT $archive_dir_tmp $dir_src_cli	# -T used to overwrite the source dir and not creating a new inside
-		chmod 555 -R $dir_src_cli				# Set everyting in read+exec by default
-		chmod 555 $file_main					# Set main file executable for everyone (autcompletion of the command itself requires it)
-		chmod 550 -R "$dir_src_cli/commands/"	# Set commands files executable for users + root
-		chmod 444 -R "$dir_src_cli/"*.md		# Set .md files read-only for everyone
-
-
-		# Create an alias so the listed package are clear on the system (-f to force overwrite existing)
-		display_info "installing aliases."
-		ln -sf $file_main $file_main_alias_1
-		ln -sf $file_main $file_main_alias_2
-
-
-		# Autocompletion installation
-		# Install autocompletion only if the directory has been found.
-		if [ -n "$dir_autocompletion" ]; then
-			display_info "installing autocompletion."
-			cp "$archive_dir_tmp/completion" $file_autocompletion_1
-			cp "$archive_dir_tmp/completion" $file_autocompletion_2
-		fi
-
-		
-		# Systemd services installation
-		# Checking if systemd is installed (and do nothing if not installed because it means the OS doesn't work with it)
-		if [ $(exists_command "systemctl") = "exists" ]; then
-		
-			display_info "installing systemd services."
-		
-			# Copy systemd services & timers to systemd directory
-			cp -R $archive_dir_tmp/systemd/* $dir_systemd
-			systemctl daemon-reload
-
-			# Start & enable systemd timers (don't need to start systemd services because timers are made for this)
-			for file in $(ls $dir_systemd/$NAME_LOWERCASE* | grep ".timer"); do
-				if [ -f $file ]; then
-					display_info "$file found."
-
-					local unit="$(basename "$file")"
-
-					display_info "starting & enabling $unit." 
-					
-					# Call "restart" and not "start" to be sure to run the unit provided in this current version (unless the old unit will be kept as the running one)
-					systemctl restart "$unit" 
-					systemctl enable "$unit"
-				else
-					display_error "$file not found."
-				fi
-			done
-		fi
-
-
-		# Config installation
-		# Checking if the config directory exists and create it if doesn't exists
-		display_info "installing configuration."
-		if [ ! -d "$dir_config" ]; then
-			display_info "$dir_config not found, creating it."
-			mkdir $dir_config
-		fi
-
-		# Must testing if config file exists to avoid overwrite user customizations 
-		if [ ! -f "$file_config" ]; then
-			display_info "$file_config not found, creating it. "
-			# cp "$archive_dir_tmp/config/$file_config" "$file_config"
-			cp "$archive_dir_tmp/config/$NAME_LOWERCASE.conf" "$file_config"
-
-		else
-			display_info "$file_config already exists, installing new file and inserting current configured options."
-			install_new_config_file
-		fi
-		
-
-		# # Creating a file that permit to know what is the current installed publication
-		# echo "$PUBLICATION" > $file_current_publication
-
-
-		# Allow users to edit the configuration
-		chmod +rw -R $dir_config
-
-
-		# Remove unwanted files from the installed sources (keep only main, sub commands and .md files)
-		find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -not -name "*.md" -not -name "commands" -exec rm -rf {} +
-
-
-		# Success message
-		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
-			display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) has been installed."
-		else
-			display_error "$NAME installation failed."
-		fi
-		
-	fi
-}
-
-
-
-
 # Update the installed command on the system
 #
 # !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1164,34 +1092,143 @@ install_cli() {
 		display_info "starting installation."
 		detect_cli
 
+		
+		# Config directory installation
+		# Checking if the config directory exists and create it if doesn't exists
+		# This must be the first thing to do since $chosen_publication needs to be stored in this directory but it would not exists if it's the first time the CLI is installed
+		display_info "installing configuration."
+		if [ ! -d "$dir_config" ]; then
+			display_info "$dir_config not found, creating it."
+			mkdir $dir_config
+		fi
+
 
 		# Just a log message
 		if [ -n "$chosen_publication" ]; then
 			display_info "publication '$chosen_publication' entered manually."
+		else
+			display_info "using current '$($NAME_ALIAS --publication)' publication."
 		fi
 
 
 		# Check if a publication has been chosen
-		if [ "$chosen_publication" = "" ] || [ "$chosen_publication" = "main" ] ; then
+		if [ "$chosen_publication" = "" ] || [ "$chosen_publication" = "main" ] || [ "$chosen_publication" = "$($NAME_ALIAS --publication)" ]; then
+
 			# Download tarball archive with the default way
 			download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
-			echo "$PUBLICATION" > $file_current_publication
+			echo "$($NAME_ALIAS --publication)" > $file_current_publication
 		else
 			# Force using chosen publication, unless it always will be installed under the main publication
 			set_config_value "$file_config" "publication" "$chosen_publication"
 
-			# Download tarball archive from the given publication
-			download_cli "$HOST_URL_ARCH/$NAME_LOWERCASE-$chosen_publication/tarball/$VERSION" $archive_tmp $archive_dir_tmp
+			update_cli
+
+			# # Download tarball archive from the given publication
+			# download_cli "$HOST_URL_ARCH/$NAME_LOWERCASE-$chosen_publication/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
 			echo "$chosen_publication" > $file_current_publication
 		fi
 
 
-		# Install new files
-		create_cli
 		
+		# Process to the installation
+		if [ -d "$archive_dir_tmp" ]; then
+		
+			# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
+			# Remove them to allow installation of the CLI
+			if [ -f "$file_main_alias_1" ] || [ -f "$file_main_alias_2" ]; then
+				display_info "removing old aliases."
+				rm -f $file_main_alias_1
+				rm -f $file_main_alias_2
+			fi
 
+			
+			# Sources files installation
+			display_info "installing sources."
+			cp -RT $archive_dir_tmp $dir_src_cli	# -T used to overwrite the source dir and not creating a new inside
+			chmod 555 -R $dir_src_cli				# Set everyting in read+exec by default
+			chmod 555 $file_main					# Set main file executable for everyone (autcompletion of the command itself requires it)
+			chmod 550 -R "$dir_src_cli/commands/"	# Set commands files executable for users + root
+			chmod 444 -R "$dir_src_cli/"*.md		# Set .md files read-only for everyone
+
+
+			# Create an alias so the listed package are clear on the system (-f to force overwrite existing)
+			display_info "installing aliases."
+			ln -sf $file_main $file_main_alias_1
+			ln -sf $file_main $file_main_alias_2
+
+
+			# Autocompletion installation
+			# Install autocompletion only if the directory has been found.
+			if [ -n "$dir_autocompletion" ]; then
+				display_info "installing autocompletion."
+				cp "$archive_dir_tmp/completion" $file_autocompletion_1
+				cp "$archive_dir_tmp/completion" $file_autocompletion_2
+			fi
+
+			
+			# Systemd services installation
+			# Checking if systemd is installed (and do nothing if not installed because it means the OS doesn't work with it)
+			if [ "$(exists_command "systemctl")" = "exists" ]; then
+			
+				display_info "installing systemd services."
+			
+				# Copy systemd services & timers to systemd directory
+				cp -R $archive_dir_tmp/systemd/* $dir_systemd
+				systemctl daemon-reload
+
+				# Start & enable systemd timers (don't need to start systemd services because timers are made for this)
+				for file in $(ls $dir_systemd/$NAME_LOWERCASE* | grep ".timer"); do
+					if [ -f $file ]; then
+						display_info "$file found."
+
+						local unit="$(basename "$file")"
+
+						display_info "starting & enabling $unit." 
+						
+						# Call "restart" and not "start" to be sure to run the unit provided in this current version (unless the old unit will be kept as the running one)
+						systemctl restart "$unit" 
+						systemctl enable "$unit"
+					else
+						display_error "$file not found."
+					fi
+				done
+			fi
+
+
+			# Must testing if config file exists to avoid overwrite user customizations 
+			if [ ! -f "$file_config" ]; then
+				display_info "$file_config not found, creating it. "
+				# cp "$archive_dir_tmp/config/$file_config" "$file_config"
+				cp "$archive_dir_tmp/config/$NAME_LOWERCASE.conf" "$file_config"
+
+			else
+				display_info "$file_config already exists, installing new file and inserting current configured options."
+				install_new_config_file
+			fi
+
+
+			# Allow users to edit the configuration
+			chmod +rw -R $dir_config
+
+
+			# Remove unwanted files from the installed sources (keep only main, sub commands and .md files)
+			find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -not -name "*.md" -not -name "commands" -exec rm -rf {} +
+
+
+			# Success message
+			if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
+				display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) has been installed."
+			else
+				# Remove config dir that might have been created just to store the publication name
+				rm -rf "$dir_config"
+
+				display_error "$NAME installation failed."
+			fi
+			
+		fi
+		
 
 		# Clear temporary files & directories
 		rm -rf $dir_tmp/$NAME_LOWERCASE*
@@ -1255,6 +1292,16 @@ case "$1" in
 				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $file_COMMAND_UPDATE ;;
 				--when)				$COMMAND_UPDATE_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
 				--get-logs)			get_logs $file_log_update ;;
+				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
+			esac
+		fi ;;
+	install)
+		if [ -z "$2" ]; then
+			exec $file_COMMAND_INSTALL "$1" "$2"
+		else
+			case "$2" in
+				-y|--assume-yes)	export install_confirmation="yes" && exec $file_COMMAND_INSTALL ;;
+				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $file_COMMAND_INSTALL ;;
 				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
