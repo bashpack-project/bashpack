@@ -248,10 +248,10 @@ get_config_value() {
 # /!\ This function is intended for development purpose, it's just called in logs to clarify some situations
 current_cli_info() {
 
+	# "False" option doesn't really exist as described in the config file, anything other that "true" will just disable this function.
 	if [ "$(get_config_value "$dir_config/$NAME_LOWERCASE.conf" "debug")" = "true" ]; then
-		echo "cli:$CURRENT_CLI	pub:$PUBLICATION	ver:$VERSION :"
+		echo " cli:$CURRENT_CLI pub:$PUBLICATION ver:$VERSION   "
 	fi
-
 }
 
 
@@ -261,7 +261,7 @@ current_cli_info() {
 # Usage: display_error <message> <log file to duplicate the message>
 display_error() {
 
-	local format="$now error:     $(current_cli_info) ${1}"
+	local format="$now error:    $(current_cli_info) ${1}"
 
 	if [ -n "${2}" ]; then
 		echo "$format" | tee -a "$file_log_main" "${2}"
@@ -278,7 +278,7 @@ display_error() {
 # Usage: display_success <message> <log file to duplicate the message>
 display_success() {
 
-	local format="$now success:   $(current_cli_info) ${1}"
+	local format="$now success:  $(current_cli_info) ${1}"
 
 	if [ -n "${2}" ]; then
 		echo "$format" | tee -a "$file_log_main" "${2}"
@@ -295,7 +295,7 @@ display_success() {
 # Usage: display_info <message> <log file to duplicate the message>
 display_info() {
 
-	local format="$now info:      $(current_cli_info) ${1}"
+	local format="$now info:     $(current_cli_info) ${1}"
 
 	if [ -n "${2}" ]; then
 		echo "$format" | tee -a "$file_log_main" "${2}"
@@ -323,9 +323,9 @@ append_log() {
 
 	# Set the log format on the command and append it to the selected file
 	if [ -n "$file_log" ]; then
-		sed "s/^/$now op.sys:    $(current_cli_info) /" | tee -a "$file_log"
+		sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log"
 	else
-		sed "s/^/$now op.sys:    $(current_cli_info) /" | tee -a "$file_log_main"
+		sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log_main"
 	fi
 
 }
@@ -635,7 +635,14 @@ case "$PUBLICATION" in
 		URL_ARCH="$HOST_URL_ARCH/$NAME_LOWERCASE-$PUBLICATION"
 		URL_FILE="$HOST_URL_FILE/$NAME_LOWERCASE-$PUBLICATION"
 		;;
+	main)
+		URL_ARCH="$HOST_URL_ARCH/$NAME_LOWERCASE"
+		URL_FILE="$HOST_URL_FILE/$NAME_LOWERCASE"
+		;;
 	*)
+		display_info "publication '$PUBLICATION' not found, using default 'main'."
+		PUBLICATION="main"
+		echo "main" > $file_current_publication
 		URL_ARCH="$HOST_URL_ARCH/$NAME_LOWERCASE"
 		URL_FILE="$HOST_URL_FILE/$NAME_LOWERCASE"
 		;;
