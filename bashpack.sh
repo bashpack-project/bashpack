@@ -249,7 +249,7 @@ get_config_value() {
 current_cli_info() {
 
 	if [ "$(get_config_value "$dir_config/$NAME_LOWERCASE.conf" "debug")" = "true" ]; then
-		echo "cli:$CURRENT_CLI ver:$VERSION pub:$PUBLICATION"
+		echo "cli:$CURRENT_CLI	pub:$PUBLICATION	ver:$VERSION :"
 	fi
 
 }
