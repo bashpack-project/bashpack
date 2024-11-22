@@ -1041,6 +1041,8 @@ update_cli() {
 		# Download only the main file (main by default, or the one of the chosen publication if specified)
 		if [ -z "$chosen_publication" ]; then
 			download_cli "$URL_FILE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
+		elif [ "$chosen_publication" = "main" ]; then
+			download_cli "$HOST_URL_FILE/$NAME_LOWERCASE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
 		else
 			download_cli "$HOST_URL_FILE/$NAME_LOWERCASE-$chosen_publication/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
 		fi
@@ -1119,8 +1121,8 @@ install_cli() {
 		fi
 
 
-		# Check if a publication has been chosen
-		if [ "$chosen_publication" = "" ] || [ "$chosen_publication" = "main" ] || [ "$chosen_publication" = "$($NAME_ALIAS --publication)" ]; then
+		# Check if a publication has been chosen, and allow to reinstall if the specified publication is the same as the current or is empty
+		if [ "$chosen_publication" = "" ] || [ "$chosen_publication" = "$($NAME_ALIAS --publication)" ]; then
 
 			# Download tarball archive with the default way
 			download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
