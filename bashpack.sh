@@ -1248,9 +1248,14 @@ install_cli() {
 
 		display_info "end of self installation."
 
-		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
-			display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) is ready."
+
+		# Success message
+		if [ "$chosen_publication" = "" ] || [ "$chosen_publication" = "$($NAME_ALIAS --publication)" ]; then
+			if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
+				display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) is ready."
+			fi
 		fi
+
 	else
 		verify_cli_commands
 	fi
