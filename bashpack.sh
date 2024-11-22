@@ -1033,12 +1033,18 @@ update_cli() {
 	local downloaded_cli="$dir_tmp/$NAME_LOWERCASE.sh"
 	local remote_archive="$URL_ARCH/releases/latest"
 	local force="${1}"
+	local chosen_publication="${2}"
 
 	update_process() {
 		display_info "starting self update."
 
-		# Download only the main file 
-		download_cli "$URL_FILE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
+		# Download only the main file (main by default, or the one of the chosen publication if specified)
+		if [ -z "$chosen_publication" ]; then
+			download_cli "$URL_FILE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
+		else
+			download_cli "$HOST_URL_FILE/$NAME_LOWERCASE-$chosen_publication/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
+		fi
+
 
 		# Delete old files
 		delete_cli "exclude_main"
@@ -1124,10 +1130,11 @@ install_cli() {
 			# Force using chosen publication, unless it always will be installed under the main publication
 			set_config_value "$file_config" "publication" "$chosen_publication"
 
-			update_cli
-
 			# # Download tarball archive from the given publication
 			# download_cli "$HOST_URL_ARCH/$NAME_LOWERCASE-$chosen_publication/tarball/$VERSION" $archive_tmp $archive_dir_tmp
+
+			# update_cli
+			update_cli -f "$chosen_publication"
 
 			echo "$chosen_publication" > $file_current_publication
 		fi
@@ -1221,7 +1228,8 @@ install_cli() {
 
 			# Success message
 			if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
-				display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) has been installed."
+				# display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) has been installed."
+				display_success "command '$NAME_ALIAS' has been installed."
 			else
 				# Remove config dir that might have been created just to store the publication name
 				rm -rf "$dir_config"
@@ -1237,6 +1245,10 @@ install_cli() {
 		
 
 		display_info "end of self installation."
+
+		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
+			display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) is ready."
+		fi
 	else
 		verify_cli_commands
 	fi
