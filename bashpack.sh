@@ -660,6 +660,7 @@ fi
 file_COMMAND_UPDATE="$dir_commands/update.sh"
 file_COMMAND_MAN="$dir_commands/man.sh"
 file_COMMAND_FIREWALL="$dir_commands/firewall.sh"	
+file_COMMAND_INSTALL="$dir_commands/install.sh"	
 
 if [ "$(exists_command "systemctl")" = "exists" ]; then
 	COMMAND_UPDATE_SYSTEMD_STATUS="systemctl status $NAME_LOWERCASE-updates.timer"
@@ -930,6 +931,7 @@ verify_cli_commands() {
 		read
 		cd
 		eval
+		exec
 		exit
 		export
 		case
@@ -1031,12 +1033,20 @@ update_cli() {
 	local downloaded_cli="$dir_tmp/$NAME_LOWERCASE.sh"
 	local remote_archive="$URL_ARCH/releases/latest"
 	local force="${1}"
+	local chosen_publication="${2}"
 
 	update_process() {
 		display_info "starting self update."
 
-		# Download only the main file 
-		download_cli "$URL_FILE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
+		# Download only the main file (main by default, or the one of the chosen publication if specified)
+		if [ -z "$chosen_publication" ]; then
+			download_cli "$URL_FILE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
+		elif [ "$chosen_publication" = "main" ]; then
+			download_cli "$HOST_URL_FILE/$NAME_LOWERCASE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
+		else
+			download_cli "$HOST_URL_FILE/$NAME_LOWERCASE-$chosen_publication/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
+		fi
+
 
 		# Delete old files
 		delete_cli "exclude_main"
@@ -1045,7 +1055,7 @@ update_cli() {
 		chmod +x "$downloaded_cli"
 		"$downloaded_cli" -i
 
-		display_info "end of self update."
+		display_info "end of self update or publication rotation."
 	}
 
 
@@ -1089,7 +1099,7 @@ install_cli() {
 	# Test if all required commands are on the system before install anything
 	if [ "$(verify_cli_commands "print-missing-required-command-only")" = "0" ]; then
 
-		display_info "starting installation."
+		display_info "starting self installation."
 		detect_cli
 
 		
@@ -1111,8 +1121,8 @@ install_cli() {
 		fi
 
 
-		# Check if a publication has been chosen
-		if [ "$chosen_publication" = "" ] || [ "$chosen_publication" = "main" ] || [ "$chosen_publication" = "$($NAME_ALIAS --publication)" ]; then
+		# Check if a publication has been chosen, and allow to reinstall if the specified publication is the same as the current or is empty
+		if [ "$chosen_publication" = "" ] || [ "$chosen_publication" = "$($NAME_ALIAS --publication)" ]; then
 
 			# Download tarball archive with the default way
 			download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
@@ -1122,10 +1132,11 @@ install_cli() {
 			# Force using chosen publication, unless it always will be installed under the main publication
 			set_config_value "$file_config" "publication" "$chosen_publication"
 
-			update_cli
-
 			# # Download tarball archive from the given publication
 			# download_cli "$HOST_URL_ARCH/$NAME_LOWERCASE-$chosen_publication/tarball/$VERSION" $archive_tmp $archive_dir_tmp
+
+			# update_cli
+			update_cli -f "$chosen_publication"
 
 			echo "$chosen_publication" > $file_current_publication
 		fi
@@ -1219,7 +1230,8 @@ install_cli() {
 
 			# Success message
 			if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
-				display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) has been installed."
+				# display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) has been installed."
+				display_success "command '$NAME_ALIAS' has been installed."
 			else
 				# Remove config dir that might have been created just to store the publication name
 				rm -rf "$dir_config"
@@ -1234,7 +1246,11 @@ install_cli() {
 		rm -rf $dir_tmp/$NAME_LOWERCASE*
 		
 
-		display_info "end of installation."
+		display_info "end of self installation."
+
+		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
+			display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) is ready."
+		fi
 	else
 		verify_cli_commands
 	fi
@@ -1285,11 +1301,11 @@ case "$1" in
 		fi ;;
 	update)
 		if [ -z "$2" ]; then
-			exec $file_COMMAND_UPDATE
+			loading "exec $file_COMMAND_UPDATE"
 		else
 			case "$2" in
-				-y|--assume-yes)	export install_confirmation="yes" && exec $file_COMMAND_UPDATE ;;
-				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $file_COMMAND_UPDATE ;;
+				-y|--assume-yes)	export install_confirmation="yes" && loading "exec $file_COMMAND_UPDATE" ;;
+				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && loading "exec $file_COMMAND_UPDATE" ;;
 				--when)				$COMMAND_UPDATE_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
 				--get-logs)			get_logs $file_log_update ;;
 				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
@@ -1297,13 +1313,15 @@ case "$1" in
 		fi ;;
 	install)
 		if [ -z "$2" ]; then
-			exec $file_COMMAND_INSTALL "$1" "$2"
+			display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit
 		else
-			case "$2" in
-				-y|--assume-yes)	export install_confirmation="yes" && exec $file_COMMAND_INSTALL ;;
-				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && exec $file_COMMAND_INSTALL ;;
-				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
-			esac
+			# loading "exec $file_COMMAND_INSTALL $2"
+			exec $file_COMMAND_INSTALL "$2"
+			# case "$2" in
+			# 	-y|--assume-yes)	export install_confirmation="yes" && exec $file_COMMAND_INSTALL ;;
+			# 	--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && exec $file_COMMAND_INSTALL ;;
+			# 	*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
+			# esac
 		fi ;;
 	# Since "export -f" is not available in Shell, the helper command below permit to use commands from this file in sub scripts
 	helper)
