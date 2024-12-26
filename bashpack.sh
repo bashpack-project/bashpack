@@ -902,7 +902,7 @@ verify_cli_dependencies() {
 		esac
 		do
 		done
-		$SHELL \
+		sh \
 	"
 
 	local commands_optional=" \
@@ -1225,21 +1225,21 @@ install_cli() {
 
 # The options (except --help) must be called with root
 case "$1" in
-	-i|--self-install)		loading "install_cli $2" ;;		# Critical option, see the comments at function declaration for more info	
+	-p|--publication)				loading "detect_publication" ;;
+	-i|--self-install)				loading "install_cli $2" ;;		# Critical option, see the comments at function declaration for more info	
 	-u|--self-update)
 		if [ -z "$2" ]; then
-							loading "update_cli"			# Critical option, see the comments at function declaration for more info
+									loading "update_cli"			# Critical option, see the comments at function declaration for more info
 		else
 			case "$2" in
-				-f|--force)	loading "update_cli force" ;;	# Shortcut to quickly reinstall the CLI
+				-f|--force)			loading "update_cli force" ;;	# Shortcut to quickly reinstall the CLI
 			esac
 		fi ;;
-	--self-delete)				loading "delete_all" ;;
-	-p|--publication)			loading "detect_publication" ;;
-	--get-logs)					get_logs "$file_log_main" ;;
+	--self-delete)					loading "delete_all" ;;
+	--get-logs)						get_logs "$file_log_main" ;;
 	verify)
 		if [ -z "$2" ]; then
-			loading "verify_cli_dependencies";  loading "verify_cli_files"; loading "verify_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading "verify_repository_reachability "$URL_ARCH/tarball/$VERSION""
+									loading "verify_cli_dependencies";  loading "verify_cli_files"; loading "verify_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading "verify_repository_reachability "$URL_ARCH/tarball/$VERSION""
 		else
 			case "$2" in
 				-f|--files)			loading "verify_cli_files" ;;
@@ -1260,15 +1260,16 @@ case "$1" in
 				display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit
 			else
 				case "$2" in
-					loading)							loading "$3" ;;
-					display_success)					display_success "$3" "$4" ;;
-					display_error)						display_error "$3" "$4" ;;
-					display_info)						display_info "$3" "$4" ;;
-					append_log)							append_log "$3" ;;
-					exists_command)						exists_command "$3" ;;
-					sanitize_confirmation)				sanitize_confirmation "$3" ;;
-					get_config_value)					get_config_value "$3" "$4" ;;
-					*)									display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
+					loading)				loading "$3" ;;
+					display_success)		display_success "$3" "$4" ;;
+					display_error)			display_error "$3" "$4" ;;
+					display_info)			display_info "$3" "$4" ;;
+					get_logs)				get_logs "$3" ;;
+					append_log)				append_log "$3" ;;
+					exists_command)			exists_command "$3" ;;
+					sanitize_confirmation)	sanitize_confirmation "$3" ;;
+					get_config_value)		get_config_value "$3" "$4" ;;
+					*)						display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 				esac
 			fi
 		fi ;;
