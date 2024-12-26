@@ -25,70 +25,38 @@
 
 
 export allow_helper_functions="true"
-
-
-
-continue_question="Do you want to continue? [y/N] "
-
-
-
-
-# # Usage : text_error_cant_install <manager>
-# install_package_error() {
-# 	echo "Error: could not be installed with ${1}."
-# }
+file_log="$dir_log/updates.log"
 
 
 
 
-# # Function to install packages on the system (and package managers also, because package managers are packages themselves).
-# # Package manager order to search packages candidates: Apt -> Snapcraft -> Error "not found"
-# # Usage : install_package <manager> <package>
-# install_package() {
-# 	local manager=${1}
-# 	local package=${2}
+if [ ! -z "$2" ]; then
+	case "$2" in
+		-y|--assume-yes)	install_confirmation="yes" ;;
+		--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation ;;
+		# --when)				$COMMAND_UPDATE_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
+		# --get-logs)			get_logs $file_log ;;
+		--help)				echo "$USAGE" \
+								&& echo "" \
+								&& echo "Supported package managers:" \
+								&& echo " - APT (https://wiki.debian.org/Apt)" \
+								&& echo " - DNF (https://rpm-software-management.github.io/)" \
+								&& echo " - YUM (http://yum.baseurl.org/)" \
+								&& echo " - Canonical Snapcraft (https://snapcraft.io)" \
+								&& echo " - Firmwares with fwupd (https://github.com/fwupd/fwupd)" \
+								&& echo "" \
+								&& echo "Options:" \
+								&& echo " -y, --assume-yes 	enable automatic installations without asking during the execution." \
+								&& echo "     --ask    		ask to manually write your choice about updates installations confirmations." \
+								&& echo "     --get-logs		display logs." \
+								&& echo "     --when   		display next update cycle." \
+								&& echo "" \
+								&& echo "$NAME $VERSION" \
+								&& exit ;;
+		*)					$HELPER display_error "unknown option '$2' from '$1' command."'\n'"$USAGE" && exit ;;
+	esac
+fi
 
-# 	echo ""
-# 	echo "Installing $package with $manager...  "
-# 	echo ""
-
-# 	if ([ $manager = "apt" ] && [ $($HELPER exists_command "apt") = "exists" ]) || [ $($HELPER exists_command "apt") = "exists" ]; then
-# 		apt install -y $package
-# 	elif ([ $manager = "snap" ] && [ $($HELPER exists_command "snap") = "exists" ]) || [ $($HELPER exists_command "snap") = "exists" ]; then
-# 		snap install $package
-# 	else
-# 		echo "$package: Error: package not found."
-# 	fi
-
-# 	echo ""
-# }
-
-
-
-
-# # Function to delete packages on the system.
-# # Package manager order to search packages candidates: Apt -> Snapcraft -> Error "not found"
-# # Usage : delete_package $package <$manager> <yes>
-# delete_package() {
-# 	local package=${1}
-# 	local manager=${2}
-
-# 	echo ""
-# 	if [ "$manager != "" ]; then
-# 		echo "Uninstalling $package with $manager...  "
-# 	else
-# 		echo "Uninstalling $package with the default system manager...  "
-# 	fi
-# 	echo ""
-
-# 	if ([ $manager = "apt" ] && [ $($HELPER exists_command "apt") = "exists" ]) || [ $($HELPER exists_command "apt") = "exists" ]; then
-# 		apt remove -y $package
-# 	elif ([ $manager = "snap" ] && [ $($HELPER exists_command "snap") = "exists" ]) || [ $($HELPER exists_command "snap") = "exists" ]; then
-# 		snap remove $package
-# 	else
-# 		echo "$package: Error: package not found."
-# 	fi
-# }
 
 
 
@@ -113,21 +81,21 @@ fi
 # Update APT packages
 if [ "$($HELPER exists_command "apt")" = "exists" ]; then
 
-	$HELPER display_info "updating with APT." "$file_log_update"
+	$HELPER display_info "updating with APT." "$file_log"
 
 	if [ "$($HELPER exists_command "dpkg")" = "exists" ]; then
-		dpkg --configure -a								| $HELPER append_log "$file_log_update"
+		dpkg --configure -a								| $HELPER append_log "$file_log"
 	fi
 
-	apt update											| $HELPER append_log "$file_log_update"
-	apt install --fix-broken $install_confirmation		| $HELPER append_log "$file_log_update"
-	apt full-upgrade $install_confirmation				| $HELPER append_log "$file_log_update"
+	apt update											| $HELPER append_log "$file_log"
+	apt install --fix-broken $install_confirmation		| $HELPER append_log "$file_log"
+	apt full-upgrade $install_confirmation				| $HELPER append_log "$file_log"
 
 	# Ensure to delete all old packages & their configurations
-	apt autopurge $install_confirmation					| $HELPER append_log "$file_log_update"
+	apt autopurge $install_confirmation					| $HELPER append_log "$file_log"
 
 	# Just repeat to check if everything is ok
-	apt full-upgrade $install_confirmation				| $HELPER append_log "$file_log_update"
+	apt full-upgrade $install_confirmation				| $HELPER append_log "$file_log"
 
 
 	# apt update
@@ -177,9 +145,9 @@ upgrade_with_snapcraft() {
 }
 
 if [ "$($HELPER exists_command "snap")" = "exists" ]; then
-	$HELPER display_info "updating with Snap." "$file_log_update"
+	$HELPER display_info "updating with Snap." "$file_log"
 	# upgrade_with_snapcraft $install_confirmation
-	upgrade_with_snapcraft $install_confirmation | $HELPER append_log "$file_log_update"
+	upgrade_with_snapcraft $install_confirmation | $HELPER append_log "$file_log"
 fi
 
 
@@ -187,17 +155,17 @@ fi
 
 # Update DNF packages (using YUM as fallback if DNF doesn't exist)
 if [ "$($HELPER exists_command "dnf")" = "exists" ]; then
-	$HELPER display_info "updating with DNF." "$file_log_update"
+	$HELPER display_info "updating with DNF." "$file_log"
 
 	# dnf upgrade $install_confirmation
-	dnf upgrade $install_confirmation | $HELPER append_log "$file_log_update"
+	dnf upgrade $install_confirmation | $HELPER append_log "$file_log"
 
 
 elif [ "$($HELPER exists_command "yum")" = "exists" ]; then
-	$HELPER display_info "updating with YUM." "$file_log_update"
+	$HELPER display_info "updating with YUM." "$file_log"
 
 	# yum upgrade $install_confirmation
-	yum upgrade $install_confirmation | $HELPER append_log "$file_log_update"
+	yum upgrade $install_confirmation | $HELPER append_log "$file_log"
 
 fi
 

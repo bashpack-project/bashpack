@@ -30,7 +30,7 @@
 
 
 
-export VERSION="2.0.1"
+export VERSION="3.0.0"
 
 export NAME="Bashpack"
 export NAME_LOWERCASE="$(echo "$NAME" | tr A-Z a-z)"
@@ -45,7 +45,7 @@ REPO_URL="$NAME_LOWERCASE-project"
 HOST_URL_ARCH="https://api.github.com/repos/$REPO_URL"
 HOST_URL_FILE="https://raw.githubusercontent.com/$REPO_URL"
 
-USAGE="Usage: $CURRENT_CLI [COMMAND] [OPTION] \n$CURRENT_CLI --help"
+export USAGE="Usage: $CURRENT_CLI [COMMAND] [OPTION] \n$CURRENT_CLI --help"
 
 dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
@@ -90,6 +90,8 @@ export archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
 export archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
 
 export now="$(date +%y-%m-%d_%H-%M-%S)"
+export continue_question="Do you want to continue? [y/N] "
+
 
 export file_main="$dir_src_cli/$NAME_LOWERCASE.sh"
 export file_main_alias_1="$dir_bin/$NAME_LOWERCASE"
@@ -103,21 +105,30 @@ if [ ! -d "$dir_log" ]; then
 	mkdir -p "$dir_log"
 fi
 export file_log_main="$dir_log/main.log"
-export file_log_update="$dir_log/updates.log"
+# export file_log_update="$dir_log/updates.log"
 
 
 
 # Display a warning in case of using the script and not a command installed on the system
 # Export a variable that permit to avoid this message duplication (because this file is called multiple times over the differents process)
-if [ "$WARNING_ALREADY_SEND" != "true" ]; then
+if [ "$WARNING_ALREADY_SENT" != "true" ]; then
 	if [ "$CURRENT_CLI" = "./$NAME_LOWERCASE.sh" ]; then
 		echo "Warning: you are currently using '$CURRENT_CLI' which is located at $(pwd)."
 		echo ""
 
-		export WARNING_ALREADY_SEND="true"
+		export WARNING_ALREADY_SENT="true"
 	fi
 fi
 
+
+
+if [ "$CURRENT_CLI" = "./$NAME_LOWERCASE.sh" ]; then
+	dir_commands="commands"
+else
+	dir_commands="$dir_src_cli/commands"
+fi
+
+list_commands=$(ls $dir_commands | sed "s/.sh//g")
 
 
 
@@ -130,60 +141,60 @@ if [ -z "$1" ]; then
 else
 	case "$1" in
 		--version) echo $VERSION && exit ;;
-		update)
-			case "$2" in
-				--help) echo "$USAGE" \
-				&&		echo "" \
-				&&		echo "Supported package managers:" \
-				&&		echo " - APT (https://wiki.debian.org/Apt)" \
-				&&		echo " - DNF (https://rpm-software-management.github.io/)" \
-				&&		echo " - YUM (http://yum.baseurl.org/)" \
-				&&		echo " - Canonical Snapcraft (https://snapcraft.io)" \
-				&&		echo " - Firmwares with fwupd (https://github.com/fwupd/fwupd)" \
-				&&		echo "" \
-				&&		echo "Options:" \
-				&&		echo " -y, --assume-yes 	enable automatic installations without asking during the execution." \
-				&&		echo "     --ask    		ask to manually write your choice about updates installations confirmations." \
-				&&		echo "     --get-logs		display logs." \
-				&&		echo "     --when   		display next update cycle." \
-				&&		echo "" \
-				&&		echo "$NAME $VERSION" \
-				&&		exit ;;
-			esac
-		;;
-		verify)
-			case "$2" in
-				--help) echo "$USAGE" \
-				&&		echo "" \
-				&&		echo "Verify current $NAME installation on your system." \
-				&&		echo "" \
-				&&		echo "Options:" \
-				&&		echo " -f, --files			check that all required files are available." \
-				&&		echo " -c, --commands			check that required commands are available." \
-				&&		echo " -r, --repository-reachability	check that remote repository is reachable." \
-				&&		echo "" \
-				&&		echo "$NAME $VERSION" \
-				&&		exit ;;
-			esac
-		;;
-		firewall)
-			case "$2" in
-				--help) echo "$USAGE" \
-				&&		echo "" \
-				&&		echo "Configure the firewall of your system." \
-				&&		echo "Custom rules can be added from '$dir_config'." \
-				&&		echo "" \
-				&&		echo "Options:" \
-				&&		echo " -i, --install	install the ruleset." \
-				&&		echo " -d, --display	display the current ruleset." \
-				&&		echo " -r, --restart	restart the firewall." \
-				&&		echo "     --disable	disable the firewall." \
-				&&		echo "     --restore	rollback a previous ruleset version." \
-				&&		echo "" \
-				&&		echo "$NAME $VERSION" \
-				&&		exit ;;
-			esac
-		;;
+		# update)
+			# case "$2" in
+			# 	--help) echo "$USAGE" \
+			# 	&&		echo "" \
+			# 	&&		echo "Supported package managers:" \
+			# 	&&		echo " - APT (https://wiki.debian.org/Apt)" \
+			# 	&&		echo " - DNF (https://rpm-software-management.github.io/)" \
+			# 	&&		echo " - YUM (http://yum.baseurl.org/)" \
+			# 	&&		echo " - Canonical Snapcraft (https://snapcraft.io)" \
+			# 	&&		echo " - Firmwares with fwupd (https://github.com/fwupd/fwupd)" \
+			# 	&&		echo "" \
+			# 	&&		echo "Options:" \
+			# 	&&		echo " -y, --assume-yes 	enable automatic installations without asking during the execution." \
+			# 	&&		echo "     --ask    		ask to manually write your choice about updates installations confirmations." \
+			# 	&&		echo "     --get-logs		display logs." \
+			# 	&&		echo "     --when   		display next update cycle." \
+			# 	&&		echo "" \
+			# 	&&		echo "$NAME $VERSION" \
+			# 	&&		exit ;;
+			# esac
+		# ;;
+		# verify)
+		# 	case "$2" in
+		# 		--help) echo "$USAGE" \
+		# 		&&		echo "" \
+		# 		&&		echo "Verify current $NAME installation on your system." \
+		# 		&&		echo "" \
+		# 		&&		echo "Options:" \
+		# 		&&		echo " -f, --files			check that all required files are available." \
+		# 		&&		echo " -c, --commands			check that required commands are available." \
+		# 		&&		echo " -r, --repository-reachability	check that remote repository is reachable." \
+		# 		&&		echo "" \
+		# 		&&		echo "$NAME $VERSION" \
+		# 		&&		exit ;;
+		# 	esac
+		# ;;
+		# firewall)
+		# 	case "$2" in
+		# 		--help) echo "$USAGE" \
+		# 		&&		echo "" \
+		# 		&&		echo "Configure the firewall of your system." \
+		# 		&&		echo "Custom rules can be added from '$dir_config'." \
+		# 		&&		echo "" \
+		# 		&&		echo "Options:" \
+		# 		&&		echo " -i, --install	install the ruleset." \
+		# 		&&		echo " -d, --display	display the current ruleset." \
+		# 		&&		echo " -r, --restart	restart the firewall." \
+		# 		&&		echo "     --disable	disable the firewall." \
+		# 		&&		echo "     --restore	rollback a previous ruleset version." \
+		# 		&&		echo "" \
+		# 		&&		echo "$NAME $VERSION" \
+		# 		&&		exit ;;
+		# 	esac
+		# ;;
 		--help) echo "$USAGE" \
 		&&		echo "" \
 		&&		echo "Options:" \
@@ -196,9 +207,7 @@ else
 		&&		echo "     --version		display version." \
 		&&		echo "" \
 		&&		echo "Commands (--help for commands options):" \
-		&&		echo " firewall [OPTION]	configure the firewall of your system." \
-		&&		echo " update [OPTION]	update everything on your system." \
-		&&		echo " verify [OPTION]	verify the current $NAME installation health." \
+		&&		echo "$list_commands" \
 		&&		echo "" \
 		&&		echo "$NAME $VERSION" \
 		&&		exit ;;
@@ -322,11 +331,11 @@ append_log() {
 
 
 	# Set the log format on the command and append it to the selected file
-	if [ -n "$file_log" ]; then
-		sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log"
-	else
-		sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log_main"
-	fi
+	# if [ -n "$file_log" ]; then
+	# 	sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log"
+	# else
+	# 	sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log_main"
+	# fi
 
 }
 
@@ -651,16 +660,22 @@ esac
 
 
 
-if [ "$CURRENT_CLI" = "./$NAME_LOWERCASE.sh" ]; then
-	dir_commands="commands"
-else
-	dir_commands="$dir_src_cli/commands"
-fi
+# if [ "$CURRENT_CLI" = "./$NAME_LOWERCASE.sh" ]; then
+# 	dir_commands="commands"
+# else
+# 	dir_commands="$dir_src_cli/commands"
+# fi
 
-file_COMMAND_UPDATE="$dir_commands/update.sh"
-file_COMMAND_MAN="$dir_commands/man.sh"
-file_COMMAND_FIREWALL="$dir_commands/firewall.sh"	
-file_COMMAND_INSTALL="$dir_commands/install.sh"	
+# list_commands=$(ls $dir_commands | sed "s/.sh//g")
+
+# file_COMMAND_UPDATE="$dir_commands/update.sh"
+# file_COMMAND_MAN="$dir_commands/man.sh"
+# file_COMMAND_FIREWALL="$dir_commands/firewall.sh"	
+# file_COMMAND_INSTALL="$dir_commands/install.sh"	
+
+
+
+
 
 if [ "$(exists_command "systemctl")" = "exists" ]; then
 	COMMAND_UPDATE_SYSTEMD_STATUS="systemctl status $NAME_LOWERCASE-updates.timer"
@@ -1264,6 +1279,22 @@ install_cli() {
 
 
 
+# for command in $list_commands; do
+# for command in $(find . -name "$1*" -printf "%f\n" | sed "s/.sh//g"); do
+	# case "$1" in
+	# 	"$command")		"$dir_commands/$command.sh" "$@" ;;
+	# 	# *)				display_error "unknown command '$1'."'\n'"$USAGE" && exit ;;
+	# esac
+
+	# echo "1" $1
+	# echo "c" $command
+
+	# if [ "$1" = "$(find . -name "$1*" -printf "%f\n" | sed "s/.sh//g")" ]; then
+	# 	"$dir_commands/$command.sh" "$@"
+	# else
+	# 	display_error "unknown command '$1'."'\n'"$USAGE"
+	# fi
+# done
 
 # The options (except --help) must be called with root
 case "$1" in
@@ -1279,7 +1310,7 @@ case "$1" in
 	--self-delete)				loading "delete_all" ;;
 	-p|--publication)			loading "detect_publication" ;;
 	--get-logs)					get_logs "$file_log_main" ;;
-	man)						loading "$file_COMMAND_MAN" ;;
+	# man)						loading "$file_COMMAND_MAN" ;;
 	verify)
 		if [ -z "$2" ]; then
 			loading "verify_cli_commands";  loading "verify_cli_files"; loading "verify_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading "verify_repository_reachability "$URL_ARCH/tarball/$VERSION""
@@ -1291,48 +1322,48 @@ case "$1" in
 				*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
-	firewall)
-		if [ -z "$2" ]; then
-			exec $file_COMMAND_FIREWALL
-		else
-			case "$2" in
-				-i|--install)	export function_to_launch="install" && exec $file_COMMAND_FIREWALL ;;
-				-d|--display)	export function_to_launch="display" && exec $file_COMMAND_FIREWALL ;;
-				-r|--restart)	export function_to_launch="restart" && exec $file_COMMAND_FIREWALL ;;
-				--disable)		export function_to_launch="disable" && exec $file_COMMAND_FIREWALL ;;
-				--restore)		export function_to_launch="restore" && exec $file_COMMAND_FIREWALL ;;
-				*)				display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
-			esac
-		fi ;;
-	update)
-		if [ -z "$2" ]; then
-			loading "exec $file_COMMAND_UPDATE"
-		else
-			case "$2" in
-				-y|--assume-yes)	export install_confirmation="yes" && loading "exec $file_COMMAND_UPDATE" ;;
-				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && loading "exec $file_COMMAND_UPDATE" ;;
-				--when)				$COMMAND_UPDATE_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
-				--get-logs)			get_logs $file_log_update ;;
-				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
-			esac
-		fi ;;
-	install)
-		if [ -z "$2" ]; then
-			display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit
-		else
-			# loading "exec $file_COMMAND_INSTALL $2"
-			exec $file_COMMAND_INSTALL "$2"
-			# case "$2" in
-			# 	-y|--assume-yes)	export install_confirmation="yes" && exec $file_COMMAND_INSTALL ;;
-			# 	--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && exec $file_COMMAND_INSTALL ;;
-			# 	*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
-			# esac
-		fi ;;
+	# firewall)
+	# 	if [ -z "$2" ]; then
+	# 		exec $file_COMMAND_FIREWALL
+	# 	else
+	# 		case "$2" in
+	# 			-i|--install)	export function_to_launch="install" && exec $file_COMMAND_FIREWALL ;;
+	# 			-d|--display)	export function_to_launch="display" && exec $file_COMMAND_FIREWALL ;;
+	# 			-r|--restart)	export function_to_launch="restart" && exec $file_COMMAND_FIREWALL ;;
+	# 			--disable)		export function_to_launch="disable" && exec $file_COMMAND_FIREWALL ;;
+	# 			--restore)		export function_to_launch="restore" && exec $file_COMMAND_FIREWALL ;;
+	# 			*)				display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
+	# 		esac
+	# 	fi ;;
+	# update)
+	# 	if [ -z "$2" ]; then
+	# 		loading "exec $file_COMMAND_UPDATE"
+	# 	else
+	# 		case "$2" in
+	# 			-y|--assume-yes)	export install_confirmation="yes" && loading "exec $file_COMMAND_UPDATE" ;;
+	# 			--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && loading "exec $file_COMMAND_UPDATE" ;;
+	# 			--when)				$COMMAND_UPDATE_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
+	# 			--get-logs)			get_logs $file_log_update ;;
+	# 			*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
+	# 		esac
+	# 	fi ;;
+	# install)
+	# 	if [ -z "$2" ]; then
+	# 		display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit
+	# 	else
+	# 		# loading "exec $file_COMMAND_INSTALL $2"
+	# 		exec $file_COMMAND_INSTALL "$2"
+	# 		# case "$2" in
+	# 		# 	-y|--assume-yes)	export install_confirmation="yes" && exec $file_COMMAND_INSTALL ;;
+	# 		# 	--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && exec $file_COMMAND_INSTALL ;;
+	# 		# 	*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
+	# 		# esac
+	# 	fi ;;
 	# Since "export -f" is not available in Shell, the helper command below permit to use commands from this file in sub scripts
 	helper)
 		# The $allow_helper_functions variable must be exported as "true" in sub scripts that needs the helper functions
 		# This permit to avoid these commands to be used directly from the command line by the users
-		if [ "$allow_helper_functions" != "true" ];then
+		if [ "$allow_helper_functions" != "true" ]; then
 			display_error "reserved operation."
 		else
 			if [ -z "$2" ]; then
@@ -1351,7 +1382,15 @@ case "$1" in
 				esac
 			fi
 		fi ;;
-	*) display_error "unknown option '$1'."'\n'"$USAGE" && exit ;;
+	# *) display_error "unknown command '$1'."'\n'"$USAGE" && exit ;;
+	*)
+		# Dynamically get availables commands or display error in case of not found
+		if [ "$1" = "$(find $dir_commands/ -name "$1*" -printf "%f\n" | sed "s/.sh//g")" ]; then
+			"$dir_commands/$1.sh" "$@"
+		else
+			display_error "unknown command '$1'."'\n'"$USAGE" && exit
+		fi
+		;;
 esac
 
 
