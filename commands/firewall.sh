@@ -25,7 +25,7 @@
 
 
 export allow_helper_functions="true"
-
+file_log="$dir_log/firewall.log"
 
 
 firewall_config="$dir_config/firewall.conf"
@@ -64,6 +64,17 @@ display_firewall() {
 
 
 # Disable the current ruleset
+# Usage: status_firewall
+status_firewall() {
+	if [ "$($HELPER exists_command "systemctl")" = "exists" ]; then
+		 systemctl is-active nftables.service
+	fi
+}
+
+
+
+
+# Disable the current ruleset
 # Usage: disable_firewall
 disable_firewall() {
 	if [ "$($HELPER exists_command "systemctl")" = "exists" ]; then
@@ -79,9 +90,13 @@ disable_firewall() {
 restart_firewall() {
 	if [ "$($HELPER exists_command "systemctl")" = "exists" ]; then
 		systemctl restart nftables.service
-		systemctl status nftables.service
+		
+		if [ "$(status_firewall)" = "active" ]; then
+			$HELPER display_success "firewall has restarted"
+		else
+			$HELPER display_error "firewall has not restarted"
+		fi
 
-		display_firewall
 	fi
 }
 
@@ -220,20 +235,54 @@ create_firewall() {
 
 
 
-case "$function_to_launch" in
-	display)	display_firewall ;;
-	restart)	restart_firewall ;;
-	install)
-				if [ "$firewall_allowed" = "1" ] || [ "$firewall_allowed" = "2" ]; then
-					install_firewall
-					create_firewall
-				else 
-					$HELPER display_error "firewall management is disabled or misconfigured in $file_config"
-				fi ;;
-	disable)	disable_firewall ;;
-	restore)	restore_firewall ;;
-	*) exit ;;
-esac
+# case "$function_to_launch" in
+# 	display)	display_firewall ;;
+# 	restart)	restart_firewall ;;
+# 	install)
+# 				if [ "$firewall_allowed" = "1" ] || [ "$firewall_allowed" = "2" ]; then
+# 					install_firewall
+# 					create_firewall
+# 				else 
+# 					$HELPER display_error "firewall management is disabled or misconfigured in $file_config"
+# 				fi ;;
+# 	disable)	disable_firewall ;;
+# 	restore)	restore_firewall ;;
+# 	*) exit ;;
+# esac
+
+
+
+
+if [ ! -z "$2" ]; then
+	case "$2" in
+		-i|--install)
+						if [ "$firewall_allowed" = "1" ] || [ "$firewall_allowed" = "2" ]; then
+							install_firewall
+							create_firewall
+						else 
+							$HELPER display_error "firewall management is disabled or misconfigured in $file_config"
+						fi ;;
+		-d|--display)	display_firewall ;;
+		-r|--restart)	restart_firewall ;;
+		--disable)		disable_firewall ;;
+		--restore)		restore_firewall ;;
+		--help)			echo "$USAGE" \
+							&& echo "" \
+							&& echo "Configure the firewall of your system." \
+							&& echo "Custom rules can be added from '$dir_config'." \
+							&& echo "" \
+							&& echo "Options:" \
+							&& echo " -i, --install	install the ruleset." \
+							&& echo " -d, --display	display the current ruleset." \
+							&& echo " -r, --restart	restart the firewall." \
+							&& echo "     --disable	disable the firewall." \
+							&& echo "     --restore	rollback a previous ruleset version." \
+							&& echo "" \
+							&& echo "$NAME $VERSION" \
+							&& exit ;;
+		*)				$HELPER display_error "unknown option '$2' from '$1' command."'\n'"$USAGE" && exit ;;
+	esac
+fi
 
 
 

@@ -25,6 +25,35 @@
 
 
 export allow_helper_functions="true"
+file_log="$dir_log/install.log"
+
+
+
+
+if [ ! -z "$2" ]; then
+	case "$2" in
+		-y|--assume-yes)	install_confirmation="yes" ;;
+		--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation ;;
+		--help)				echo "$USAGE" \
+								&& echo "" \
+								&& echo "Supported package managers:" \
+								&& echo " - APT (https://wiki.debian.org/Apt)" \
+								&& echo " - DNF (https://rpm-software-management.github.io/)" \
+								&& echo " - YUM (http://yum.baseurl.org/)" \
+								&& echo " - Canonical Snapcraft (https://snapcraft.io)" \
+								&& echo " - Firmwares with fwupd (https://github.com/fwupd/fwupd)" \
+								&& echo "" \
+								&& echo "Options:" \
+								&& echo " -y, --assume-yes 	enable automatic installations without asking during the execution." \
+								&& echo "     --ask    		ask to manually write your choice about updates installations confirmations." \
+								&& echo "     --get-logs		display logs." \
+								&& echo "     --when   		display next update cycle." \
+								&& echo "" \
+								&& echo "$NAME $VERSION" \
+								&& exit ;;
+		*)					$HELPER display_error "unknown option '$2' from '$1' command."'\n'"$USAGE" && exit ;;
+	esac
+fi
 
 
 

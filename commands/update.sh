@@ -60,7 +60,6 @@ fi
 
 
 
-
 # Clear user choice to the simple "-y" option or leave it empty.
 # It will be used as-it with the differents commands.
 # Examples :
