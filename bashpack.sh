@@ -316,7 +316,7 @@ loading() {
 
 			sleep 0.12
 		done
-		i=$((i+1))
+		# i=$((i+1))
 	done
 }
 
@@ -487,7 +487,7 @@ verify_repository_reachability() {
 	local url="${1}"
 
 	if [ "$(exists_command "curl")" = "exists" ]; then
-		http_code="$(curl -s -L -I -o /dev/null -w %{response_code} $url)"
+		http_code="$(curl -s -L -I -o /dev/null -w "%{response_code}" $url)"
 	elif [ "$(exists_command "wget")" = "exists" ]; then
 		http_code="$(wget --spider --server-response "$url" 2>&1 | awk '/^  HTTP/{print $2}' | tail -n 1)"
 	else
@@ -801,6 +801,127 @@ verify_cli_files() {
 			display_error "at least one file or directory is missing."
 		fi
 	fi
+}
+
+
+
+
+# Check if all the required commands are available on the system
+# Usage: verify_dependencies <file_to_test>
+# Usage: verify_dependencies <file_to_test> "print-missing-required-command-only"
+verify_dependencies() {
+
+	local file_to_test="${1}"
+	if [ -z "$file_to_test" ]; then
+		file_to_test="$CURRENT_CLI"
+	fi	
+
+	local print_missing_required_command_only="${2}"
+	if [ "$print_missing_required_command_only" = "print-missing-required-command-only" ]; then
+		print_missing_required_command_only="true"
+	else
+		display_info "checking if required commands are available on the system."
+	fi	
+
+	local found=0
+	local missing=0
+	local missing_required=0
+	local total=0
+
+	# Permit to find all the commands listed in a file (1 line = 1 command)
+	# Usage: find_command <file>
+	find_command() {
+		local file_tmp="${1}"
+		local type="${2}"		# "required" or "optional" command
+
+		while read -r command; do
+			if [ "$(exists_command "$command")" = "exists" ]; then
+
+				if [ "$print_missing_required_command_only" != "true" ]; then
+					display_success "found ($type) $command"
+				fi
+
+				found=$((found+1))
+			else 
+				if [ "$print_missing_required_command_only" != "true" ]; then
+					display_error "miss. ($type) $command"
+				fi
+
+				missing=$((missing+1))
+
+				if [ "$type" = "required" ]; then
+					missing_required=$((missing_required+1))
+				fi
+			fi
+
+			total=$((total+1))
+
+		done < "$file_tmp"
+	}
+
+
+
+	# Must store the commands in a file to be able to use the counters
+	local file_tmp_all="$dir_tmp/$NAME_LOWERCASE-commands-all"
+	local file_tmp_required="$dir_tmp/$NAME_LOWERCASE-commands-required"
+	local file_tmp_optional="$dir_tmp/$NAME_LOWERCASE-commands-optional"
+
+
+	# Automatically detect commands from this current file
+	local commands="$(cat $file_to_test \
+					| grep -v "{" \
+					| grep -v "}" \
+					| grep -v ")" \
+					| grep -v "=" \
+					| grep -v "#" \
+					| grep -v "\"" \
+					| grep -v "_" \
+					| awk '{print $1}' | sort -d | uniq)"
+	echo "$commands" | sort -d > $file_tmp_all
+
+
+	# Manually set optional commands
+	local commands_optional=" \
+		less
+		pkg-config
+		curl
+		wget
+		journalctl
+		systemctl \
+	"
+	echo "$commands_optional" | sort -d | tr -d "[:blank:]" > $file_tmp_optional
+
+
+
+	# Get required commands
+	# local commands_required="$(diff --changed-group-format='%<' --unchanged-group-format='' $file_tmp_all $file_tmp_optional | cut -d " " -f 2)"
+	local commands_required="$(comm -23 $file_tmp_all $file_tmp_optional)"
+	echo "$commands_required" | sort -d > $file_tmp_required
+
+
+
+	find_command $file_tmp_required "required"
+	find_command $file_tmp_optional "optional"
+
+
+	if [ "$print_missing_required_command_only" != "true" ]; then
+		
+		display_info "$found/$total commands found."	
+
+		if [ "$missing_required" = "0" ] && [ "$missing" != "0" ]; then
+			display_error "at least one optional command is missing but will not prevent proper functioning."
+		elif [ "$missing_required" != "0" ]; then
+			display_error "at least one required command is missing."
+		fi
+	else
+		echo $missing_required		
+	fi
+
+
+	rm $file_tmp_all
+	rm $file_tmp_required
+	rm $file_tmp_optional
+
 }
 
 
@@ -1225,6 +1346,7 @@ install_cli() {
 
 # The options (except --help) must be called with root
 case "$1" in
+	test)							verify_dependencies $2;;
 	-p|--publication)				loading "detect_publication" ;;
 	-i|--self-install)				loading "install_cli $2" ;;		# Critical option, see the comments at function declaration for more info	
 	-u|--self-update)
