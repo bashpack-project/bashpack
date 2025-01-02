@@ -199,7 +199,7 @@ update_packages() {
 
 						$HELPER display_info "starting firmwares updates (fwupd)."
 
-						$NAME_ALIAS install fwupd
+						install_package fwupd
 
 						if [ "$($HELPER exists_command "fwupdmgr")" = "exists" ]; then
 							fwupdmgr upgrade $install_confirmation

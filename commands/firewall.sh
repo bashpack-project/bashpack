@@ -38,6 +38,28 @@ nftables_file_backup="$nftables_dir/nftables.conf_backup_$now"
 
 
 
+
+# Display help
+# Usage: display_help
+display_help() {
+	echo "$USAGE"
+	echo ""
+	echo "Configure the firewall of your system."
+	echo "Custom rules can be added from '$dir_config'."
+	echo ""
+	echo "Options:"
+	echo " -i, --install	install the ruleset written at $firewall_config."
+	echo " -d, --display	display the current ruleset."
+	echo " -r, --restart	restart the firewall."
+	echo "     --disable	disable the firewall."
+	echo "     --restore	rollback a previous ruleset version."
+	echo ""
+	echo "$NAME $VERSION"
+}
+
+
+
+
 # Create the custom inbound ruleset file
 if [ ! -f "$firewall_config" ]; then
 	echo "# Customs inbound rules can be added below" > "$firewall_config"
@@ -266,22 +288,11 @@ if [ ! -z "$2" ]; then
 		-r|--restart)	restart_firewall ;;
 		--disable)		disable_firewall ;;
 		--restore)		restore_firewall ;;
-		--help)			echo "$USAGE" \
-							&& echo "" \
-							&& echo "Configure the firewall of your system." \
-							&& echo "Custom rules can be added from '$dir_config'." \
-							&& echo "" \
-							&& echo "Options:" \
-							&& echo " -i, --install	install the ruleset." \
-							&& echo " -d, --display	display the current ruleset." \
-							&& echo " -r, --restart	restart the firewall." \
-							&& echo "     --disable	disable the firewall." \
-							&& echo "     --restore	rollback a previous ruleset version." \
-							&& echo "" \
-							&& echo "$NAME $VERSION" \
-							&& exit ;;
+		--help)			display_help ;;
 		*)				$HELPER display_error "unknown option '$2' from '$1' command."'\n'"$USAGE" && exit ;;
 	esac
+else
+	display_help
 fi
 
 

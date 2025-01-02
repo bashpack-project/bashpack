@@ -28,7 +28,7 @@ export allow_helper_functions="true"
 
 
 echo "Have you ever seen a P carrying a B ?  "
-$HELPER loading "sleep 1.3"
+$HELPER loading_process "sleep 1.3"
 
 
 

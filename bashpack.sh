@@ -113,7 +113,7 @@ export file_log_main="$dir_log/main.log"
 # Export a variable that permit to avoid this message duplication (because this file is called multiple times over the differents process)
 if [ "$WARNING_ALREADY_SENT" != "true" ]; then
 	if [ "$CURRENT_CLI" = "./$NAME_LOWERCASE.sh" ]; then
-		echo "Warning: you are currently using '$CURRENT_CLI' which is located at $(pwd)."
+		echo "Warning: currently using '$CURRENT_CLI' which is located at $(pwd)."
 		echo ""
 
 		export WARNING_ALREADY_SENT="true"
@@ -144,12 +144,12 @@ else
 			case "$2" in
 				--help) echo "$USAGE" \
 				&&		echo "" \
-				&&		echo "Verify current $NAME installation on your system." \
+				&&		echo "Verify current $NAME installation health." \
 				&&		echo "" \
 				&&		echo "Options:" \
-				&&		echo " -f, --files              check that all required files are available." \
-				&&		echo " -d, --dependencies       check that required dependencies are available." \
-				&&		echo " -r, --repository         check that remote repository is reachable." \
+				&&		echo " -f, --files                  check that all required files are available." \
+				&&		echo " -d, --dependencies <file>    check that required dependencies are available." \
+				&&		echo " -r, --repository             check that remote repository is reachable." \
 				&&		echo "" \
 				&&		echo "$NAME $VERSION" \
 				&&		exit ;;
@@ -302,9 +302,9 @@ append_log() {
 
 
 
-# Loading animation so we know the process has not crashed.
-# Usage: loading "<command that takes time>"
-loading() {
+# loading_process animation so we know the process has not crashed.
+# Usage: loading_process "<command that takes time>"
+loading_process() {
 	${1} & local pid=$!
 
 	# while ps -p $pid > /dev/null; do
@@ -524,13 +524,13 @@ download_cli() {
 
 		# Try to download with curl if exists
 		if [ "$(exists_command "curl")" = "exists" ]; then
-			display_info "downloading sources from $file_url with curl."
-			loading "curl -sL $file_url -o $file_tmp"
+			display_info "downloading_process sources from $file_url with curl."
+			loading_process "curl -sL $file_url -o $file_tmp"
 			
 		# Try to download with wget if exists
 		elif [ "$(exists_command "wget")" = "exists" ]; then
-			display_info "downloading sources from $file_url with wget."
-			loading "wget -q $file_url -O $file_tmp"
+			display_info "downloading_process sources from $file_url with wget."
+			loading_process "wget -q $file_url -O $file_tmp"
 
 		else
 			display_error "could not download $file_url with curl or wget."
@@ -807,8 +807,9 @@ verify_cli_files() {
 
 
 # Check if all the required commands are available on the system
-# Usage: verify_dependencies <file_to_test>
-# Usage: verify_dependencies <file_to_test> "print-missing-required-command-only"
+# Usage: 
+#  verify_dependencies <file_to_test>
+#  verify_dependencies <file_to_test> "print-missing-required-command-only"
 verify_dependencies() {
 
 	local file_to_test="${1}"
@@ -821,12 +822,19 @@ verify_dependencies() {
 		print_missing_required_command_only="true"
 	else
 		display_info "checking if required commands are available on the system."
-	fi	
+	fi
+
+	
+	# Must store the commands in a file to be able to use the counters
+	local file_tmp_all="$dir_tmp/$NAME_LOWERCASE-commands-all"
+	local file_tmp_required="$dir_tmp/$NAME_LOWERCASE-commands-required"
+	local file_tmp_optional="$dir_tmp/$NAME_LOWERCASE-commands-optional"
 
 	local found=0
 	local missing=0
 	local missing_required=0
 	local total=0
+
 
 	# Permit to find all the commands listed in a file (1 line = 1 command)
 	# Usage: find_command <file>
@@ -861,35 +869,148 @@ verify_dependencies() {
 
 
 
-	# Must store the commands in a file to be able to use the counters
-	local file_tmp_all="$dir_tmp/$NAME_LOWERCASE-commands-all"
-	local file_tmp_required="$dir_tmp/$NAME_LOWERCASE-commands-required"
-	local file_tmp_optional="$dir_tmp/$NAME_LOWERCASE-commands-optional"
+
+	# For each regex below:
+	# - Remove comments
+	# - Do regex specific use case
+	# - Get all words of the file line by line
+	# - Remove everything that is not a char contained in command name
+	# - Sort & remove duplications
+
+	# - Get commands used in "text $(command) text"
+	# - Remove text strings inside ""
+	local list1="$(cat $file_to_test \
+		| sed -e 's/#.*$//' \
+		| sed -e 's/\([a-z]\) .*/\1/' \
+		| sed -e 's/"[^*]*"//' \
+		| sort -ud)"
+
+	# Get "command" from this pattern: "text $(command text"
+	local list2="$(cat $file_to_test \
+		| sed -e 's/#.*$//' \
+		| sed -e 's/.*$(\([a-z_-]*\).*/\1/' \
+		| grep -v "_" \
+		| grep -v "^.$" \
+		| grep "^[a-z]" \
+		| grep -v "a-z" \
+		| grep -v "[=:;.,_)\"\$]" \
+		| sort -ud)"
+
+	# Get "command" from this pattern: text | command text
+	local list3="$(cat $file_to_test \
+		| sed -e 's/#.*$//' \
+		| grep '|[ ]' \
+		| tr '|' '\n' \
+		| awk '{print $1}' \
+		| grep -v "^.$" \
+		| grep "^[a-z]" \
+		| grep -v "a-z" \
+		| grep -v "[=:;.,_)\"\$]" \
+		| sort -ud)"
+
+	# Get "command" from this pattern: if command text
+	local list4="$(cat $file_to_test \
+		| sed -e 's/#.*$//' \
+		| grep 'if' \
+		| sed -e 's/[^ ]* *\([^ ]*\) .*/\1/' \
+		| sort -ud)"
+
+	# Get "command" from this pattern: loop command text; do
+	local list5="$(cat $file_to_test \
+		| sed -e 's/#.*$//' \
+		| grep ';' \
+		| grep 'do' \
+		| sed -e 's/[a-z]* \([a-z]* \).*/\1/' \
+		| sort -ud)"
+
+	# Get "command" from this pattern: command -
+	local list6="$(cat $file_to_test \
+		| sed -e 's/#.*$//' \
+		| grep "[a-z] -" \
+		| sed 's/\([a-z]*\)[ -].*/\1/' \
+		| sort -ud)"
+
+	# Keep only the grepped text from this pattern: text grep text
+	local list7="$(cat $file_to_test \
+		| sed -e 's/#.*$//' \
+		| grep "grep" \
+		| sed -e 's/.*\(grep\).*/\1/' \
+		| sort -ud)"
+
+	local list="$(echo "$list1" \
+				&& echo "$list2" \
+				&& echo "$list3" \
+				&& echo "$list4" \
+				&& echo "$list5" \
+				&& echo "$list6" \
+				&& echo "$list7" \
+			)"
+
+	# - Remove functions names
+	# - Remove words of 1 char
+	# - Remove words that are not commands starting with special chars (careful to the - that can be contained in middle of command names)
+	# - Remove words that are not commands containing special chars
+	# - Remove words that are not commands ending with special chars
+	# - Sort & remove duplications
+	echo $list \
+		| sed -E 's/\s+/\n/g' \
+		| grep -v "^.$" \
+		| grep "^[a-z]" \
+		| grep -v "a-z" \
+		| grep -v "[=:;.,_)\"\$]" \
+		| sort -ud > $file_tmp_all
 
 
-	# Automatically detect commands from this current file
-	local commands="$(cat $file_to_test \
-					| grep -v "{" \
-					| grep -v "}" \
-					| grep -v ")" \
-					| grep -v "=" \
-					| grep -v "#" \
-					| grep -v "\"" \
-					| grep -v "_" \
-					| awk '{print $1}' | sort -d | uniq)"
-	echo "$commands" | sort -d > $file_tmp_all
+		# cat $CURRENT_CLI \
+		# | sed -e 's/#.*$//' \
+		# | sed -e 's/"$(/§$(/' -e 's/)"/)§/' \
+		# | sed -e 's/"[^*]*"//' \
+		# | sed -e 's/"[^*]*§//' \
+		# | sed -E 's/\|/\n/' \
+		# | sed -E 's/\(/\n/' \
+		# | sed -E 's/\ -.*/\n/' \
+		# | sed -E 's/\ \+.*/\n/' \
+		# | sed -e 's/ \([a-z0-9-]*\)\(.*)§\)/\1/' \
+		# | sed -e 's/\(systemctl\)\( .*\)/\1/' \
+		# | sed -E 's/\s+/\n/g' \
+		# | sed -e 's/["\|\+;,.§({}0-9A-Z]//g' \
+		# | cut -d "=" -f 2 \
+		# | grep -v "_" \
+		# | grep -v "^.$" \
+		# | grep -v "^[-%'\*\[\$]" \
+		# | grep -v "[/]" \
+		# | grep -v "[)]$" \
+		# | sort -ud
+
+		# cat $CURRENT_CLI \
+		# | sed -e 's/#.*$//' \
+		# | sed -e 's/.*\(".*\)\($(.*)\)\(.*"\)/\2/' \
+		# | sed -e 's/"[^*]*"//' \
+		# | sed -E 's/[a-zA-Z0-9 -_]*\|/\n/' \
+		# | sed -E 's/\(/\n/' \
+		# | sed -E 's/\ -.*/\n/' \
+		# | sed -E 's/\ \+.*/\n/' \
+		# | sed -e 's/systemctl.*/systemctl/' \
+		# | sed -E 's/\s+/\n/g' \
+		# | sed -e 's/["\|\+;,.({}0-9A-Z]//g' \
+		# | cut -d "=" -f 2 \
+		# | grep -v "_" \
+		# | grep -v "^.$" \
+		# | grep -v "^[-%'\*\[\$]" \
+		# | grep -v "[/]" \
+		# | grep -v "[)]$" \
+		# | sort -ud
+
 
 
 	# Manually set optional commands
-	local commands_optional=" \
+	echo "\
 		less
 		pkg-config
 		curl
 		wget
-		journalctl
 		systemctl \
-	"
-	echo "$commands_optional" | sort -d | tr -d "[:blank:]" > $file_tmp_optional
+	" | sort -d | tr -d "[:blank:]" > $file_tmp_optional
 
 
 
@@ -921,148 +1042,6 @@ verify_dependencies() {
 	rm $file_tmp_all
 	rm $file_tmp_required
 	rm $file_tmp_optional
-
-}
-
-
-
-
-
-# Check if all the required commands are available on the system
-# Usage: verify_cli_dependencies
-# Usage: verify_cli_dependencies "print-missing-required-command-only"
-verify_cli_dependencies() {
-
-	local print_missing_required_command_only="${1}"
-	if [ "$print_missing_required_command_only" = "print-missing-required-command-only" ]; then
-		print_missing_required_command_only="true"
-	else
-		display_info "checking if required commands are available on the system."
-	fi	
-
-	local found=0
-	local missing=0
-	local missing_required=0
-	local total=0
-
-	# Permit to find all the commands listed in a file (1 line = 1 command)
-	# Usage: find_command <file>
-	find_command() {
-		local file_tmp="${1}"
-		local type="${2}"		# "required" or "optional" command
-
-		while read -r command; do
-			if [ "$(exists_command "$command")" = "exists" ]; then
-
-				if [ "$print_missing_required_command_only" != "true" ]; then
-					display_success "found ($type) $command"
-				fi
-
-				found=$((found+1))
-			else 
-				if [ "$print_missing_required_command_only" != "true" ]; then
-					display_error "miss. ($type) $command"
-				fi
-
-				missing=$((missing+1))
-
-				if [ "$type" = "required" ]; then
-					missing_required=$((missing_required+1))
-				fi
-			fi
-
-			total=$((total+1))
-
-		done < "$file_tmp"
-	}
-
-	local commands_required=" \
-		tr
-		ls
-		ln
-		echo
-		printf
-		cat
-		cut
-		sed
-		awk
-		find
-		grep
-		tail
-		chmod
-		mkdir
-		mv
-		rm
-		cp
-		pwd
-		id
-		date
-		sleep
-		ps
-		sort
-		basename
-		tee
-		file
-		tar
-		command
-		exec
-		set
-		read
-		cd
-		eval
-		exec
-		exit
-		export
-		case
-		if
-		while
-		for
-		local
-		then
-		fi
-		esac
-		do
-		done
-		sh \
-	"
-
-	local commands_optional=" \
-		less
-		pkg-config
-		curl
-		wget
-		journalctl
-		systemctl \
-	"
-
-	# Must store the commands in a file to be able to use the counters
-	local file_tmp_required="$dir_tmp/$NAME_LOWERCASE-commands-required"
-	local file_tmp_optional="$dir_tmp/$NAME_LOWERCASE-commands-optional"
-
-	echo "$commands_required" | sort -d > $file_tmp_required
-	echo "$commands_optional" | sort -d > $file_tmp_optional
-
-	find_command $file_tmp_required "required"
-	find_command $file_tmp_optional "optional"
-
-
-	if [ "$print_missing_required_command_only" != "true" ]; then
-		
-		display_info "$found/$total commands found."	
-
-		if [ "$missing_required" = "0" ] && [ "$missing" != "0" ]; then
-			display_error "at least one optional command is missing but will not prevent proper functioning."
-		elif [ "$missing_required" != "0" ]; then
-			display_error "at least one required command is missing."
-		fi
-	else
-		echo $missing_required		
-	fi
-
-
-	rm $file_tmp_required
-	rm $file_tmp_optional
-
 }
 
 
@@ -1146,10 +1125,10 @@ update_cli() {
 	else
 		# Testing if a new version exists on the current publication to avoid reinstall if not.
 		if [ "$(exists_command "curl")" = "exists" ] && [ "$(curl -s "$remote_archive" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
-			display_info "latest version is already installed ($VERSION-$(detect_publication) detected with curl)."
+			display_info "latest version is already installed ($VERSION-$(detect_publication))."
 
 		elif [ "$(exists_command "wget")" = "exists" ] && [ "$(wget -q -O- "$remote_archive" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
-			display_info "latest version is already installed ($VERSION-$(detect_publication) detected with wget)."
+			display_info "latest version is already installed ($VERSION-$(detect_publication))."
 
 		else
 			update_process
@@ -1176,7 +1155,7 @@ install_cli() {
 	local chosen_publication="${1}"
 
 	# Test if all required commands are on the system before install anything
-	if [ "$(verify_cli_dependencies "print-missing-required-command-only")" = "0" ]; then
+	if [ "$(verify_dependencies "$CURRENT_CLI" "print-missing-required-command-only")" = "0" ]; then
 
 		display_info "starting self installation."
 		detect_cli
@@ -1336,7 +1315,7 @@ install_cli() {
 		fi
 
 	else
-		verify_cli_dependencies
+		verify_dependencies
 	fi
 
 }
@@ -1346,28 +1325,26 @@ install_cli() {
 
 # The options (except --help) must be called with root
 case "$1" in
-	test)							verify_dependencies $2;;
-	-p|--publication)				loading "detect_publication" ;;
-	-i|--self-install)				loading "install_cli $2" ;;		# Critical option, see the comments at function declaration for more info	
+	-p|--publication)				loading_process "detect_publication" ;;
+	-i|--self-install)				loading_process "install_cli $2" ;;		# Critical option, see the comments at function declaration for more info	
 	-u|--self-update)
 		if [ -z "$2" ]; then
-									loading "update_cli"			# Critical option, see the comments at function declaration for more info
+									loading_process "update_cli"			# Critical option, see the comments at function declaration for more info
 		else
 			case "$2" in
-				-f|--force)			loading "update_cli force" ;;	# Shortcut to quickly reinstall the CLI
+				-f|--force)			loading_process "update_cli force" ;;	# Shortcut to quickly reinstall the CLI
 			esac
 		fi ;;
-	--self-delete)					loading "delete_all" ;;
+	--self-delete)					loading_process "delete_all" ;;
 	--get-logs)						get_logs "$file_log_main" ;;
 	verify)
 		if [ -z "$2" ]; then
-									loading "verify_cli_dependencies";  loading "verify_cli_files"; loading "verify_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading "verify_repository_reachability "$URL_ARCH/tarball/$VERSION""
+									loading_process "verify_dependencies $3";  loading_process "verify_cli_files"; loading_process "verify_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading_process "verify_repository_reachability "$URL_ARCH/tarball/$VERSION""
 		else
 			case "$2" in
-				-f|--files)			loading "verify_cli_files" ;;
-				-d|--dependencies)	loading "verify_cli_dependencies" ;;
-				# -c|--commands)	loading "verify_commands_dependencies" ;;
-				-r|--repository)	loading "verify_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading "verify_repository_reachability "$URL_ARCH/tarball/$VERSION"" ;;
+				-f|--files)			loading_process "verify_cli_files" ;;
+				-d|--dependencies)	loading_process "verify_dependencies $3" ;;
+				-r|--repository)	loading_process "verify_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading_process "verify_repository_reachability "$URL_ARCH/tarball/$VERSION"" ;;
 				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
@@ -1382,7 +1359,7 @@ case "$1" in
 				display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit
 			else
 				case "$2" in
-					loading)				loading "$3" ;;
+					loading_process)				loading_process "$3" ;;
 					display_success)		display_success "$3" "$4" ;;
 					display_error)			display_error "$3" "$4" ;;
 					display_info)			display_info "$3" "$4" ;;

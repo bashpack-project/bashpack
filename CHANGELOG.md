@@ -7,9 +7,10 @@ The released versions changelogs below are only about the main repository.
 ##### Modified
 - Sub commands are now dynamically detected in order to permit anyone to create its own sub commands
 - "Update" and "install" sub commands are now merged in the "package" sub command
+- Sub command "verify" option "-c/--commands" replaced by "-d/--dependencies"
 
 ##### Fixed
-- Firewall command restoration option wasn't able to read the given file name
+- Sub command "firewall" restoration option wasn't able to read the given file name
 - Install for the first time while specifying a publication name wasn't working due to missing destination directory
 
 ------------
