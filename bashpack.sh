@@ -755,7 +755,7 @@ verify_cli_files() {
 	# Just init variable to set it local
 	local previous_path
 
-	if [ "$(exists_command "eval")" = "exists" ]; then
+	# if [ "$(exists_command "eval")" = "exists" ]; then
 
 		# Automatically detect every files and directories used in the CLI (every paths that we want to test here must be used through variables from this file)
 		while read -r line; do
@@ -800,7 +800,7 @@ verify_cli_files() {
 		if [ "$missing" != "0" ]; then
 			display_error "at least one file or directory is missing."
 		fi
-	fi
+	# fi
 }
 
 
@@ -869,7 +869,7 @@ verify_dependencies() {
 
 
 
-
+	# Automatically detect all commands 
 	# For each regex below:
 	# - Remove comments
 	# - Do regex specific use case
@@ -877,7 +877,7 @@ verify_dependencies() {
 	# - Remove everything that is not a char contained in command name
 	# - Sort & remove duplications
 
-	# - Get commands used in "text $(command) text"
+	# - Get most of "command" from this pattern: command text
 	# - Remove text strings inside ""
 	local list1="$(cat $file_to_test \
 		| sed -e 's/#.*$//' \
@@ -961,57 +961,25 @@ verify_dependencies() {
 		| sort -ud > $file_tmp_all
 
 
-		# cat $CURRENT_CLI \
-		# | sed -e 's/#.*$//' \
-		# | sed -e 's/"$(/§$(/' -e 's/)"/)§/' \
-		# | sed -e 's/"[^*]*"//' \
-		# | sed -e 's/"[^*]*§//' \
-		# | sed -E 's/\|/\n/' \
-		# | sed -E 's/\(/\n/' \
-		# | sed -E 's/\ -.*/\n/' \
-		# | sed -E 's/\ \+.*/\n/' \
-		# | sed -e 's/ \([a-z0-9-]*\)\(.*)§\)/\1/' \
-		# | sed -e 's/\(systemctl\)\( .*\)/\1/' \
-		# | sed -E 's/\s+/\n/g' \
-		# | sed -e 's/["\|\+;,.§({}0-9A-Z]//g' \
-		# | cut -d "=" -f 2 \
-		# | grep -v "_" \
-		# | grep -v "^.$" \
-		# | grep -v "^[-%'\*\[\$]" \
-		# | grep -v "[/]" \
-		# | grep -v "[)]$" \
-		# | sort -ud
 
-		# cat $CURRENT_CLI \
-		# | sed -e 's/#.*$//' \
-		# | sed -e 's/.*\(".*\)\($(.*)\)\(.*"\)/\2/' \
-		# | sed -e 's/"[^*]*"//' \
-		# | sed -E 's/[a-zA-Z0-9 -_]*\|/\n/' \
-		# | sed -E 's/\(/\n/' \
-		# | sed -E 's/\ -.*/\n/' \
-		# | sed -E 's/\ \+.*/\n/' \
-		# | sed -e 's/systemctl.*/systemctl/' \
-		# | sed -E 's/\s+/\n/g' \
-		# | sed -e 's/["\|\+;,.({}0-9A-Z]//g' \
-		# | cut -d "=" -f 2 \
-		# | grep -v "_" \
-		# | grep -v "^.$" \
-		# | grep -v "^[-%'\*\[\$]" \
-		# | grep -v "[/]" \
-		# | grep -v "[)]$" \
-		# | sort -ud
+	# # Manually set optional commands
+	# echo "\
+	# 	less
+	# 	pkg-config
+	# 	curl
+	# 	wget
+	# 	systemctl \
+	# " | sort -d | tr -d "[:blank:]" > $file_tmp_optional
 
 
-
-	# Manually set optional commands
-	echo "\
-		less
-		pkg-config
-		curl
-		wget
-		systemctl \
-	" | sort -d | tr -d "[:blank:]" > $file_tmp_optional
-
+	# Automatically detect all optional commands
+	# Get "command" from this pattern: exists_command "command"
+	cat $file_to_test \
+		| sed -e 's/#.*$//' \
+		| grep 'exists_command "' \
+		| sed 's/.*exists_command "\([a-z-]*\)".*/\1/' \
+		| grep -v 'exists_command' \
+		| sort -ud > $file_tmp_optional
 
 
 	# Get required commands
