@@ -90,7 +90,7 @@ export archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
 export archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
 
 export now="$(date +%y-%m-%d_%H-%M-%S)"
-export continue_question="Do you want to continue? [y/N] "
+export question_continue="Do you want to continue? [y/N] "
 
 
 export file_main="$dir_src_cli/$NAME_LOWERCASE.sh"
@@ -105,7 +105,6 @@ if [ ! -d "$dir_log" ]; then
 	mkdir -p "$dir_log"
 fi
 export file_log_main="$dir_log/main.log"
-# export file_log_update="$dir_log/updates.log"
 
 
 
@@ -739,10 +738,17 @@ delete_all() {
 
 
 # Check if all the files and directories that compose the CLI exist 
-# Usage: verify_cli_files
-verify_cli_files() {
+# Usages:
+#  verify_files
+#  verify_files <file to test>
+verify_files() {
 
 	display_info  "checking if required files and directories are available on the system."
+
+	local file_to_test="${1}"
+	if [ -z "$file_to_test" ]; then
+		file_to_test="$CURRENT_CLI"
+	fi
 
 	# local filters_example="text1\|text2\|text3\|text4" 
 	local filters_wanted="=" 
@@ -755,61 +761,58 @@ verify_cli_files() {
 	# Just init variable to set it local
 	local previous_path
 
-	# if [ "$(exists_command "eval")" = "exists" ]; then
 
-		# Automatically detect every files and directories used in the CLI (every paths that we want to test here must be used through variables from this file)
-		while read -r line; do
-			if [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "file_" | grep -v "\$file")" ] || [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "dir_" | grep -v "\$dir")" ]; then
+	# Automatically detect every files and directories used in the CLI (every paths that we want to test here must be used through variables from this file)
+	while read -r line; do
+		if [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "file_" | grep -v "\$file")" ] || [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "dir_" | grep -v "\$dir")" ]; then
 
-				local path_variable="$(echo $line | cut -d "=" -f 1 | sed s/"export "//)"
+			local path_variable="$(echo $line | cut -d "=" -f 1 | sed s/"export "//)"
 
-				# Just init variable to set it local
-				local path_value
-				eval path_value=\$$path_variable
+			# Just init variable to set it local
+			local path_value
+			eval path_value=\$$path_variable
 
-				if [ -n "$path_value" ]; then
-					if [ "$previous_path" != "$path_variable" ]; then
+			if [ -n "$path_value" ]; then
+				if [ "$previous_path" != "$path_variable" ]; then
 
-						if [ -f "$path_value" ]; then
-							# display_success "found file -> $path_variable -> $path_value"
-							display_success "found file -> $path_value"
-							found=$((found+1))
-						elif [ -d "$path_value" ]; then
-							# display_success "found dir  -> $path_variable -> $path_value"
-							display_success "found dir. -> $path_value"
-							found=$((found+1))
-						else
-							# display_error "miss.      -> $path_variable -> $path_value"
-							display_error "miss.      -> $path_value"
-							missing=$((missing+1))
-						fi
-				
-						total=$((total+1))
+					if [ -f "$path_value" ]; then
+						# display_success "found file -> $path_variable -> $path_value"
+						display_success "found file -> $path_value"
+						found=$((found+1))
+					elif [ -d "$path_value" ]; then
+						# display_success "found dir  -> $path_variable -> $path_value"
+						display_success "found dir. -> $path_value"
+						found=$((found+1))
+					else
+						# display_error "miss.      -> $path_variable -> $path_value"
+						display_error "miss.      -> $path_value"
+						missing=$((missing+1))
 					fi
+				
+					total=$((total+1))
 				fi
-
-				# Store current path as the next previous path to be able to avoid tests duplication
-				previous_path="$path_variable"
-
 			fi
-		done < "$CURRENT_CLI"
 
+			# Store current path as the next previous path to be able to avoid tests duplication
+			previous_path="$path_variable"
 
-		display_info "$found/$total paths found."
-
-		if [ "$missing" != "0" ]; then
-			display_error "at least one file or directory is missing."
 		fi
-	# fi
+	done < "$file_to_test"
+
+	display_info "$found/$total paths found."
+
+	if [ "$missing" != "0" ]; then
+		display_error "at least one file or directory is missing."
+	fi
 }
 
 
 
 
 # Check if all the required commands are available on the system
-# Usage: 
-#  verify_dependencies <file_to_test>
-#  verify_dependencies <file_to_test> "print-missing-required-command-only"
+# Usages: 
+#  verify_dependencies <file to test>
+#  verify_dependencies <file to test> "print-missing-required-command-only"
 verify_dependencies() {
 
 	local file_to_test="${1}"
@@ -880,15 +883,15 @@ verify_dependencies() {
 	# - Get most of "command" from this pattern: command text
 	# - Remove text strings inside ""
 	local list1="$(cat $file_to_test \
-		| sed -e 's/#.*$//' \
-		| sed -e 's/\([a-z]\) .*/\1/' \
-		| sed -e 's/"[^*]*"//' \
+		| sed 's/#.*$//' \
+		| sed 's/\([a-z]\) .*/\1/' \
+		| sed 's/"[^*]*"//' \
 		| sort -ud)"
 
 	# Get "command" from this pattern: "text $(command text"
 	local list2="$(cat $file_to_test \
-		| sed -e 's/#.*$//' \
-		| sed -e 's/.*$(\([a-z_-]*\).*/\1/' \
+		| sed 's/#.*$//' \
+		| sed 's/.*$(\([a-z_-]*\).*/\1/' \
 		| grep -v "_" \
 		| grep -v "^.$" \
 		| grep "^[a-z]" \
@@ -898,7 +901,7 @@ verify_dependencies() {
 
 	# Get "command" from this pattern: text | command text
 	local list3="$(cat $file_to_test \
-		| sed -e 's/#.*$//' \
+		| sed 's/#.*$//' \
 		| grep '|[ ]' \
 		| tr '|' '\n' \
 		| awk '{print $1}' \
@@ -910,31 +913,31 @@ verify_dependencies() {
 
 	# Get "command" from this pattern: if command text
 	local list4="$(cat $file_to_test \
-		| sed -e 's/#.*$//' \
+		| sed 's/#.*$//' \
 		| grep 'if' \
-		| sed -e 's/[^ ]* *\([^ ]*\) .*/\1/' \
+		| sed 's/[^ ]* *\([^ ]*\) .*/\1/' \
 		| sort -ud)"
 
 	# Get "command" from this pattern: loop command text; do
 	local list5="$(cat $file_to_test \
-		| sed -e 's/#.*$//' \
+		| sed 's/#.*$//' \
 		| grep ';' \
 		| grep 'do' \
-		| sed -e 's/[a-z]* \([a-z]* \).*/\1/' \
+		| sed 's/[a-z]* \([a-z]* \).*/\1/' \
 		| sort -ud)"
 
 	# Get "command" from this pattern: command -
 	local list6="$(cat $file_to_test \
-		| sed -e 's/#.*$//' \
+		| sed 's/#.*$//' \
 		| grep "[a-z] -" \
 		| sed 's/\([a-z]*\)[ -].*/\1/' \
 		| sort -ud)"
 
 	# Keep only the grepped text from this pattern: text grep text
 	local list7="$(cat $file_to_test \
-		| sed -e 's/#.*$//' \
+		| sed 's/#.*$//' \
 		| grep "grep" \
-		| sed -e 's/.*\(grep\).*/\1/' \
+		| sed 's/.*\(grep\).*/\1/' \
 		| sort -ud)"
 
 	local list="$(echo "$list1" \
@@ -975,7 +978,7 @@ verify_dependencies() {
 	# Automatically detect all optional commands
 	# Get "command" from this pattern: exists_command "command"
 	cat $file_to_test \
-		| sed -e 's/#.*$//' \
+		| sed 's/#.*$//' \
 		| grep 'exists_command "' \
 		| sed 's/.*exists_command "\([a-z-]*\)".*/\1/' \
 		| grep -v 'exists_command' \
@@ -1307,10 +1310,10 @@ case "$1" in
 	--get-logs)						get_logs "$file_log_main" ;;
 	verify)
 		if [ -z "$2" ]; then
-									loading_process "verify_dependencies $3";  loading_process "verify_cli_files"; loading_process "verify_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading_process "verify_repository_reachability "$URL_ARCH/tarball/$VERSION""
+									loading_process "verify_dependencies $3";  loading_process "verify_files"; loading_process "verify_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading_process "verify_repository_reachability "$URL_ARCH/tarball/$VERSION""
 		else
 			case "$2" in
-				-f|--files)			loading_process "verify_cli_files" ;;
+				-f|--files)			loading_process "verify_files $3" ;;
 				-d|--dependencies)	loading_process "verify_dependencies $3" ;;
 				-r|--repository)	loading_process "verify_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading_process "verify_repository_reachability "$URL_ARCH/tarball/$VERSION"" ;;
 				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;

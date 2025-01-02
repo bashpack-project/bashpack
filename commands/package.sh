@@ -25,9 +25,42 @@
 
 
 export allow_helper_functions="true"
-file_log="$dir_log/packages.log"
 
-continue_question="Do you want to automatically accept installations during the process? [y/N] "
+
+command_name=$(echo $(basename $1))
+file_log="$dir_log/$command_name.log"
+
+
+question_accept_install="Do you want to automatically accept installations during the process? [y/N] "
+
+
+
+
+# Display help
+# Usage: display_help
+display_help() {
+	echo "$USAGE"
+	echo ""
+	echo "Supported package managers:"
+	echo " - APT (https://wiki.debian.org/Apt)"
+	echo " - DNF (https://rpm-software-management.github.io/)"
+	echo " - YUM (http://yum.baseurl.org/)"
+	echo " - Canonical Snapcraft (https://snapcraft.io)"
+	echo " - Firmwares with fwupd (https://github.com/fwupd/fwupd)"
+	echo ""
+	echo "Arguments:"
+	echo " install"
+	echo " update"
+	echo ""
+	echo "Options:"
+	echo " -y, --assume-yes 	enable automatic installations without asking during the execution."
+	echo "     --ask    		ask to manually write your choice about updates installations confirmations."
+	echo "     --get-logs		display logs."
+	echo "     --when   		display next update cycle."
+	echo ""
+	echo "$NAME $VERSION"
+}
+
 
 
 
@@ -146,7 +179,7 @@ update_packages() {
 			if [ "${1}" = "-y" ]; then
 				snap refresh
 			else
-				read -p "$continue_question" install_confirmation_snapcraft
+				read -p "$question_accept_install" install_confirmation_snapcraft
 
 				if [ "$install_confirmation_snapcraft" = "$yes" ]; then
 					snap refresh
@@ -235,7 +268,7 @@ if [ ! -z "$2" ]; then
 			else
 				case "$4" in
 					-y|--assume-yes)	install_confirmation="yes" && install_package "$3" ;;
-					--ask)				read -p "$continue_question" install_confirmation && install_package "$3" ;;
+					--ask)				read -p "$question_accept_install" install_confirmation && install_package "$3" ;;
 				esac
 			fi
 			;;
@@ -245,31 +278,17 @@ if [ ! -z "$2" ]; then
 			else
 				case "$3" in
 					-y|--assume-yes)	install_confirmation="yes" && update_packages ;;
-					--ask)				read -p "$continue_question" install_confirmation && update_packages ;;
+					--ask)				read -p "$question_accept_install" install_confirmation && update_packages ;;
 					--when)				get_next_update_packages_date ;;
 				esac
 			fi
 			;;
 		--get-logs)	$HELPER get_logs $file_log ;; 
-		--help)		echo "$USAGE" \
-						&& echo "" \
-						&& echo "Supported package managers:" \
-						&& echo " - APT (https://wiki.debian.org/Apt)" \
-						&& echo " - DNF (https://rpm-software-management.github.io/)" \
-						&& echo " - YUM (http://yum.baseurl.org/)" \
-						&& echo " - Canonical Snapcraft (https://snapcraft.io)" \
-						&& echo " - Firmwares with fwupd (https://github.com/fwupd/fwupd)" \
-						&& echo "" \
-						&& echo "Options:" \
-						&& echo " -y, --assume-yes 	enable automatic installations without asking during the execution." \
-						&& echo "     --ask    		ask to manually write your choice about updates installations confirmations." \
-						&& echo "     --get-logs		display logs." \
-						&& echo "     --when   		display next update cycle." \
-						&& echo "" \
-						&& echo "$NAME $VERSION" \
-						&& exit ;;
+		--help)		display_help ;;
 		*)			$HELPER display_error "unknown option '$2' from '$1' command."'\n'"$USAGE" && exit ;;
 	esac
+else
+	display_help
 fi
 
 
