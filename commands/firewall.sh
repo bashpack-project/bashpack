@@ -31,12 +31,12 @@ command_name=$(echo $(basename $1))
 file_log="$dir_log/$command_name.log"
 
 
-file_config_firewall="$dir_config/firewall.conf"
-firewall_allowed="$($HELPER get_config_value "$file_config_firewall" "firewall")"
+file_config_command="$dir_config/$command_name.conf"
+firewall_allowed="$($HELPER get_config_value "$file_config_command" "$command_name")"
 
 
 file_nftables="/etc/nftables.conf"
-dir_nftables="/etc/bashpack/firewall"
+dir_nftables="/etc/bashpack/$command_name"
 file_nftables_backup="$dir_nftables/nftables.conf_backup_$now"
 
 
@@ -51,7 +51,7 @@ display_help() {
 	echo "Custom rules can be added from '$dir_config'."
 	echo ""
 	echo "Options:"
-	echo " -i, --install	install the ruleset written at $file_config_firewall."
+	echo " -i, --install	install the ruleset written at $file_config_command."
 	echo " -d, --display	display the current ruleset."
 	echo " -r, --restart	restart the firewall."
 	echo "     --disable	disable the firewall."
@@ -64,14 +64,14 @@ display_help() {
 
 
 # Create the custom inbound ruleset file
-if [ ! -f "$file_config_firewall" ]; then
-	echo "# Customs inbound rules can be added below" > "$file_config_firewall"
-	echo "# Every lines will automatically be wrapped inside the well formatted nftables command 'nft add rule inet filter $NAME_UPPERCASE-PREROUTING [LINE] counter accept'" >> "$file_config_firewall"
-	echo "# Examples of rules that can be copied, pasted and adapted:" >> "$file_config_firewall"
-	echo "#tcp dport <PORT>" >> "$file_config_firewall"
-	echo "#ip saddr <CIDR>" >> "$file_config_firewall"
-	echo "#ip6 saddr <CIDR>" >> "$file_config_firewall"
-	chmod 755 "$file_config_firewall"
+if [ ! -f "$file_config_command" ]; then
+	echo "# Customs inbound rules can be added below" > "$file_config_command"
+	echo "# Every lines will automatically be wrapped inside the well formatted nftables command 'nft add rule inet filter $NAME_UPPERCASE-PREROUTING [LINE] counter accept'" >> "$file_config_command"
+	echo "# Examples of rules that can be copied, pasted and adapted:" >> "$file_config_command"
+	echo "#tcp dport <PORT>" >> "$file_config_command"
+	echo "#ip saddr <CIDR>" >> "$file_config_command"
+	echo "#ip6 saddr <CIDR>" >> "$file_config_command"
+	chmod 755 "$file_config_command"
 fi
 
 
@@ -137,7 +137,7 @@ backup_firewall() {
 		chmod 755 $dir_nftables
 		nft list ruleset > $file_nftables_backup
 
-		$HELPER display_info "A backup of your current nftables firewall ruleset has been saved to "$file_nftables_backup"."
+		$HELPER display_info "a backup of your current nftables firewall ruleset has been saved to "$file_nftables_backup"."
 	fi
 }
 
@@ -234,7 +234,7 @@ create_firewall() {
 		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
 			nft add rule inet filter $NAME_UPPERCASE-PREROUTING "$line" counter accept
 		fi	
-	done < "$file_config_firewall"
+	done < "$file_config_command"
 
 	# Creating $NAME_UPPERCASE-POSTROUTING 
 	# Eveything is open outbound by default
@@ -268,7 +268,7 @@ create_firewall() {
 # 					install_firewall
 # 					create_firewall
 # 				else 
-# 					$HELPER display_error "firewall management is disabled or misconfigured in $file_config_firewall"
+# 					$HELPER display_error "firewall management is disabled or misconfigured in $file_config_command"
 # 				fi ;;
 # 	disable)	disable_firewall ;;
 # 	restore)	restore_firewall ;;
@@ -285,7 +285,7 @@ if [ ! -z "$2" ]; then
 							install_firewall
 							create_firewall
 						else 
-							$HELPER display_error "firewall management is disabled or misconfigured in $file_config_firewall"
+							$HELPER display_error "firewall management is disabled or misconfigured in $file_config_command"
 						fi ;;
 		-d|--display)	display_firewall ;;
 		-r|--restart)	restart_firewall ;;
