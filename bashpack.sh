@@ -559,28 +559,29 @@ download_file() {
 		# Success message
 		if [ -f "$file_tmp" ]; then
 			display_success "file '$file_tmp' has been downloaded."
+
+			# Test if the "$dir_extract_tmp" variable is empty to know if we downloaded an archive that we need to extract
+			if [ -n "$dir_extract_tmp" ]; then
+				# Test if the downloaded file is a tarball
+				if file "$file_tmp" | grep -q "gzip compressed data"; then
+					if [ "$(exists_command "tar")" = "exists" ]; then
+					
+						# Prepare tmp directory
+						rm -rf $dir_extract_tmp
+						mkdir -p $dir_extract_tmp
+
+						# "tar --strip-components 1" permit to extract sources in /tmp/$NAME_LOWERCASE and don't create a new directory /tmp/$NAME_LOWERCASE/$NAME_LOWERCASE
+						tar -xf "$file_tmp" -C "$dir_extract_tmp" --strip-components 1
+					fi
+				else
+					display_error "file '$file_url' is a non-working tarball and cannot be used, deleting it."
+				fi
+			fi
 		else
 			display_error "file '$file_tmp' has not been downloaded."
 		fi
 
 
-		# Test if the "$dir_extract_tmp" variable is empty to know if we downloaded an archive that we need to extract
-		if [ -n "$dir_extract_tmp" ]; then
-			# Test if the downloaded file is a tarball
-			if file "$file_tmp" | grep -q "gzip compressed data"; then
-				if [ "$(exists_command "tar")" = "exists" ]; then
-				
-					# Prepare tmp directory
-					rm -rf $dir_extract_tmp
-					mkdir -p $dir_extract_tmp
-
-					# "tar --strip-components 1" permit to extract sources in /tmp/$NAME_LOWERCASE and don't create a new directory /tmp/$NAME_LOWERCASE/$NAME_LOWERCASE
-					tar -xf "$file_tmp" -C "$dir_extract_tmp" --strip-components 1
-				fi
-			else
-				display_error "file '$file_url' is a non-working tarball and cannot be used, deleting it."
-			fi
-		fi
 	# fi
 
 }
