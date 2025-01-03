@@ -27,6 +27,20 @@
 export allow_helper_functions="true"
 
 
+
+
+# Display help
+# Usage: display_help
+display_help() {
+	echo "$USAGE"
+	echo ""
+	echo "A simple command used for testing purposes."
+	echo "Custom rules can be added from '$dir_config'."
+	echo ""
+	echo "$NAME $VERSION"
+}
+
+
 echo "Have you ever seen a P carrying a B ?  "
 $HELPER loading_process "sleep 1.3"
 

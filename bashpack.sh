@@ -495,10 +495,10 @@ verify_repository_reachability() {
 
 	http_family="$(echo $http_code | cut -c 1)"
 	if [ "$http_family" = "1" ] || [ "$http_family" = "2" ] || [ "$http_family" = "3" ]; then
-		repository_reachable="true"
+		# export repository_reachable="true"
 		display_success "[HTTP $http_code] $url is reachable."
 	else 
-		repository_reachable="false"
+		# export repository_reachable="false"
 		if [ -z $http_code ]; then
 			display_error "$url is not reachable."
 		else
@@ -523,7 +523,7 @@ download_file() {
 
 	# Testing if repository is reachable with HTTP before doing anything.
 	loading_process "verify_repository_reachability $file_url"
-	if [ "$repository_reachable" = "true" ]; then
+	# if [ "$repository_reachable" = "true" ]; then
 
 		# Try to download with curl if exists
 		if [ "$(exists_command "curl")" = "exists" ]; then
@@ -565,7 +565,7 @@ download_file() {
 				display_error "file '$file_url' is a non-working tarball and cannot be used, deleting it."
 			fi
 		fi
-	fi
+	# fi
 
 }
 
@@ -1075,7 +1075,13 @@ command_list() {
 	fi
 
 
-	verify_repository_reachability $url > /dev/null
+	display_commands_installed() {
+		display_error "can't reach repositories, displaying only installed commands."
+		ls -l $dir_commands
+	}
+
+
+	loading_process "verify_repository_reachability $url"
 	if [ "$repository_reachable" = "true" ]; then
 
 		if [ "$(exists_command "curl")" = "exists" ]; then
@@ -1086,9 +1092,11 @@ command_list() {
 		# elif [ "$(exists_command "wget")" = "exists" ]; then
 			
 			# loading_process "wget -q $file_url -O $file_tmp"
-		else
-			display_error "nothing found."
+		# else
+		# 	display_commands_installed
 		fi
+	# elif [ "$repository_reachable" != "true" ]; then
+	# 	display_commands_installed
 	fi
 
 	cat $list_tmp1 \
@@ -1111,39 +1119,50 @@ command_list() {
 	done < "$list_tmp2"
 
 
-	rm $list_tmp1
-	rm $list_tmp2
+	# rm $list_tmp1
+	# rm $list_tmp2
 }
 
 
 
 
 # Get a command from repository
-# Usage: command_get <command> <url>
+# Usages:
+#  command_get <command>
+#  command_get <command> <url>
 command_get() {
 
 	local command="${1}"
 	local file_command="$dir_commands/$command.sh"
 	local file_command_tmp="$dir_tmp/$NAME_LOWERCASE-$command.sh"
 
+
+	echo "tmp" $dir_tmp
+	echo "command" $command
+	echo "NAME_LOWERCASE" $NAME_LOWERCASE
+	echo "file_command_tmp" $file_command_tmp
+
 	if [ -z "$command" ]; then
 		display_info "please specify a command from the list below."
 		command_list
-	else
 
+	elif [ -f "$file_command" ]; then
+		display_info "command '$command' is already installed."
+
+	else
 		local url="${2}"
 		if [ -z "$url" ]; then
 			url="$URL_RAW/$VERSION/commands/$command.sh"
 		fi
 
-		download_file "$url" "$file_command_tmp"
+		download_file $url $file_command
 
-		if [ -f "$file_command_tmp" ]; then
-			mv "$file_command_tmp" "$file_command"
+		# if [ -f "$file_command_tmp" ]; then
+			# mv "$file_command_tmp" "$file_command"
 			chmod +x $file_command
-		else
-			display_error "file '$file_command_tmp' has not been downloaded from $url."
-		fi
+		# else
+		# 	display_error "file '$file_command_tmp' has not been downloaded from $url."
+		# fi
 
 		if [ -f $file_command ]; then
 			display_success "command '$command' has been installed."
@@ -1455,8 +1474,8 @@ case "$1" in
 		else
 			case "$2" in
 				-l|--list)			command_list ;;
-				-g|--get)			command_get $3 $4;;
-				-d|--delete)		command_delete $3;;
+				-g|--get)			command_get $3 $4 ;;
+				-d|--delete)		command_delete $3 ;;
 				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
