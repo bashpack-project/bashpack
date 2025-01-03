@@ -48,7 +48,7 @@ display_help() {
 	echo "$USAGE"
 	echo ""
 	echo "Configure the firewall of your system."
-	echo "Custom rules can be added from '$dir_config'."
+	echo "Custom rules can be added from '$file_config_command'."
 	echo ""
 	echo "Options:"
 	echo " -i, --install	install the ruleset written at $file_config_command."

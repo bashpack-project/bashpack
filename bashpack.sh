@@ -39,6 +39,7 @@ export NAME_ALIAS="bp"
 
 export CURRENT_CLI="$0"
 export HELPER="$CURRENT_CLI helper"
+export OWNER="$(ls -l $NAME_LOWERCASE.sh | cut -d " " -f 3)"
 
 # BASE_URL="https://api.github.com/repos/$NAME_LOWERCASE-project"
 REPO_URL="$NAME_LOWERCASE-project"
@@ -1082,7 +1083,7 @@ command_list() {
 
 
 	loading_process "verify_repository_reachability $url"
-	if [ "$repository_reachable" = "true" ]; then
+	# if [ "$repository_reachable" = "true" ]; then
 
 		if [ "$(exists_command "curl")" = "exists" ]; then
 			# display_info "getting list of command from $url."
@@ -1097,7 +1098,7 @@ command_list() {
 		fi
 	# elif [ "$repository_reachable" != "true" ]; then
 	# 	display_commands_installed
-	fi
+	# fi
 
 	cat $list_tmp1 \
 		| grep 'download_url' \
@@ -1119,8 +1120,8 @@ command_list() {
 	done < "$list_tmp2"
 
 
-	# rm $list_tmp1
-	# rm $list_tmp2
+	rm $list_tmp1
+	rm $list_tmp2
 }
 
 
@@ -1136,12 +1137,6 @@ command_get() {
 	local file_command="$dir_commands/$command.sh"
 	local file_command_tmp="$dir_tmp/$NAME_LOWERCASE-$command.sh"
 
-
-	echo "tmp" $dir_tmp
-	echo "command" $command
-	echo "NAME_LOWERCASE" $NAME_LOWERCASE
-	echo "file_command_tmp" $file_command_tmp
-
 	if [ -z "$command" ]; then
 		display_info "please specify a command from the list below."
 		command_list
@@ -1155,14 +1150,15 @@ command_get() {
 			url="$URL_RAW/$VERSION/commands/$command.sh"
 		fi
 
-		download_file $url $file_command
+		download_file $url $file_command_tmp
 
-		# if [ -f "$file_command_tmp" ]; then
-			# mv "$file_command_tmp" "$file_command"
+		if [ -f "$file_command_tmp" ]; then
+			mv "$file_command_tmp" "$file_command"
 			chmod +x $file_command
-		# else
-		# 	display_error "file '$file_command_tmp' has not been downloaded from $url."
-		# fi
+			chown $OWNER:$OWNER $file_command
+		else
+			display_error "file '$file_command_tmp' has not been downloaded from $url."
+		fi
 
 		if [ -f $file_command ]; then
 			display_success "command '$command' has been installed."
