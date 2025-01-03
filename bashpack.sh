@@ -1075,11 +1075,11 @@ command_list() {
 	fi
 
 
-	verify_repository_reachability $url
+	verify_repository_reachability $url > /dev/null
 	if [ "$repository_reachable" = "true" ]; then
 
 		if [ "$(exists_command "curl")" = "exists" ]; then
-			display_info "getting list of command from $url."
+			# display_info "getting list of command from $url."
 
 			loading_process "curl -sL $url" > $list_tmp1
 
@@ -1127,21 +1127,20 @@ command_get() {
 	local file_command_tmp="$dir_tmp/$NAME_LOWERCASE-$command.sh"
 
 	if [ -z "$command" ]; then
-		display_error "no command name given."
+		display_info "please specify a command from the list below."
 		command_list
 	else
+
 		local url="${2}"
 		if [ -z "$url" ]; then
-			url="$URL_RAW/main/commands/$command.sh"
+			url="$URL_RAW/$VERSION/commands/$command.sh"
 		fi
 
-		download_file $url $file_command_tmp
+		download_file "$url" "$file_command_tmp"
 
-		if [ -f $file_command_tmp ]; then
-			cp $file_command_tmp $file_command
+		if [ -f "$file_command_tmp" ]; then
+			mv "$file_command_tmp" "$file_command"
 			chmod +x $file_command
-
-			rm $file_command_tmp
 		else
 			display_error "file '$file_command_tmp' has not been downloaded from $url."
 		fi
@@ -1456,7 +1455,7 @@ case "$1" in
 		else
 			case "$2" in
 				-l|--list)			command_list ;;
-				-g|--get)			command_get $3;;
+				-g|--get)			command_get $3 $4;;
 				-d|--delete)		command_delete $3;;
 				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
