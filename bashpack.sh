@@ -42,8 +42,8 @@ export HELPER="$CURRENT_CLI helper"
 
 # BASE_URL="https://api.github.com/repos/$NAME_LOWERCASE-project"
 REPO_URL="$NAME_LOWERCASE-project"
-HOST_URL_ARCH="https://api.github.com/repos/$REPO_URL"
-HOST_URL_FILE="https://raw.githubusercontent.com/$REPO_URL"
+HOST_URL_API="https://api.github.com/repos/$REPO_URL"
+HOST_URL_RAW="https://raw.githubusercontent.com/$REPO_URL"
 
 export USAGE="Usage: $CURRENT_CLI [COMMAND] [OPTION] \n$CURRENT_CLI --help"
 
@@ -138,7 +138,7 @@ if [ -z "$1" ]; then
 	exit
 else
 	case "$1" in
-		--version) echo $VERSION && exit ;;
+		-v|--version) echo $VERSION && exit ;;
 		verify)
 			case "$2" in
 				--help) echo "$USAGE" \
@@ -499,7 +499,11 @@ verify_repository_reachability() {
 		display_success "[HTTP $http_code] $url is reachable."
 	else 
 		repository_reachable="false"
-		display_error "[HTTP $http_code] $url is not reachable."
+		if [ -z $http_code ]; then
+			display_error "$url is not reachable."
+		else
+			display_error "[HTTP $http_code] $url is not reachable."
+		fi
 		exit
 	fi
 }
@@ -509,30 +513,38 @@ verify_repository_reachability() {
 
 # Download releases archives from the repository
 # Usages:
-# - download_cli <url of single file> <temp file>
-# - download_cli <url of n.n.n archive> <temp archive> <temp dir for extraction>
-download_cli() {
+# - download_file <url of single file> <temp file>
+# - download_file <url of n.n.n archive> <temp archive> <temp dir for extraction>
+download_file() {
 
 	local file_url="${1}"
 	local file_tmp="${2}"
 	local dir_extract_tmp="${3}"
 
 	# Testing if repository is reachable with HTTP before doing anything.
-	verify_repository_reachability "$file_url"
+	loading_process "verify_repository_reachability $file_url"
 	if [ "$repository_reachable" = "true" ]; then
 
 		# Try to download with curl if exists
 		if [ "$(exists_command "curl")" = "exists" ]; then
-			display_info "downloading_process sources from $file_url with curl."
+			display_info "downloading sources from $file_url with curl."
 			loading_process "curl -sL $file_url -o $file_tmp"
 			
 		# Try to download with wget if exists
 		elif [ "$(exists_command "wget")" = "exists" ]; then
-			display_info "downloading_process sources from $file_url with wget."
+			display_info "downloading sources from $file_url with wget."
 			loading_process "wget -q $file_url -O $file_tmp"
 
 		else
 			display_error "could not download $file_url with curl or wget."
+		fi
+
+
+		# Success message
+		if [ -f "$file_tmp" ]; then
+			display_success "file $file_tmp has been downloaded."
+		else
+			display_error "file $file_tmp has not been downloaded."
 		fi
 
 
@@ -600,19 +612,19 @@ fi
 
 case "$PUBLICATION" in
 	unstable|dev)
-		URL_ARCH="$HOST_URL_ARCH/$NAME_LOWERCASE-$PUBLICATION"
-		URL_FILE="$HOST_URL_FILE/$NAME_LOWERCASE-$PUBLICATION"
+		URL_API="$HOST_URL_API/$NAME_LOWERCASE-$PUBLICATION"
+		URL_RAW="$HOST_URL_RAW/$NAME_LOWERCASE-$PUBLICATION"
 		;;
 	main)
-		URL_ARCH="$HOST_URL_ARCH/$NAME_LOWERCASE"
-		URL_FILE="$HOST_URL_FILE/$NAME_LOWERCASE"
+		URL_API="$HOST_URL_API/$NAME_LOWERCASE"
+		URL_RAW="$HOST_URL_RAW/$NAME_LOWERCASE"
 		;;
 	*)
 		display_info "publication '$PUBLICATION' not found, using default 'main'."
 		PUBLICATION="main"
 		echo "main" > $file_current_publication
-		URL_ARCH="$HOST_URL_ARCH/$NAME_LOWERCASE"
-		URL_FILE="$HOST_URL_FILE/$NAME_LOWERCASE"
+		URL_API="$HOST_URL_API/$NAME_LOWERCASE"
+		URL_RAW="$HOST_URL_RAW/$NAME_LOWERCASE"
 		;;
 esac
 
@@ -1049,7 +1061,137 @@ install_new_config_file() {
 
 
 
-# Update the installed command on the system
+# List available commands from repository
+# Usages:
+#  command_list
+#  command_list <url>
+command_list() {
+
+	local list_tmp1="$dir_tmp/$NAME_LOWERCASE-command-list1"
+	local list_tmp2="$dir_tmp/$NAME_LOWERCASE-command-list2"
+	local url="${1}"
+	if [ -z "$url" ]; then
+		url="$URL_API/contents/commands"
+	fi
+
+
+	verify_repository_reachability $url
+	if [ "$repository_reachable" = "true" ]; then
+
+		if [ "$(exists_command "curl")" = "exists" ]; then
+			display_info "getting list of command from $url."
+
+			loading_process "curl -sL $url" > $list_tmp1
+
+		# elif [ "$(exists_command "wget")" = "exists" ]; then
+			
+			# loading_process "wget -q $file_url -O $file_tmp"
+		else
+			display_error "nothing found."
+		fi
+	fi
+
+	cat $list_tmp1 \
+		| grep 'download_url' \
+		| sed "s/.*commands\/\(.*\).sh.*/\1/" \
+		| sort -ud > $list_tmp2
+
+	while read -r command; do
+
+		if [ "$command" != "" ]; then
+
+			# Checking if the command is already installed
+			if [ -f "$dir_commands/$command.sh" ]; then
+				echo "$command (installed)"
+			else
+				echo "$command"
+			fi
+		fi
+
+	done < "$list_tmp2"
+
+
+	rm $list_tmp1
+	rm $list_tmp2
+}
+
+
+
+
+# Get a command from repository
+# Usage: command_get <command> <url>
+command_get() {
+
+	local command="${1}"
+	local file_command="$dir_commands/$command.sh"
+	local file_command_tmp="$dir_tmp/$NAME_LOWERCASE-$command.sh"
+
+	if [ -z "$command" ]; then
+		display_error "no command name given."
+		command_list
+	else
+		local url="${2}"
+		if [ -z "$url" ]; then
+			url="$URL_RAW/main/commands/$command.sh"
+		fi
+
+		download_file $url $file_command_tmp
+
+		if [ -f $file_command_tmp ]; then
+			cp $file_command_tmp $file_command
+			chmod +x $file_command
+
+			rm $file_command_tmp
+		else
+			display_error "file '$file_command_tmp' has not been downloaded from $url."
+		fi
+
+		if [ -f $file_command ]; then
+			display_success "command '$command' has been installed."
+			display_info "'$NAME_ALIAS $command --help' to display help."
+		else
+			display_error "command '$command' has not been installed."
+		fi
+	fi
+}
+
+
+
+
+# Remove an installed command
+# Usage: command_delete <command>
+command_delete() {
+
+	local command="${1}"
+	local file_command="$dir_commands/$command.sh"
+
+	local confirmation
+
+	if [ -f "$file_command" ]; then
+
+		read -p "$question_continue" confirmation
+	
+		if [ "$(sanitize_confirmation $confirmation)" = "yes" ]; then
+			rm "$file_command"
+
+			if [ -f "$file_command" ]; then
+				display_error "command '$command' has not been removed."
+			else
+				display_success "command '$command' has been removed."
+			fi
+		else
+			display_info "uninstallation aborted."
+		fi
+	else
+		display_success "command '$command' not found."
+	fi
+
+}
+
+
+
+
+# Update the installed CLI on the system
 #
 # !!!!!!!!!!!!!!!!!!!!!!!!!
 # !!! CRITICAL FUNCTION !!!
@@ -1060,7 +1202,7 @@ install_new_config_file() {
 update_cli() {
 
 	local downloaded_cli="$dir_tmp/$NAME_LOWERCASE.sh"
-	local remote_archive="$URL_ARCH/releases/latest"
+	local remote_archive="$URL_API/releases/latest"
 	local force="${1}"
 	local chosen_publication="${2}"
 
@@ -1069,11 +1211,11 @@ update_cli() {
 
 		# Download only the main file (main by default, or the one of the chosen publication if specified)
 		if [ -z "$chosen_publication" ]; then
-			download_cli "$URL_FILE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
+			download_file "$URL_RAW/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
 		elif [ "$chosen_publication" = "main" ]; then
-			download_cli "$HOST_URL_FILE/$NAME_LOWERCASE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
+			download_file "$HOST_URL_RAW/$NAME_LOWERCASE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
 		else
-			download_cli "$HOST_URL_FILE/$NAME_LOWERCASE-$chosen_publication/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
+			download_file "$HOST_URL_RAW/$NAME_LOWERCASE-$chosen_publication/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
 		fi
 
 
@@ -1110,7 +1252,7 @@ update_cli() {
 
 
 
-# Install the command on the system
+# Install the CLI on the system
 #
 # !!!!!!!!!!!!!!!!!!!!!!!!!
 # !!! CRITICAL FUNCTION !!!
@@ -1154,7 +1296,7 @@ install_cli() {
 		if [ "$chosen_publication" = "" ] || [ "$chosen_publication" = "$($NAME_ALIAS --publication)" ]; then
 
 			# Download tarball archive with the default way
-			download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
+			download_file "$URL_API/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
 			echo "$($NAME_ALIAS --publication)" > $file_current_publication
 		else
@@ -1162,7 +1304,7 @@ install_cli() {
 			set_config_value "$file_config" "publication" "$chosen_publication"
 
 			# # Download tarball archive from the given publication
-			# download_cli "$HOST_URL_ARCH/$NAME_LOWERCASE-$chosen_publication/tarball/$VERSION" $archive_tmp $archive_dir_tmp
+			# download_file "$HOST_URL_API/$NAME_LOWERCASE-$chosen_publication/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
 			# update_cli
 			update_cli -f "$chosen_publication"
@@ -1308,14 +1450,25 @@ case "$1" in
 		fi ;;
 	--self-delete)					loading_process "delete_all" ;;
 	--get-logs)						get_logs "$file_log_main" ;;
+	command)
+		if [ -z "$2" ]; then
+									command_list
+		else
+			case "$2" in
+				-l|--list)			command_list ;;
+				-g|--get)			command_get $3;;
+				-d|--delete)		command_delete $3;;
+				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
+			esac
+		fi ;;
 	verify)
 		if [ -z "$2" ]; then
-									loading_process "verify_dependencies $3";  loading_process "verify_files"; loading_process "verify_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading_process "verify_repository_reachability "$URL_ARCH/tarball/$VERSION""
+									loading_process "verify_dependencies $3";  loading_process "verify_files"; loading_process "verify_repository_reachability "$URL_RAW/main/$NAME_LOWERCASE.sh""; loading_process "verify_repository_reachability "$URL_API/tarball/$VERSION""
 		else
 			case "$2" in
 				-f|--files)			loading_process "verify_files $3" ;;
 				-d|--dependencies)	loading_process "verify_dependencies $3" ;;
-				-r|--repository)	loading_process "verify_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading_process "verify_repository_reachability "$URL_ARCH/tarball/$VERSION"" ;;
+				-r|--repository)	loading_process "verify_repository_reachability "$URL_RAW/main/$NAME_LOWERCASE.sh""; loading_process "verify_repository_reachability "$URL_API/tarball/$VERSION"" ;;
 				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
