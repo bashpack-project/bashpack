@@ -298,19 +298,19 @@ append_log() {
 
 	local file_log="${1}"
 	
-	# # Get process name to write it in log file
-	# local command="${0}"
-	# $command & local pid=$!
-	# local process_name="$(ps -o cmd -fp $pid | cut -d " " -f 1 -s)"
-	# display_info "launching: $command"
+	# Get process name to write it in log file
+	local command="${0}"
+	$command & local pid=$!
+	local process_name="$(ps -o cmd -fp $pid | cut -d " " -f 1 -s)"
+	display_info "launching: $command"
 
 
-	# Set the log format on the command and append it to the selected file
-	# if [ -n "$file_log" ]; then
-	# 	sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log"
-	# else
-	# 	sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log_main"
-	# fi
+	Set the log format on the command and append it to the selected file
+	if [ -n "$file_log" ]; then
+		sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log"
+	else
+		sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log_main"
+	fi
 
 }
 
@@ -543,24 +543,24 @@ download_file() {
 
 		# Try to download with curl if exists
 		if [ "$(exists_command "curl")" = "exists" ]; then
-			display_info "downloading sources from $file_url with curl."
+			display_info "downloading sources from '$file_url' with curl."
 			loading_process "curl -sL $file_url -o $file_tmp"
 			
 		# Try to download with wget if exists
 		elif [ "$(exists_command "wget")" = "exists" ]; then
-			display_info "downloading sources from $file_url with wget."
+			display_info "downloading sources from '$file_url' with wget."
 			loading_process "wget -q $file_url -O $file_tmp"
 
 		else
-			display_error "could not download $file_url with curl or wget."
+			display_error "could not download '$file_url' with curl or wget."
 		fi
 
 
 		# Success message
 		if [ -f "$file_tmp" ]; then
-			display_success "file $file_tmp has been downloaded."
+			display_success "file '$file_tmp' has been downloaded."
 		else
-			display_error "file $file_tmp has not been downloaded."
+			display_error "file '$file_tmp' has not been downloaded."
 		fi
 
 
@@ -1089,54 +1089,44 @@ command_list() {
 	if [ -z "$url" ]; then
 		url="$URL_API/contents/commands"
 	fi
-
-
-	display_commands_installed() {
-		display_error "can't reach repositories, displaying only installed commands."
-		ls -l $dir_commands
-	}
+	local installed="[installed]"
 
 
 	loading_process "verify_repository_reachability $url"
-	# if [ "$repository_reachable" = "true" ]; then
+	if [ "$(exists_command "curl")" = "exists" ]; then
+		loading_process "curl -sL $url" > $list_tmp1
+	elif [ "$(exists_command "wget")" = "exists" ]; then			
+		loading_process "wget -q $url -O $list_tmp1"
+	else
+		display_info "displaying installed commands."
+		ls $dir_commands | sed "s/\.sh/ $installed/"
+	fi
 
-		if [ "$(exists_command "curl")" = "exists" ]; then
-			# display_info "getting list of command from $url."
 
-			loading_process "curl -sL $url" > $list_tmp1
+	if [ -f "$list_tmp1" ]; then
+		cat $list_tmp1 \
+			| grep 'download_url' \
+			| sed "s/.*commands\/\(.*\).sh.*/\1/" \
+			| sort -ud > $list_tmp2
 
-		# elif [ "$(exists_command "wget")" = "exists" ]; then
-			
-			# loading_process "wget -q $file_url -O $file_tmp"
-		# else
-		# 	display_commands_installed
-		fi
-	# elif [ "$repository_reachable" != "true" ]; then
-	# 	display_commands_installed
-	# fi
+		while read -r command; do
+			if [ "$command" != "" ]; then
 
-	cat $list_tmp1 \
-		| grep 'download_url' \
-		| sed "s/.*commands\/\(.*\).sh.*/\1/" \
-		| sort -ud > $list_tmp2
-
-	while read -r command; do
-
-		if [ "$command" != "" ]; then
-
-			# Checking if the command is already installed
-			if [ -f "$dir_commands/$command.sh" ]; then
-				echo "$command (installed)"
-			else
-				echo "$command"
+				# Checking if the command is already installed
+				if [ -f "$dir_commands/$command.sh" ]; then
+					echo "$command $installed"
+				else
+					echo "$command"
+				fi
 			fi
-		fi
 
-	done < "$list_tmp2"
+		done < "$list_tmp2"
+
+		rm $list_tmp1
+		rm $list_tmp2
+	fi
 
 
-	rm $list_tmp1
-	rm $list_tmp2
 }
 
 
@@ -1165,14 +1155,13 @@ command_get() {
 			url="$URL_RAW/$VERSION/commands/$command.sh"
 		fi
 
-		download_file $url $file_command_tmp
+		# download_file $url $file_command_tmp
+		download_file $url $file_command
 
 		if [ -f "$file_command_tmp" ]; then
-			mv "$file_command_tmp" "$file_command"
+			# mv "$file_command_tmp" "$file_command"
 			chmod +x $file_command
 			chown $OWNER:$OWNER $file_command
-		else
-			display_error "file '$file_command_tmp' has not been downloaded from $url."
 		fi
 
 		if [ -f $file_command ]; then
@@ -1212,7 +1201,7 @@ command_delete() {
 			display_info "uninstallation aborted."
 		fi
 	else
-		display_success "command '$command' not found."
+		display_error "command '$command' not found."
 	fi
 
 }

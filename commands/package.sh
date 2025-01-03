@@ -144,7 +144,7 @@ update_packages() {
 		$HELPER display_info "updating with APT." "$file_log"
 
 		if [ "$($HELPER exists_command "dpkg")" = "exists" ]; then
-			dpkg --configure -a
+			dpkg --configure -a | append_log $file_log
 		fi
 
 		apt update
