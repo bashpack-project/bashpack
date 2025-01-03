@@ -140,6 +140,21 @@ if [ -z "$1" ]; then
 else
 	case "$1" in
 		-v|--version) echo $VERSION && exit ;;
+		command)
+			case "$2" in
+				--help) echo "$USAGE" \
+				&&		echo "" \
+				&&		echo "Manage $NAME sub commands." \
+				&&		echo "" \
+				&&		echo "Options:" \
+				&&		echo " -l, --list         list available commands." \
+				&&		echo " -g, --get <name>   install a command." \
+				&&		echo " -d, --delete       remove a command." \
+				&&		echo "" \
+				&&		echo "$NAME $VERSION" \
+				&&		exit ;;
+			esac
+		;;
 		verify)
 			case "$2" in
 				--help) echo "$USAGE" \
@@ -164,7 +179,7 @@ else
 		&&		echo "     --get-logs       display logs." \
 		&&		echo "     --help           display this information." \
 		&&		echo " -p, --publication    display the current installed $NAME publication stage (main, unstable, dev)." \
-		&&		echo "     --version        display version." \
+		&&		echo " -v, --version        display version." \
 		&&		echo "" \
 		&&		echo "Commands (--help for commands options):" \
 		&&		echo "$(ls $dir_commands | sed "s/.sh//g" | sed "s/^/  /g")" \
