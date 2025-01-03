@@ -39,7 +39,7 @@ export NAME_ALIAS="bp"
 
 export CURRENT_CLI="$0"
 export HELPER="$CURRENT_CLI helper"
-export OWNER="$(ls -l $NAME_LOWERCASE.sh | cut -d " " -f 3)"
+export OWNER="$(ls -l $CURRENT_CLI | cut -d " " -f 3)"
 
 # BASE_URL="https://api.github.com/repos/$NAME_LOWERCASE-project"
 REPO_URL="$NAME_LOWERCASE-project"
