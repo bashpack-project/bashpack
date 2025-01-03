@@ -41,6 +41,8 @@ export CURRENT_CLI="$0"
 export HELPER="$CURRENT_CLI helper"
 export OWNER="$(ls -l $CURRENT_CLI | cut -d " " -f 3)"
 
+ff
+
 # BASE_URL="https://api.github.com/repos/$NAME_LOWERCASE-project"
 REPO_URL="$NAME_LOWERCASE-project"
 HOST_URL_API="https://api.github.com/repos/$REPO_URL"
