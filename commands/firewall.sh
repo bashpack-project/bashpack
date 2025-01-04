@@ -63,19 +63,25 @@ display_help() {
 
 
 
-# Init main configuration options
-if [ -z "$(cat $file_config | grep "\[command\] $CURRENT_SUBCOMMAND")" ]; then
-	echo "
-		# [command] $CURRENT_SUBCOMMAND
- 		# This option allow $NAME to manage the firewall of the system.
- 		# Default ruleset: [inbounds any block] and [outbounds any allow]. You can edit custom rules in the firewall.conf file.
- 		# - 0 = do not manage the firewall with $NAME
- 		# - 1 = use your custom ruleset and reset the firewall every hour and every boot (useful for workstations)
- 		# - 2 = use your custom ruleset and keep it forever (useful for servers)
- 		$CURRENT_SUBCOMMAND 0
-		" | sed 's/^[ \t]*//' >> $file_config
-fi
+# Install requirements of the sub command
+# This function is intended to be used from $CURRENT_CLI with $CURRENT_CLI $command init_command
+# (it will only work is init_command is available as an argument with the others options)
+# Usage: $CURRENT_CLI $command init_command
+init_command() {
 
+	# Create option in the main config file to enable automatic firewall management
+	if [ -z "$(cat $file_config | grep "\[command\] $CURRENT_SUBCOMMAND")" ]; then
+		echo "
+			# [command] $CURRENT_SUBCOMMAND
+			# This option allow $NAME to manage the firewall of the system.
+			# Default ruleset: [inbounds any block] and [outbounds any allow]. You can edit custom rules in the firewall.conf file.
+			# - 0 = do not manage the firewall with $NAME
+			# - 1 = use your custom ruleset and reset the firewall every hour and every boot (useful for workstations)
+			# - 2 = use your custom ruleset and keep it forever (useful for servers)
+			$CURRENT_SUBCOMMAND 0
+			" | sed 's/^[ \t]*//' >> $file_config
+	fi
+}
 
 
 

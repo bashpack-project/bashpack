@@ -1190,7 +1190,7 @@ command_get() {
 			chmod +x $file_command
 			chown $OWNER:$OWNER $file_command
 
-			# $CURRENT_CLI $command init_command
+			$CURRENT_CLI $command init_command
 		fi
 
 		if [ -f $file_command ]; then
