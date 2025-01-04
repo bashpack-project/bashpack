@@ -27,16 +27,16 @@
 export allow_helper_functions="true"
 
 
-command_name=$(echo $(basename $1))
-file_log="$dir_log/$command_name.log"
+# command_name=$(echo $(basename $1))
+# file_LOG_CURRENT_SUBCOMMAND="$dir_log/$CURRENT_SUBCOMMAND.log"
+# file_CONFIG_CURRENT_SUBCOMMAND="$dir_config/$CURRENT_SUBCOMMAND.conf"
 
 
-file_config_command="$dir_config/$command_name.conf"
-firewall_allowed="$($HELPER get_config_value "$file_config_command" "$command_name")"
+firewall_allowed="$($HELPER get_config_value "$file_CONFIG_CURRENT_SUBCOMMAND" "$CURRENT_SUBCOMMAND")"
 
 
 file_nftables="/etc/nftables.conf"
-dir_nftables="/etc/bashpack/$command_name"
+dir_nftables="/etc/bashpack/$CURRENT_SUBCOMMAND"
 file_nftables_backup="$dir_nftables/nftables.conf_backup_$now"
 
 
@@ -48,10 +48,10 @@ display_help() {
 	echo "$USAGE"
 	echo ""
 	echo "Configure the firewall of your system."
-	echo "Custom rules can be added from '$file_config_command'."
+	echo "Custom rules can be added from '$file_CONFIG_CURRENT_SUBCOMMAND'."
 	echo ""
 	echo "Options:"
-	echo " -i, --install	install the ruleset written at $file_config_command."
+	echo " -i, --install	install the ruleset written at $file_CONFIG_CURRENT_SUBCOMMAND."
 	echo " -d, --display	display the current ruleset."
 	echo " -r, --restart	restart the firewall."
 	echo "     --disable	disable the firewall."
@@ -63,15 +63,35 @@ display_help() {
 
 
 
+# Init command on the system (install required files or options if any)
+# This function is intended to be used during command installation
+# Usage: init_command
+init_command() {
+
+	config_description="# [command] $CURRENT_SUBCOMMAND \
+		# This option allow Bashpack to manage the firewall of the system. \
+		# Default ruleset: [inbounds any block] and [outbounds any allow]. You can edit custom rules in the firewall.conf file. \
+		# - 0 = do not manage the firewall with Bashpack \
+		# - 1 = use your custom ruleset and reset the firewall every hour and every boot (useful for workstations) \
+		# - 2 = use your custom ruleset and keep it forever (useful for servers) \
+		$CURRENT_SUBCOMMAND 0" \
+
+	$HELPER command_config_activation "$CURRENT_SUBCOMMAND" "$config_description" "1"
+
+}
+
+
+
+
 # Create the custom inbound ruleset file
-if [ ! -f "$file_config_command" ]; then
-	echo "# Customs inbound rules can be added below" > "$file_config_command"
-	echo "# Every lines will automatically be wrapped inside the well formatted nftables command 'nft add rule inet filter $NAME_UPPERCASE-PREROUTING [LINE] counter accept'" >> "$file_config_command"
-	echo "# Examples of rules that can be copied, pasted and adapted:" >> "$file_config_command"
-	echo "#tcp dport <PORT>" >> "$file_config_command"
-	echo "#ip saddr <CIDR>" >> "$file_config_command"
-	echo "#ip6 saddr <CIDR>" >> "$file_config_command"
-	chmod 755 "$file_config_command"
+if [ ! -f "$file_CONFIG_CURRENT_SUBCOMMAND" ]; then
+	echo "# Customs inbound rules can be added below" > "$file_CONFIG_CURRENT_SUBCOMMAND"
+	echo "# Every lines will automatically be wrapped inside the well formatted nftables command 'nft add rule inet filter $NAME_UPPERCASE-PREROUTING [LINE] counter accept'" >> "$file_CONFIG_CURRENT_SUBCOMMAND"
+	echo "# Examples of rules that can be copied, pasted and adapted:" >> "$file_CONFIG_CURRENT_SUBCOMMAND"
+	echo "#tcp dport <PORT>" >> "$file_CONFIG_CURRENT_SUBCOMMAND"
+	echo "#ip saddr <CIDR>" >> "$file_CONFIG_CURRENT_SUBCOMMAND"
+	echo "#ip6 saddr <CIDR>" >> "$file_CONFIG_CURRENT_SUBCOMMAND"
+	chmod 755 "$file_CONFIG_CURRENT_SUBCOMMAND"
 fi
 
 
@@ -234,7 +254,7 @@ create_firewall() {
 		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
 			nft add rule inet filter $NAME_UPPERCASE-PREROUTING "$line" counter accept
 		fi	
-	done < "$file_config_command"
+	done < "$file_CONFIG_CURRENT_SUBCOMMAND"
 
 	# Creating $NAME_UPPERCASE-POSTROUTING 
 	# Eveything is open outbound by default
@@ -268,7 +288,7 @@ create_firewall() {
 # 					install_firewall
 # 					create_firewall
 # 				else 
-# 					$HELPER display_error "firewall management is disabled or misconfigured in $file_config_command"
+# 					$HELPER display_error "firewall management is disabled or misconfigured in $file_CONFIG_CURRENT_SUBCOMMAND"
 # 				fi ;;
 # 	disable)	disable_firewall ;;
 # 	restore)	restore_firewall ;;
@@ -285,13 +305,14 @@ if [ ! -z "$2" ]; then
 							install_firewall
 							create_firewall
 						else 
-							$HELPER display_error "firewall management is disabled or misconfigured in $file_config_command"
+							$HELPER display_error "firewall management is disabled or misconfigured in $file_CONFIG_CURRENT_SUBCOMMAND"
 						fi ;;
 		-d|--display)	display_firewall ;;
 		-r|--restart)	restart_firewall ;;
 		--disable)		disable_firewall ;;
 		--restore)		restore_firewall ;;
 		--help)			display_help ;;
+		init_command)	init_command ;;
 		*)				$HELPER display_error "unknown option '$2' from '$1' command."'\n'"$USAGE" && exit ;;
 	esac
 else

@@ -27,8 +27,8 @@
 export allow_helper_functions="true"
 
 
-command_name=$(echo $(basename $1))
-file_log="$dir_log/$command_name.log"
+# command_name=$(echo $(basename $1))
+# file_log="$dir_log/$CURRENT_SUBCOMMAND.log"
 
 
 question_accept_install="Do you want to automatically accept installations during the process? [y/N] "
@@ -60,7 +60,6 @@ display_help() {
 	echo ""
 	echo "$NAME $VERSION"
 }
-
 
 
 
@@ -141,10 +140,10 @@ update_packages() {
 
 	if [ "$($HELPER exists_command "apt")" = "exists" ]; then
 
-		$HELPER display_info "updating with APT." "$file_log"
+		$HELPER display_info "updating with APT." "$file_LOG_CURRENT_SUBCOMMAND"
 
 		if [ "$($HELPER exists_command "dpkg")" = "exists" ]; then
-			dpkg --configure -a | append_log $file_log
+			dpkg --configure -a | append_log $file_LOG_CURRENT_SUBCOMMAND
 		fi
 
 		apt update
@@ -191,7 +190,7 @@ update_packages() {
 	}
 
 	if [ "$($HELPER exists_command "snap")" = "exists" ]; then
-		$HELPER display_info "updating with Snap." "$file_log"
+		$HELPER display_info "updating with Snap." "$file_LOG_CURRENT_SUBCOMMAND"
 		# upgrade_with_snapcraft $install_confirmation
 		upgrade_with_snapcraft $install_confirmation
 	fi
@@ -201,14 +200,14 @@ update_packages() {
 
 	# Update DNF packages (using YUM as fallback if DNF doesn't exist)
 	if [ "$($HELPER exists_command "dnf")" = "exists" ]; then
-		$HELPER display_info "updating with DNF." "$file_log"
+		$HELPER display_info "updating with DNF." "$file_LOG_CURRENT_SUBCOMMAND"
 
 		# dnf upgrade $install_confirmation
 		dnf upgrade $install_confirmation
 
 
 	elif [ "$($HELPER exists_command "yum")" = "exists" ]; then
-		$HELPER display_info "updating with YUM." "$file_log"
+		$HELPER display_info "updating with YUM." "$file_LOG_CURRENT_SUBCOMMAND"
 
 		# yum upgrade $install_confirmation
 		yum upgrade $install_confirmation
@@ -283,7 +282,7 @@ if [ ! -z "$2" ]; then
 				esac
 			fi
 			;;
-		--get-logs)	$HELPER get_logs $file_log ;; 
+		--get-logs)	$HELPER get_logs $file_LOG_CURRENT_SUBCOMMAND ;; 
 		--help)		display_help ;;
 		*)			$HELPER display_error "unknown option '$2' from '$1' command."'\n'"$USAGE" && exit ;;
 	esac

@@ -130,6 +130,14 @@ fi
 
 
 
+if [ "$(echo $1 | grep -v '-' )" ]; then
+	export CURRENT_SUBCOMMAND="$1"
+	export file_LOG_CURRENT_SUBCOMMAND="$dir_log/$CURRENT_SUBCOMMAND.log"
+	export file_CONFIG_CURRENT_SUBCOMMAND="$dir_config/$CURRENT_SUBCOMMAND.conf"
+fi
+
+
+
 
 # Options that can be called without root
 # Display usage in case of empty option
@@ -1078,6 +1086,26 @@ install_new_config_file() {
 
 
 
+# Permit to set an option in the main config file to activate or not the automation of a sub command 
+# Usage: command_config_activation <command> <description> <option>
+command_config_activation() {
+
+	local command="${1}"
+	local description="${2}"
+	local option="${3}"
+
+
+	echo "" >> $file_config
+	echo $description >> $file_config
+
+	set_config_value $file_config $command $option
+
+	echo "" >> $file_config
+}
+
+
+
+
 # List available commands from repository
 # Usages:
 #  command_list
@@ -1126,8 +1154,6 @@ command_list() {
 		rm $list_tmp1
 		rm $list_tmp2
 	fi
-
-
 }
 
 
@@ -1156,13 +1182,15 @@ command_get() {
 			url="$URL_RAW/$VERSION/commands/$command.sh"
 		fi
 
-		# download_file $url $file_command_tmp
-		download_file $url $file_command
+		download_file $url $file_command_tmp
+		# download_file $url $file_command
 
 		if [ -f "$file_command_tmp" ]; then
-			# mv "$file_command_tmp" "$file_command"
+			mv "$file_command_tmp" "$file_command"
 			chmod +x $file_command
 			chown $OWNER:$OWNER $file_command
+
+			$command init_command
 		fi
 
 		if [ -f $file_command ]; then
@@ -1503,15 +1531,16 @@ case "$1" in
 			else
 				case "$2" in
 					loading_process)				loading_process "$3" ;;
-					display_success)		display_success "$3" "$4" ;;
-					display_error)			display_error "$3" "$4" ;;
-					display_info)			display_info "$3" "$4" ;;
-					get_logs)				get_logs "$3" ;;
-					append_log)				append_log "$3" ;;
-					exists_command)			exists_command "$3" ;;
-					sanitize_confirmation)	sanitize_confirmation "$3" ;;
-					get_config_value)		get_config_value "$3" "$4" ;;
-					*)						display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
+					display_success)				display_success "$3" "$4" ;;
+					display_error)					display_error "$3" "$4" ;;
+					display_info)					display_info "$3" "$4" ;;
+					get_logs)						get_logs "$3" ;;
+					append_log)						append_log "$3" ;;
+					exists_command)					exists_command "$3" ;;
+					sanitize_confirmation)			sanitize_confirmation "$3" ;;
+					get_config_value)				get_config_value "$3" "$4" ;;
+					command_config_activation)		command_config_activation "$3" "$4" "$5";;
+					*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 				esac
 			fi
 		fi ;;
