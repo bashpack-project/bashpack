@@ -1221,7 +1221,7 @@ command_delete() {
 		read -p "$question_continue" confirmation
 	
 		if [ "$(sanitize_confirmation $confirmation)" = "yes" ]; then
-			# rm "$file_command"
+			rm "$file_command"
 
 			# Remove the related sub command options from the main config file
 			sed -i '/\[command\] firewall/,/^\s*$/{d}' $file_config
