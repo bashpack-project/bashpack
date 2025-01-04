@@ -1086,22 +1086,22 @@ install_new_config_file() {
 
 
 
-# Permit to set an option in the main config file to activate or not the automation of a sub command 
-# Usage: command_config_activation <command> <description> <option>
-command_config_activation() {
+# # Permit to set an option in the main config file to activate or not the automation of a sub command 
+# # Usage: command_config_activation <command> <description> <option>
+# command_config_activation() {
 
-	local command="${1}"
-	local description="${2}"
-	local option="${3}"
+# 	local command="${1}"
+# 	local description="${2}"
+# 	local option="${3}"
 
 
-	echo "" >> $file_config
-	echo $description >> $file_config
+# 	echo "" >> $file_config
+# 	echo $description >> $file_config
 
-	set_config_value $file_config $command $option
+# 	set_config_value $file_config $command $option
 
-	echo "" >> $file_config
-}
+# 	echo "" >> $file_config
+# }
 
 
 
@@ -1190,7 +1190,7 @@ command_get() {
 			chmod +x $file_command
 			chown $OWNER:$OWNER $file_command
 
-			$command init_command
+			# $CURRENT_CLI $command init_command
 		fi
 
 		if [ -f $file_command ]; then
@@ -1212,14 +1212,19 @@ command_delete() {
 	local command="${1}"
 	local file_command="$dir_commands/$command.sh"
 
+	# Just init to set it local
 	local confirmation
+	
 
 	if [ -f "$file_command" ]; then
 
 		read -p "$question_continue" confirmation
 	
 		if [ "$(sanitize_confirmation $confirmation)" = "yes" ]; then
-			rm "$file_command"
+			# rm "$file_command"
+
+			# Remove the related sub command options from the main config file
+			sed -i '/\[command\] firewall/,/^\s*$/{d}' $file_config
 
 			if [ -f "$file_command" ]; then
 				display_error "command '$command' has not been removed."
@@ -1539,7 +1544,7 @@ case "$1" in
 					exists_command)					exists_command "$3" ;;
 					sanitize_confirmation)			sanitize_confirmation "$3" ;;
 					get_config_value)				get_config_value "$3" "$4" ;;
-					command_config_activation)		command_config_activation "$3" "$4" "$5";;
+					# command_config_activation)		command_config_activation "$3" "$4" "$5";;
 					*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 				esac
 			fi

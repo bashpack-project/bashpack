@@ -36,7 +36,7 @@ firewall_allowed="$($HELPER get_config_value "$file_CONFIG_CURRENT_SUBCOMMAND" "
 
 
 file_nftables="/etc/nftables.conf"
-dir_nftables="/etc/bashpack/$CURRENT_SUBCOMMAND"
+dir_nftables="/etc/$NAME/$CURRENT_SUBCOMMAND"
 file_nftables_backup="$dir_nftables/nftables.conf_backup_$now"
 
 
@@ -63,22 +63,18 @@ display_help() {
 
 
 
-# Init command on the system (install required files or options if any)
-# This function is intended to be used during command installation
-# Usage: init_command
-init_command() {
-
-	config_description="# [command] $CURRENT_SUBCOMMAND \
-		# This option allow Bashpack to manage the firewall of the system. \
-		# Default ruleset: [inbounds any block] and [outbounds any allow]. You can edit custom rules in the firewall.conf file. \
-		# - 0 = do not manage the firewall with Bashpack \
-		# - 1 = use your custom ruleset and reset the firewall every hour and every boot (useful for workstations) \
-		# - 2 = use your custom ruleset and keep it forever (useful for servers) \
-		$CURRENT_SUBCOMMAND 0" \
-
-	$HELPER command_config_activation "$CURRENT_SUBCOMMAND" "$config_description" "1"
-
-}
+# Init main configuration options
+if [ -z "$(cat $file_config | grep "\[command\] $CURRENT_SUBCOMMAND")" ]; then
+	echo "
+		# [command] $CURRENT_SUBCOMMAND
+ 		# This option allow $NAME to manage the firewall of the system.
+ 		# Default ruleset: [inbounds any block] and [outbounds any allow]. You can edit custom rules in the firewall.conf file.
+ 		# - 0 = do not manage the firewall with $NAME
+ 		# - 1 = use your custom ruleset and reset the firewall every hour and every boot (useful for workstations)
+ 		# - 2 = use your custom ruleset and keep it forever (useful for servers)
+ 		$CURRENT_SUBCOMMAND 0
+		" | sed 's/^[ \t]*//' >> $file_config
+fi
 
 
 
