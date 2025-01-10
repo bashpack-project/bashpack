@@ -1249,7 +1249,10 @@ command_get() {
 			chmod 550 $file_command
 			chown $OWNER:$OWNER $file_command
 
-			$CURRENT_CLI $command init_command
+			# Detect if the command needs to be initialised
+			if [ "$(cat $file_command | grep 'init_command()')" ]; then
+				$CURRENT_CLI $command init_command
+			fi
 		fi
 
 		if [ -f $file_command ]; then
