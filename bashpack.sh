@@ -45,6 +45,7 @@ export OWNER="$(ls -l $CURRENT_CLI | cut -d " " -f 3)"
 REPO_URL="$NAME_LOWERCASE-project"
 HOST_URL_API="https://api.github.com/repos/$REPO_URL"
 HOST_URL_RAW="https://raw.githubusercontent.com/$REPO_URL"
+default_command_url="$HOST_URL_RAW/commands/refs/heads/main/commands"
 
 export USAGE="Usage: $CURRENT_CLI [COMMAND] [OPTION...] \n$CURRENT_CLI --help"
 
@@ -1236,7 +1237,8 @@ command_get() {
 	else
 		local url="${2}"
 		if [ -z "$url" ]; then
-			url="$URL_RAW/$VERSION/commands/$command.sh"
+			# url="$URL_RAW/$VERSION/commands/$command.sh"
+			url="$default_command_url/$command.sh"
 		fi
 
 		download_file $url $file_command_tmp
@@ -1244,7 +1246,7 @@ command_get() {
 
 		if [ -f "$file_command_tmp" ]; then
 			mv "$file_command_tmp" "$file_command"
-			chmod +x $file_command
+			chmod 550 $file_command
 			chown $OWNER:$OWNER $file_command
 
 			$CURRENT_CLI $command init_command
@@ -1509,7 +1511,7 @@ install_cli() {
 			# Creating default source list
 			if [ ! -f "$file_sourceslist_commands" ]; then
 				display_info "$file_sourceslist_commands not found, creating it. "
-				echo "https://raw.githubusercontent.com/$NAME_LOWERCASE-project/commands/refs/heads/main/commands/" > $file_sourceslist_commands
+				echo "$default_command_url" > $file_sourceslist_commands
 			fi
 
 
