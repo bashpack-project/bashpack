@@ -751,7 +751,8 @@ delete_cli() {
 			# This command can be used to list concerned files and directories : 
 			# find $dir_src_cli -mindepth 1 -maxdepth 1 ! -name "$NAME_LOWERCASE.sh" -print
 			# find $dir_src_cli -mindepth 1 -maxdepth 1 ! -name "$NAME_LOWERCASE.sh" -exec rm -rv {} + 2&> /dev/null
-			find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -exec rm -rf {} +
+			find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -not -name "commands/" -exec rm -rf {} +
+			# find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -exec rm -rf {} +
 
 		else
 			# Delete everything
