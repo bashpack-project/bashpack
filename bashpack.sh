@@ -46,7 +46,7 @@ REPO_URL="$NAME_LOWERCASE-project"
 HOST_URL_API="https://api.github.com/repos/$REPO_URL"
 HOST_URL_RAW="https://raw.githubusercontent.com/$REPO_URL"
 
-export USAGE="Usage: $CURRENT_CLI [COMMAND] [OPTION] \n$CURRENT_CLI --help"
+export USAGE="Usage: $CURRENT_CLI [COMMAND] [OPTION...] \n$CURRENT_CLI --help"
 
 dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
