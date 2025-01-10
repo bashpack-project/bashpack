@@ -45,7 +45,6 @@ export OWNER="$(ls -l $CURRENT_CLI | cut -d " " -f 3)"
 REPO_URL="$NAME_LOWERCASE-project"
 HOST_URL_API="https://api.github.com/repos/$REPO_URL"
 HOST_URL_RAW="https://raw.githubusercontent.com/$REPO_URL"
-default_command_url="$HOST_URL_RAW/commands/refs/heads/main/commands"
 
 export USAGE="Usage: $CURRENT_CLI [COMMAND] [OPTION...] \n$CURRENT_CLI --help"
 
@@ -140,6 +139,9 @@ fi
 
 dir_sourceslist="$dir_config/sources"
 file_sourceslist_commands="$dir_sourceslist/commands.list"
+
+
+file_repository_reachable_tmp="$dir_tmp/$NAME_LOWERCASE-last-repository-tested-is-reachable"
 
 
 
@@ -550,7 +552,6 @@ detect_publication() {
 
 
 
-
 # Permit to verify if the remote repository is reachable with HTTP.
 # Usage: verify_repository_reachability <URL>
 verify_repository_reachability() {
@@ -567,10 +568,10 @@ verify_repository_reachability() {
 
 	http_family="$(echo $http_code | cut -c 1)"
 	if [ "$http_family" = "1" ] || [ "$http_family" = "2" ] || [ "$http_family" = "3" ]; then
-		# export repository_reachable="true"
+		echo "true" > $file_repository_reachable_tmp
 		display_success "[HTTP $http_code] $url is reachable."
 	else 
-		# export repository_reachable="false"
+		echo "false" > $file_repository_reachable_tmp
 		if [ -z $http_code ]; then
 			display_error "$url is not reachable."
 		else
@@ -579,6 +580,7 @@ verify_repository_reachability() {
 		exit
 	fi
 }
+
 
 
 
@@ -595,7 +597,7 @@ download_file() {
 
 	# Testing if repository is reachable with HTTP before doing anything.
 	loading_process "verify_repository_reachability $file_url"
-	# if [ "$repository_reachable" = "true" ]; then
+	if [ "$(cat $file_repository_reachable_tmp)" = "true" ]; then
 
 		# Try to download with curl if exists
 		if [ "$(exists_command "curl")" = "exists" ]; then
@@ -636,9 +638,9 @@ download_file() {
 		else
 			display_error "file '$file_tmp' has not been downloaded."
 		fi
-
-
-	# fi
+		
+	fi
+	rm -f $file_repository_reachable_tmp
 
 }
 
@@ -700,6 +702,9 @@ case "$PUBLICATION" in
 		URL_RAW="$HOST_URL_RAW/$NAME_LOWERCASE"
 		;;
 esac
+
+URL_API_COMMAND="$HOST_URL_API/commands"
+URL_RAW_COMMAND="$HOST_URL_RAW/commands/refs/heads/main/commands"
 
 
 
@@ -837,7 +842,7 @@ verify_files() {
 
 	# local filters_example="text1\|text2\|text3\|text4" 
 	local filters_wanted="=" 
-	local filters_unwanted="local " # the space is important for "local " otherwise it can hide some /usr/local/ paths, but the goal is just to avoid local functions variables declarations
+	local filters_unwanted="local \|tmp/" # the space is important for "local " otherwise it can hide some /usr/local/ paths, but the goal is just to avoid local functions variables declarations
 
 	local found=0
 	local missing=0
@@ -1164,21 +1169,30 @@ command_list() {
 	local list_tmp2="$dir_tmp/$NAME_LOWERCASE-command-list2"
 	local url="${1}"
 	if [ -z "$url" ]; then
-		url="$URL_API/contents/commands"
+		url="$URL_API_COMMAND/contents/commands"
 	fi
 	local installed="[installed]"
 
 
 	loading_process "verify_repository_reachability $url"
-	if [ "$(exists_command "curl")" = "exists" ]; then
-		loading_process "curl -sL $url" > $list_tmp1
-	elif [ "$(exists_command "wget")" = "exists" ]; then			
-		loading_process "wget -q $url -O $list_tmp1"
+	if [ "$(cat $file_repository_reachable_tmp)" = "true" ]; then
+		if [ "$(exists_command "curl")" = "exists" ]; then
+			loading_process "curl -sL $url" > $list_tmp1
+		elif [ "$(exists_command "wget")" = "exists" ]; then			
+			loading_process "wget -q $url -O $list_tmp1"
+		else
+			display_error "can't list remotes commands with curl or wget."
+		fi
 	else
-		display_info "displaying installed commands."
-		ls $dir_commands | sed "s/\.sh/ $installed/"
+		if [ ! -z "$(ls $dir_commands)" ]; then
+			display_info "displaying installed commands."
+			ls $dir_commands | sed "s/\.sh/ $installed/"
+		else
+			display_info "no command installed."
+		fi
 	fi
-
+	rm -f $file_repository_reachable_tmp
+	
 
 	if [ -f "$list_tmp1" ]; then
 		cat $list_tmp1 \
@@ -1238,7 +1252,7 @@ command_get() {
 		local url="${2}"
 		if [ -z "$url" ]; then
 			# url="$URL_RAW/$VERSION/commands/$command.sh"
-			url="$default_command_url/$command.sh"
+			url="$URL_RAW_COMMAND/$command.sh"
 		fi
 
 		download_file $url $file_command_tmp
@@ -1514,7 +1528,7 @@ install_cli() {
 			# Creating default source list
 			if [ ! -f "$file_sourceslist_commands" ]; then
 				display_info "$file_sourceslist_commands not found, creating it. "
-				echo "$default_command_url" > $file_sourceslist_commands
+				echo "$URL_RAW_COMMAND" > $file_sourceslist_commands
 			fi
 
 
