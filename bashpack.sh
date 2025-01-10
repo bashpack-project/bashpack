@@ -46,7 +46,14 @@ REPO_URL="$NAME_LOWERCASE-project"
 HOST_URL_API="https://api.github.com/repos/$REPO_URL"
 HOST_URL_RAW="https://raw.githubusercontent.com/$REPO_URL"
 
-export USAGE="Usage: $CURRENT_CLI [COMMAND] [OPTION...] \n$CURRENT_CLI --help"
+
+if [ "$(echo $CURRENT_CLI | grep -v '.sh')" ]; then
+	usage_cli="$NAME_ALIAS"
+else
+	usage_cli="$CURRENT_CLI"
+fi
+export USAGE="Usage: $usage_cli [COMMAND] [OPTION...] \n$usage_cli --help"
+
 
 dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
