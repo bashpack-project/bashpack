@@ -137,6 +137,9 @@ if [ "$(echo $1 | grep -v '-' )" ]; then
 fi
 
 
+dir_sourceslist="$dir_config/sources"
+file_sourceslist_commands="$dir_sourceslist/commands.list"
+
 
 
 # Options that can be called without root
@@ -1484,6 +1487,19 @@ install_cli() {
 			else
 				display_info "$file_config already exists, installing new file and inserting current configured options."
 				install_new_config_file
+			fi
+
+
+			# Must testing if sources exists to avoid overwrite user customizations 
+			if [ ! -d "$dir_sourceslist" ]; then
+				display_info "$dir_sourceslist not found, creating it. "
+				mkdir -p $dir_sourceslist
+			fi
+
+			# Creating default source list
+			if [ ! -f "$file_sourceslist_commands" ]; then
+				display_info "$file_sourceslist_commands not found, creating it. "
+				echo "https://raw.githubusercontent.com/$NAME_LOWERCASE-project/commands/refs/heads/main/commands/" > $file_sourceslist_commands
 			fi
 
 
