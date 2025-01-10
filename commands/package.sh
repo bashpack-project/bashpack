@@ -102,7 +102,7 @@ install_package() {
 
 		# Test every supported package managers until finding a compatible
 		if [ "$($HELPER exists_command apt)" = "exists" ]; then
-			apt install $install_confirmation $package
+			apt install $install_confirmation $package | $HELPER append_log "$file_LOG_CURRENT_SUBCOMMAND"
 			manager="apt"
 
 		elif [ "$($HELPER exists_command dnf)" = "exists" ]; then
@@ -143,18 +143,18 @@ update_packages() {
 		$HELPER display_info "updating with APT." "$file_LOG_CURRENT_SUBCOMMAND"
 
 		if [ "$($HELPER exists_command "dpkg")" = "exists" ]; then
-			dpkg --configure -a | append_log $file_LOG_CURRENT_SUBCOMMAND
+			dpkg --configure -a										| $HELPER append_log $file_LOG_CURRENT_SUBCOMMAND
 		fi
 
-		apt update
-		apt install --fix-broken $install_confirmation
-		apt full-upgrade $install_confirmation
+		apt update													| $HELPER append_log "$file_LOG_CURRENT_SUBCOMMAND"
+		apt install --fix-broken $install_confirmation				| $HELPER append_log "$file_LOG_CURRENT_SUBCOMMAND"
+		apt full-upgrade $install_confirmation						| $HELPER append_log "$file_LOG_CURRENT_SUBCOMMAND"
 		
 		# Ensure to delete all old packages & their configurations
-		apt autopurge $install_confirmation
+		apt autopurge $install_confirmation							| $HELPER append_log "$file_LOG_CURRENT_SUBCOMMAND"
 		
 		# Just repeat to check if everything is ok
-		apt full-upgrade $install_confirmation
+		apt full-upgrade $install_confirmation						| $HELPER append_log "$file_LOG_CURRENT_SUBCOMMAND"
 	fi
 
 

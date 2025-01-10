@@ -178,7 +178,7 @@ else
 				&&		exit ;;
 			esac
 		;;
-		--help) echo "$USAGE" \
+		-h|--help|help) echo "$USAGE" \
 		&&		echo "" \
 		&&		echo "Options:" \
 		&&		echo " -i, --self-install   install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
@@ -186,10 +186,12 @@ else
 		&&		echo "     --self-delete    delete $NAME from your system." \
 		&&		echo "     --get-logs       display logs." \
 		&&		echo "     --help           display this information." \
-		&&		echo " -p, --publication    display the current installed $NAME publication stage (main, unstable, dev)." \
+		&&		echo " -p, --publication    display the current installed $NAME publication." \
 		&&		echo " -v, --version        display version." \
 		&&		echo "" \
-		&&		echo "Commands (--help for commands options):" \
+		&&		echo "Commands (<command> --help to display usages):" \
+		&&		echo "  command" \
+		&&		echo "  verify" \
 		&&		echo "$(ls $dir_commands | sed "s/.sh//g" | sed "s/^/  /g")" \
 		&&		echo "" \
 		&&		echo "$NAME $VERSION" \
@@ -296,7 +298,12 @@ display_info() {
 	fi
 }
 
-
+tee_2(){
+  [ "$1" = '-a' ] && shift || rm -f "$1"
+  sed 's/\x0/¤¤¤¤¤¤¤¤¤¤!/g' - | while read line; do
+    echo "$line" | sed 's/¤¤¤¤¤¤¤¤¤¤!/\x0/g' >> "$1"
+  done
+}
 
 
 # Write output of a command in logs
@@ -306,19 +313,51 @@ append_log() {
 
 	local file_log="${1}"
 	
-	# Get process name to write it in log file
-	local command="${0}"
-	$command & local pid=$!
-	local process_name="$(ps -o cmd -fp $pid | cut -d " " -f 1 -s)"
-	display_info "launching: $command"
+	# # Get process name to write it in log file
+	# local command="${0}"
+	# $command & local pid=$!
+	# local process_name="$(ps -o cmd -fp $pid | cut -d " " -f 1 -s)"
+	# display_info "launching: $command"
 
 
-	Set the log format on the command and append it to the selected file
+	local output
+
+	# Set the log format on the command and append it to the selected file
 	if [ -n "$file_log" ]; then
-		sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log"
+		# sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log"
+		# sed "s/^/$now op.sys:   $(current_cli_info) /" | dd status=none of="$file_log"
+		# sed "s/^/$now op.sys:   $(current_cli_info) /" | cp /dev/stdin "$file_log"
+		# sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -ia "$file_log"
+		# sed "s/^/$now op.sys:   $(current_cli_info) /" > $output
+		# echo $output
+
+		# sed "s/^/$now op.sys:   $(current_cli_info) /" >&$file_log
+		# cat $file_log
+		# sed "s/^/$now op.sys:   $(current_cli_info) /" <"/dev/stdin"
+		sed "s/^/$now op.sys:   $(current_cli_info) /"
+
 	else
-		sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log_main"
+		# sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log_main"
+		# sed "s/^/$now op.sys:   $(current_cli_info) /" | dd status=none of="$file_log_main"
+		# sed "s/^/$now op.sys:   $(current_cli_info) /" | cp /dev/stdin "$file_log_main"
+		sed "s/^/$now op.sys:   $(current_cli_info) /"
 	fi
+
+	# tail -n 1 $file_log
+
+	# cat /dev/tty | tee -a $file_log
+	# cat /dev/tty >> $file_log
+
+	# cat /dev/pts/0 | tee -a $file_log
+	# $(dd if=/dev/pts/0 of="$file_log" status=none)&
+	$(cat /dev/pts/0 1&>2 >> "$file_log")&
+
+tail -n 1 $file_log
+	
+	# shopt +s lastpipe
+	# /dev/tty | while read -r line; do
+	# 	echo $line
+	# done
 
 }
 
@@ -330,17 +369,22 @@ append_log() {
 loading_process() {
 	${1} & local pid=$!
 
+	tput civis
+
 	# while ps -p $pid > /dev/null; do
 	while ps -T | grep $pid > /dev/null; do
 		# for s in / - \|; do
 		# for s in l o a d e r; do
 		for s in . o O °; do
-			printf "$s\033[0K\r"
+			# printf "$s\033[0K\r"
+			printf "%s\033[0K\r"
 
 			sleep 0.12
 		done
 		# i=$((i+1))
 	done
+
+	tput cnorm
 }
 
 

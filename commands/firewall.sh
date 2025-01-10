@@ -85,6 +85,7 @@ init_command() {
 
 
 
+
 # Create the custom inbound ruleset file
 if [ ! -f "$file_CONFIG_CURRENT_SUBCOMMAND" ]; then
 	echo "# Customs inbound rules can be added below" > "$file_CONFIG_CURRENT_SUBCOMMAND"
