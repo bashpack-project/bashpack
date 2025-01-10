@@ -1250,7 +1250,7 @@ command_get() {
 			chown $OWNER:$OWNER $file_command
 
 			# Detect if the command needs to be initialised
-			if [ "$(cat $file_command | grep 'init_command()')" ]; then
+			if [ "$(cat $file_command | grep -v '#' | grep 'init_command()')" ]; then
 				$CURRENT_CLI $command init_command
 			fi
 		fi
