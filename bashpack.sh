@@ -1216,6 +1216,16 @@ command_get() {
 	local file_command="$dir_commands/$command.sh"
 	local file_command_tmp="$dir_tmp/$NAME_LOWERCASE-$command.sh"
 
+
+	# Creating command directory if not exists
+	if [ ! -d "$dir_commands" ]; then
+		mkdir $dir_commands
+
+		# Set commands files executable for users + root
+		chmod 550 -R $dir_commands
+	fi
+
+
 	if [ -z "$command" ]; then
 		display_info "please specify a command from the list below."
 		command_list
@@ -1430,7 +1440,7 @@ install_cli() {
 			cp -RT $archive_dir_tmp $dir_src_cli	# -T used to overwrite the source dir and not creating a new inside
 			chmod 555 -R $dir_src_cli				# Set everyting in read+exec by default
 			chmod 555 $file_main					# Set main file executable for everyone (autcompletion of the command itself requires it)
-			chmod 550 -R "$dir_src_cli/commands/"	# Set commands files executable for users + root
+			# chmod 550 -R "$dir_src_cli/commands/"	# Set commands files executable for users + root
 			chmod 444 -R "$dir_src_cli/"*.md		# Set .md files read-only for everyone
 
 
