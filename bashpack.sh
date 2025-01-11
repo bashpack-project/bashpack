@@ -961,6 +961,7 @@ verify_dependencies() {
 				fi
 
 				missing=$((missing+1))
+				
 
 				if [ "$type" = "required" ]; then
 					missing_required=$((missing_required+1))
@@ -1020,11 +1021,10 @@ verify_dependencies() {
 		| sed 's/[^ ]* *\([^ ]*\) .*/\1/' \
 		| sort -ud)"
 
-	# Get "command" from this pattern: loop command text; do
+	# Get "command" from this pattern: while command text
 	local list5="$(cat $file_to_test \
 		| sed 's/#.*$//' \
-		| grep ';' \
-		| grep 'do' \
+		| grep 'while' \
 		| sed 's/[a-z]* \([a-z]* \).*/\1/' \
 		| sort -ud)"
 
