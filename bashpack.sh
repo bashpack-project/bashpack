@@ -1203,7 +1203,7 @@ display_sourceslist() {
 
 
 
-subcommands_allowed_extensions="\|sh\|py\|kdbx"
+subcommands_allowed_extensions="\|sh\|py"
 
 # List available commands from repository
 # Usages: command_list
