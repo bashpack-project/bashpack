@@ -613,12 +613,12 @@ download_file() {
 		# Try to download with curl if exists
 		if [ "$(exists_command "curl")" = "exists" ]; then
 			display_info "downloading sources from '$file_url' with curl."
-			loading_process "curl -sL $file_url -o $file_tmp"
+			loading_process "curl -sLk $file_url -o $file_tmp"
 			
 		# Try to download with wget if exists
 		elif [ "$(exists_command "wget")" = "exists" ]; then
 			display_info "downloading sources from '$file_url' with wget."
-			loading_process "wget -q $file_url -O $file_tmp"
+			loading_process "wget -q --no-check-certificate $file_url -O $file_tmp"
 
 		else
 			display_error "could not download '$file_url' with curl or wget."
@@ -1228,7 +1228,7 @@ command_list() {
 
 	if [ -f "$file_sourceslist_subcommands" ] && [ -s "$file_sourceslist_subcommands" ]; then
 
-		for url in $(grep '^http' $file_sourceslist_subcommands | sort -d); do
+		for url in $(grep '^http' $file_sourceslist_subcommands); do
 			
 			# In case of commands repository is on Github, getting accurate URL
 			# (because api.github.com and raw.githubusercontent.com have themselves their usages, and we need to always have api.github.com for this usecase)
@@ -1270,7 +1270,7 @@ command_list() {
 								| grep -iw "\.$subcommands_allowed_extensions" \
 								| sed "s/\.[$subcommands_allowed_extensions]*//" \
 								| sed "s|$| $real_url|" \
-								| sort -ud >> $file_registry
+								| sort -u >> $file_registry
 						fi
 					done < $list_tmp
 				else
@@ -1282,7 +1282,7 @@ command_list() {
 						| grep -iw "\.$subcommands_allowed_extensions" \
 						| sed "s/\.[$subcommands_allowed_extensions]*//" \
 						| sed "s|$| $url|" \
-						| sort -ud >> $file_registry
+						| sort -u >> $file_registry
 				fi
 
 				rm -f $list_tmp
