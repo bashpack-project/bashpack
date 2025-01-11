@@ -1389,7 +1389,7 @@ command_get() {
 command_delete() {
 
 	local command="${1}"
-	local file_command="$dir_commands/$command.sh"
+	local file_command="$dir_commands/$command"
 
 	# Just init to set it local
 	local confirmation
@@ -1742,8 +1742,8 @@ case "$1" in
 		fi ;;
 	*)
 		# Dynamically get availables commands or display error in case of not found
-		if [ -d $dir_commands ] && [ "$1" = "$(find $dir_commands/ -name "$1*" -printf "%f\n" | sed "s/.sh//g")" ]; then
-			"$dir_commands/$1.sh" "$@"
+		if [ -d $dir_commands ] && [ "$1" = "$(find $dir_commands/ -name "$1*" -printf "%f\n")" ]; then
+			"$dir_commands/$1" "$@"
 		else
 			display_error "unknown command '$1'."'\n'"$USAGE" && exit
 		fi
