@@ -145,10 +145,12 @@ fi
 
 
 dir_sourceslist="$dir_config/sources"
-file_sourceslist_commands="$dir_sourceslist/commands.list"
+file_sourceslist_subcommands="$dir_sourceslist/subcommands.list"
+file_registry="$dir_sourceslist/.subcommands.registry"
 
 
 file_repository_reachable_tmp="$dir_tmp/$NAME_LOWERCASE-last-repository-tested-is-reachable"
+
 
 
 
@@ -1207,7 +1209,6 @@ display_sourceslist() {
 command_list() {
 
 	local list_tmp1="$dir_tmp/$NAME_LOWERCASE-command-list1"
-	local list_tmp2="$dir_tmp/$NAME_LOWERCASE-command-list2"
 
 	local installed="[installed]"
 
@@ -1229,9 +1230,12 @@ command_list() {
 	# fi
 
 
-	if [ -f "$file_sourceslist_commands" ] && [ ! -z "$file_sourceslist_commands" ]; then
+	rm -f $file_registry
 
-		for url in $(grep '^http' $file_sourceslist_commands | sort -d); do
+
+	if [ -f "$file_sourceslist_subcommands" ] && [ ! -z "$file_sourceslist_subcommands" ]; then
+
+		for url in $(grep '^http' $file_sourceslist_subcommands | sort -d); do
 			
 			# In case of commands repository is on Github, getting accurate URL
 			# (because api.github.com and raw.githubusercontent.com have themselves their usages, and we need to always have api.github.com for this usecase)
@@ -1247,8 +1251,10 @@ command_list() {
 
 				if [ "$(exists_command "curl")" = "exists" ]; then
 					loading_process "curl -sLk $url" > $list_tmp1
+					# rm -f $file_registry
 				elif [ "$(exists_command "wget")" = "exists" ]; then			
 					loading_process "wget -q --no-check-certificate $url -O $list_tmp1"
+					# rm -f $file_registry
 				else
 					display_error "can't list remotes commands with curl or wget."
 				fi
@@ -1257,6 +1263,8 @@ command_list() {
 
 
 			if [ -f "$list_tmp1" ]; then
+
+			
 				# If commands are from a Github repository...
 				# URL will always be "api.github.com" thanks to the hook just before
 				if [ "$(echo $url | grep '.com' | grep 'github' | grep 'api.')" ]; then
@@ -1265,22 +1273,26 @@ command_list() {
 						| cut -d "\"" -f 4 \
 						| cut -d "/" -f 8 \
 						| sed 's/\.[a-zA-Z0-9]*//' \
-						| sort -ud >> $list_tmp2
+						| sed "s|$| $url|" \
+						| sort -ud >> $file_registry
 				else
-					# ...0r from a basic web server with directory listing
+					# ...Or from a basic web server with directory listing
 					cat $list_tmp1 \
 						| grep -oP '(?<=href=")[^"]*' \
 						| sed '/\/.*/d' \
 						| sed '/^\(?.=\).*/d' \
 						| sed 's/\.[a-zA-Z0-9]*//' \
-						| sort -ud >> $list_tmp2
+						| sed "s|$| $url|" \
+						| sort -ud >> $file_registry
 				fi
+
+				rm -f $list_tmp1
 			fi
 
 		done
 
 
-		if [ -f "$list_tmp2" ]; then
+		if [ -f "$file_registry" ]; then
 
 			while read -r command; do
 				if [ "$command" != "" ]; then
@@ -1293,15 +1305,14 @@ command_list() {
 					fi
 				fi
 
-			done < $list_tmp2 | sort -u
+			done < $file_registry | sort -u
 
 
-			rm $list_tmp1
-			rm $list_tmp2
+			# rm $file_registry
 		fi
 
 	else
-		display_error "'$file_sourceslist_commands' is empty."
+		display_error "'$file_sourceslist_subcommands' is empty."
 	fi
 
 
@@ -1615,9 +1626,9 @@ install_cli() {
 			fi
 
 			# Creating default source list
-			if [ ! -f "$file_sourceslist_commands" ]; then
-				display_info "$file_sourceslist_commands not found, creating it. "
-				echo "$URL_RAW_COMMAND" > $file_sourceslist_commands
+			if [ ! -f "$file_sourceslist_subcommands" ]; then
+				display_info "$file_sourceslist_subcommands not found, creating it. "
+				echo "$URL_RAW_COMMAND" > $file_sourceslist_subcommands
 			fi
 
 
@@ -1729,7 +1740,7 @@ case "$1" in
 		fi ;;
 	*)
 		# Dynamically get availables commands or display error in case of not found
-		if [ "$1" = "$(find $dir_commands/ -name "$1*" -printf "%f\n" | sed "s/.sh//g")" ]; then
+		if [ -d $dir_commands ] && [ "$1" = "$(find $dir_commands/ -name "$1*" -printf "%f\n" | sed "s/.sh//g")" ]; then
 			"$dir_commands/$1.sh" "$@"
 		else
 			display_error "unknown command '$1'."'\n'"$USAGE" && exit
