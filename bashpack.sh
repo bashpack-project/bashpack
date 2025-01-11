@@ -565,10 +565,12 @@ verify_repository_reachability() {
 
 	local url="${1}"
 
+	display_info "try reach: $url"
+
 	if [ "$(exists_command "curl")" = "exists" ]; then
-		http_code="$(curl -s -L -I -o /dev/null -w "%{response_code}" $url)"
+		http_code="$(curl -s -k -L -I -o /dev/null -w "%{response_code}" $url)"
 	elif [ "$(exists_command "wget")" = "exists" ]; then
-		http_code="$(wget --spider --server-response "$url" 2>&1 | awk '/^  HTTP/{print $2}' | tail -n 1)"
+		http_code="$(wget --spider --server-response --no-check-certificate "$url" 2>&1 | awk '/^  HTTP/{print $2}' | tail -n 1)"
 	else
 		display_error "can't get HTTP code with curl or wget."
 	fi
@@ -604,7 +606,7 @@ download_file() {
 
 	# Testing if repository is reachable with HTTP before doing anything.
 	loading_process "verify_repository_reachability $file_url"
-	if [ "$(cat $file_repository_reachable_tmp)" = "true" ]; then
+	if [ -f "$file_repository_reachable_tmp" ] && [ "$(cat $file_repository_reachable_tmp)" = "true" ]; then
 
 		# Try to download with curl if exists
 		if [ "$(exists_command "curl")" = "exists" ]; then
@@ -1167,63 +1169,142 @@ install_new_config_file() {
 
 
 
+# Display all sources from sourceslist
+# Usage: display_sourceslist <sourceslist file>
+display_sourceslist() {
+
+	local file="$1"
+
+	grep '^http' $file
+}
+
+
+
+
+# # Get all Github URL matching a repository from a given URL 
+# # Usage: match_url_github <url>
+# match_url_github() {
+
+# 	local url="${1}"
+
+	
+# 	if [ "$(echo $url | grep 'com' | grep 'github' | grep 'api')" ]; then
+# 		project="$(echo $url  | cut -d "/" -f 5-6)"
+# 		echo "https://raw.githubusercontent.com/$project"
+
+# 	# elif [ $(echo $url | grep 'com' | grep 'github' | grep 'raw') ]; then
+# 	# 	project="$(echo $url  | cut -d "/" -f 4-5)"
+# 	# 	echo "https://api.github.com/repos/$project"
+
+# 	fi
+# }
+
+
+
+
 # List available commands from repository
-# Usages:
-#  command_list
-#  command_list <url>
+# Usages: command_list
 command_list() {
 
 	local list_tmp1="$dir_tmp/$NAME_LOWERCASE-command-list1"
 	local list_tmp2="$dir_tmp/$NAME_LOWERCASE-command-list2"
-	local url="${1}"
-	if [ -z "$url" ]; then
-		url="$URL_API_COMMAND/contents/commands"
-	fi
+
 	local installed="[installed]"
 
+	# local url="${1}"
+	# if [ -z "$url" ]; then
+	# 	url="$URL_API_COMMAND/contents/commands"
+	# fi
 
-	loading_process "verify_repository_reachability $url"
-	if [ "$(cat $file_repository_reachable_tmp)" = "true" ]; then
-		if [ "$(exists_command "curl")" = "exists" ]; then
-			loading_process "curl -sL $url" > $list_tmp1
-		elif [ "$(exists_command "wget")" = "exists" ]; then			
-			loading_process "wget -q $url -O $list_tmp1"
-		else
-			display_error "can't list remotes commands with curl or wget."
-		fi
-	else
-		if [ ! -z "$(ls $dir_commands)" ]; then
-			display_info "displaying installed commands."
-			ls $dir_commands | sed "s/\.sh/ $installed/"
-		else
-			display_info "no command installed."
-		fi
-	fi
-	rm -f $file_repository_reachable_tmp
-	
+	local url="${1}"
 
-	if [ -f "$list_tmp1" ]; then
-		cat $list_tmp1 \
-			| grep 'download_url' \
-			| sed "s/.*commands\/\(.*\).sh.*/\1/" \
-			| sort -ud > $list_tmp2
 
-		while read -r command; do
-			if [ "$command" != "" ]; then
 
-				# Checking if the command is already installed
-				if [ -f "$dir_commands/$command.sh" ]; then
-					echo "$command $installed"
+
+	# if [ -d "$dir_commands" ] && [ ! -z "$(ls $dir_commands)" ]; then
+	# 	display_info "displaying installed commands."
+	# 	ls $dir_commands | sed "s/\.[a-zA-Z0-9]*/ $installed/"
+	# else
+	# 	display_info "no command installed."
+	# fi
+
+
+	if [ -f "$file_sourceslist_commands" ] && [ ! -z "$file_sourceslist_commands" ]; then
+
+		for url in $(grep '^http' $file_sourceslist_commands | sort -d); do
+			
+			# In case of commands repository is on Github, getting accurate URL
+			# (because api.github.com and raw.githubusercontent.com have themselves their usages, and we need to always have api.github.com for this usecase)
+			if [ "$(echo $url | grep '.com' | grep 'github' | grep 'raw.')" ]; then
+				project="$(echo $url  | cut -d "/" -f 4-5)"
+				end_of_url="$(echo $url  | cut -d "/" -f 9-99)"
+				url="https://api.github.com/repos/$project/contents/$end_of_url"
+			fi
+
+
+			loading_process "verify_repository_reachability $url"
+			if [ -f "$file_repository_reachable_tmp" ] && [ "$(cat $file_repository_reachable_tmp)" = "true" ]; then
+
+				if [ "$(exists_command "curl")" = "exists" ]; then
+					loading_process "curl -sLk $url" > $list_tmp1
+				elif [ "$(exists_command "wget")" = "exists" ]; then			
+					loading_process "wget -q --no-check-certificate $url -O $list_tmp1"
 				else
-					echo "$command"
+					display_error "can't list remotes commands with curl or wget."
+				fi
+			fi
+			rm -f $file_repository_reachable_tmp
+
+
+			if [ -f "$list_tmp1" ]; then
+				# If commands are from a Github repository...
+				# URL will always be "api.github.com" thanks to the hook just before
+				if [ "$(echo $url | grep '.com' | grep 'github' | grep 'api.')" ]; then
+					cat $list_tmp1 \
+						| grep 'download_url' \
+						| cut -d "\"" -f 4 \
+						| cut -d "/" -f 8 \
+						| sed 's/\.[a-zA-Z0-9]*//' \
+						| sort -ud >> $list_tmp2
+				else
+					# ...0r from a basic web server with directory listing
+					cat $list_tmp1 \
+						| grep -oP '(?<=href=")[^"]*' \
+						| sed '/\/.*/d' \
+						| sed '/^\(?.=\).*/d' \
+						| sed 's/\.[a-zA-Z0-9]*//' \
+						| sort -ud >> $list_tmp2
 				fi
 			fi
 
-		done < "$list_tmp2"
+		done
 
-		rm $list_tmp1
-		rm $list_tmp2
+
+		if [ -f "$list_tmp2" ]; then
+
+			while read -r command; do
+				if [ "$command" != "" ]; then
+
+					# Checking if the command is already installed
+					if [ -f "$dir_commands/$command.sh" ]; then
+						echo "$command $installed"
+					else
+						echo "$command"
+					fi
+				fi
+
+			done < $list_tmp2 | sort -u
+
+
+			rm $list_tmp1
+			rm $list_tmp2
+		fi
+
+	else
+		display_error "'$file_sourceslist_commands' is empty."
 	fi
+
+
 }
 
 
