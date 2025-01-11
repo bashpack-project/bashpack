@@ -1209,7 +1209,8 @@ subcommands_allowed_extensions="\|sh\|py"
 # Usages: command_list
 command_list() {
 
-	local list_tmp="$dir_tmp/$NAME_LOWERCASE-command-list1"
+	local list_tmp="$dir_tmp/$NAME_LOWERCASE-commands-list"
+	local list_installed_tmp="$dir_tmp/$NAME_LOWERCASE-commands-installed"
 
 	local installed="[installed]"
 
@@ -1222,19 +1223,10 @@ command_list() {
 
 
 
-
-	# if [ -d "$dir_commands" ] && [ ! -z "$(ls $dir_commands)" ]; then
-	# 	display_info "displaying installed commands."
-	# 	ls $dir_commands | sed "s/\.[a-zA-Z0-9]*/ $installed/"
-	# else
-	# 	display_info "no command installed."
-	# fi
-
-
 	rm -f $file_registry
 
 
-	if [ -f "$file_sourceslist_subcommands" ] && [ ! -z "$file_sourceslist_subcommands" ]; then
+	if [ -f "$file_sourceslist_subcommands" ] && [ -s "$file_sourceslist_subcommands" ]; then
 
 		for url in $(grep '^http' $file_sourceslist_subcommands | sort -d); do
 			
@@ -1264,8 +1256,6 @@ command_list() {
 
 
 			if [ -f "$list_tmp" ]; then
-
-			
 				# If commands are from a Github repository...
 				# URL will always be "api.github.com" thanks to the hook just before
 				if [ "$(echo $url | grep '.com' | grep 'github' | grep 'api.')" ]; then
@@ -1301,26 +1291,41 @@ command_list() {
 		done
 
 
+		# Detect remotes subcommands
 		if [ -f "$file_registry" ]; then
-
-			while read -r command; do
-				if [ "$command" != "" ]; then
-
-					# Checking if the command is already installed
-					if [ -f "$dir_commands/$command.sh" ]; then
-						echo "$command $installed"
-					else
-						echo "$command"
-					fi
-				fi
-
-			done < $file_registry | sort -u
-
+			cat $file_registry | sed 's/ .*//' >> $list_installed_tmp
 		fi
 
 	else
 		display_error "'$file_sourceslist_subcommands' is empty."
 	fi
+
+
+	# Detect installed subcommands
+	if [ -d "$dir_commands" ] && [ ! -z "$(ls $dir_commands)" ]; then
+		ls $dir_commands >> $list_installed_tmp
+	fi
+
+
+	# Finally display all the subcommands and specify if already installed
+	if [ -f "$list_installed_tmp" ] && [ -s "$list_installed_tmp" ]; then
+		while read -r command; do
+			if [ "$command" != "" ]; then
+
+				# Checking if the subcommand is already installed
+				if [ -f "$dir_commands/$command" ]; then
+					echo "$command $installed"
+				else
+					echo "$command"
+				fi
+			fi
+		done < $list_installed_tmp | sort -ud
+
+		rm -f $list_installed_tmp
+	else
+		display_info "no command installed."
+	fi
+
 }
 
 
