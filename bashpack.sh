@@ -1203,12 +1203,13 @@ display_sourceslist() {
 
 
 
+subcommands_allowed_extensions="\|sh\|py\|kdbx"
 
 # List available commands from repository
 # Usages: command_list
 command_list() {
 
-	local list_tmp1="$dir_tmp/$NAME_LOWERCASE-command-list1"
+	local list_tmp="$dir_tmp/$NAME_LOWERCASE-command-list1"
 
 	local installed="[installed]"
 
@@ -1250,10 +1251,10 @@ command_list() {
 			if [ -f "$file_repository_reachable_tmp" ] && [ "$(cat $file_repository_reachable_tmp)" = "true" ]; then
 
 				if [ "$(exists_command "curl")" = "exists" ]; then
-					loading_process "curl -sLk $url" > $list_tmp1
+					loading_process "curl -sLk $url" > $list_tmp
 					# rm -f $file_registry
 				elif [ "$(exists_command "wget")" = "exists" ]; then			
-					loading_process "wget -q --no-check-certificate $url -O $list_tmp1"
+					loading_process "wget -q --no-check-certificate $url -O $list_tmp"
 					# rm -f $file_registry
 				else
 					display_error "can't list remotes commands with curl or wget."
@@ -1262,31 +1263,39 @@ command_list() {
 			rm -f $file_repository_reachable_tmp
 
 
-			if [ -f "$list_tmp1" ]; then
+			if [ -f "$list_tmp" ]; then
 
 			
 				# If commands are from a Github repository...
 				# URL will always be "api.github.com" thanks to the hook just before
 				if [ "$(echo $url | grep '.com' | grep 'github' | grep 'api.')" ]; then
-					cat $list_tmp1 \
-						| grep 'download_url' \
-						| cut -d "\"" -f 4 \
-						| cut -d "/" -f 8 \
-						| sed 's/\.[a-zA-Z0-9]*//' \
-						| sed "s|$| $url|" \
-						| sort -ud >> $file_registry
+					while read -r line; do
+						if [ "$(echo $line | grep 'download_url')" ]; then
+							# And get back the raw URL to be able to download the script from sourceslist
+							local real_url="$(echo $line | grep 'download_url' | cut -d '"' -f 4)"
+
+							echo $line \
+								| cut -d "\"" -f 4 \
+								| cut -d "/" -f 8 \
+								| grep -iw "\.$subcommands_allowed_extensions" \
+								| sed "s/\.[$subcommands_allowed_extensions]*//" \
+								| sed "s|$| $real_url|" \
+								| sort -ud >> $file_registry
+						fi
+					done < $list_tmp
 				else
 					# ...Or from a basic web server with directory listing
-					cat $list_tmp1 \
+					cat $list_tmp \
 						| grep -oP '(?<=href=")[^"]*' \
 						| sed '/\/.*/d' \
 						| sed '/^\(?.=\).*/d' \
-						| sed 's/\.[a-zA-Z0-9]*//' \
+						| grep -iw "\.$subcommands_allowed_extensions" \
+						| sed "s/\.[$subcommands_allowed_extensions]*//" \
 						| sed "s|$| $url|" \
 						| sort -ud >> $file_registry
 				fi
 
-				rm -f $list_tmp1
+				rm -f $list_tmp
 			fi
 
 		done
@@ -1307,29 +1316,23 @@ command_list() {
 
 			done < $file_registry | sort -u
 
-
-			# rm $file_registry
 		fi
 
 	else
 		display_error "'$file_sourceslist_subcommands' is empty."
 	fi
-
-
 }
 
 
 
 
 # Get a command from repository
-# Usages:
-#  command_get <command>
-#  command_get <command> <url>
+# Usage: command_get <command>
 command_get() {
 
 	local command="${1}"
-	local file_command="$dir_commands/$command.sh"
-	local file_command_tmp="$dir_tmp/$NAME_LOWERCASE-$command.sh"
+	local file_command="$dir_commands/$command"
+	# local file_command_tmp="$dir_tmp/$NAME_LOWERCASE-$command"
 
 
 	# Creating command directory if not exists
@@ -1349,17 +1352,17 @@ command_get() {
 		display_info "command '$command' is already installed."
 
 	else
-		local url="${2}"
-		if [ -z "$url" ]; then
-			# url="$URL_RAW/$VERSION/commands/$command.sh"
-			url="$URL_RAW_COMMAND/$command.sh"
+
+		if [ ! -f "$file_registry" ] || [ -z "$file_registry" ]; then
+			command_list
 		fi
 
-		download_file $url $file_command_tmp
-		# download_file $url $file_command
+		local url="$(get_config_value $file_registry $command)"
+		# download_file $url $file_command_tmp
+		download_file $url $file_command
 
-		if [ -f "$file_command_tmp" ]; then
-			mv "$file_command_tmp" "$file_command"
+		if [ -f "$file_command" ]; then
+			# mv "$file_command_tmp" "$file_command"
 			chmod 550 $file_command
 			chown $OWNER:$OWNER $file_command
 
@@ -1367,9 +1370,9 @@ command_get() {
 			if [ "$(cat $file_command | grep -v '#' | grep 'init_command()')" ]; then
 				$CURRENT_CLI $command init_command
 			fi
-		fi
+		# fi
 
-		if [ -f $file_command ]; then
+		# if [ -f $file_command ]; then
 			display_success "command '$command' has been installed."
 			display_info "'$NAME_ALIAS $command --help' to display help."
 		else
@@ -1697,7 +1700,7 @@ case "$1" in
 		else
 			case "$2" in
 				-l|--list)			command_list ;;
-				-g|--get)			command_get $3 $4 ;;
+				-g|--get)			command_get $3 ;;
 				-d|--delete)		command_delete $3 ;;
 				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
@@ -1733,7 +1736,6 @@ case "$1" in
 					exists_command)					exists_command "$3" ;;
 					sanitize_confirmation)			sanitize_confirmation "$3" ;;
 					get_config_value)				get_config_value "$3" "$4" ;;
-					# command_config_activation)		command_config_activation "$3" "$4" "$5";;
 					*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 				esac
 			fi
