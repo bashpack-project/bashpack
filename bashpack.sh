@@ -149,8 +149,10 @@ file_sourceslist_subcommands="$dir_sourceslist/subcommands.list"
 file_registry="$dir_sourceslist/.subcommands.registry"
 
 
-file_repository_reachable_tmp="$dir_tmp/$NAME_LOWERCASE-last-repository-tested-is-reachable"
+subcommands_allowed_extensions="\|sh\|py"
 
+
+file_repository_reachable_tmp="$dir_tmp/$NAME_LOWERCASE-last-repository-tested-is-reachable"
 
 
 
@@ -337,26 +339,29 @@ append_log() {
 
 	local output
 
+
+
+
 	# Set the log format on the command and append it to the selected file
-	if [ -n "$file_log" ]; then
-		# sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log"
-		# sed "s/^/$now op.sys:   $(current_cli_info) /" | dd status=none of="$file_log"
-		# sed "s/^/$now op.sys:   $(current_cli_info) /" | cp /dev/stdin "$file_log"
-		# sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -ia "$file_log"
-		# sed "s/^/$now op.sys:   $(current_cli_info) /" > $output
-		# echo $output
+	# if [ -n "$file_log" ]; then
+	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log"
+	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" | dd status=none of="$file_log"
+	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" | cp /dev/stdin "$file_log"
+	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -ia "$file_log"
+	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" > $output
+	# 	# echo $output
 
-		# sed "s/^/$now op.sys:   $(current_cli_info) /" >&$file_log
-		# cat $file_log
-		# sed "s/^/$now op.sys:   $(current_cli_info) /" <"/dev/stdin"
-		sed "s/^/$now op.sys:   $(current_cli_info) /"
+	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" >&$file_log
+	# 	# cat $file_log
+	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" <"/dev/stdin"
+	# 	sed "s/^/$now op.sys:   $(current_cli_info) /" 3>&- | tee /dev/fd/3
 
-	else
-		# sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log_main"
-		# sed "s/^/$now op.sys:   $(current_cli_info) /" | dd status=none of="$file_log_main"
-		# sed "s/^/$now op.sys:   $(current_cli_info) /" | cp /dev/stdin "$file_log_main"
-		sed "s/^/$now op.sys:   $(current_cli_info) /"
-	fi
+	# else
+	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log_main"
+	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" | dd status=none of="$file_log_main"
+	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" | cp /dev/stdin "$file_log_main"
+	# 	sed "s/^/$now op.sys:   $(current_cli_info) /" 3>&- | tee /dev/fd/3
+	# fi
 
 	# tail -n 1 $file_log
 
@@ -365,43 +370,24 @@ append_log() {
 
 	# cat /dev/pts/0 | tee -a $file_log
 	# $(dd if=/dev/pts/0 of="$file_log" status=none)&
-	$(cat /dev/pts/0 1&>2 >> "$file_log")&
+	# $(cat /dev/pts/0 1&>2 >> "$file_log")&
 
-tail -n 1 $file_log
+	# tail -n 1 $file_log
 	
 	# shopt +s lastpipe
 	# /dev/tty | while read -r line; do
 	# 	echo $line
 	# done
 
+	exec 3>&1
+
+
+	sed "s/^/$now op.sys:   $(current_cli_info) /"
+
+
+	exec 3>&-
+
 }
-
-
-
-
-# loading_process animation so we know the process has not crashed.
-# Usage: loading_process "<command that takes time>"
-loading_process() {
-	${1} & local pid=$!
-
-	tput civis
-
-	# while ps -p $pid > /dev/null; do
-	while ps -T | grep $pid > /dev/null; do
-		# for s in / - \|; do
-		# for s in l o a d e r; do
-		for s in . o O °; do
-			# printf "$s\033[0K\r"
-			printf "%s\033[0K\r"
-
-			sleep 0.12
-		done
-		# i=$((i+1))
-	done
-
-	tput cnorm
-}
-
 
 
 
@@ -470,6 +456,39 @@ exists_command() {
 		display_error "'$command' command not found"
 	fi
 }
+
+
+
+
+# loading_process animation so we know the process has not crashed.
+# Usage: loading_process "<command that takes time>"
+loading_process() {
+	${1} & local pid=$!
+
+	# # Hide cursor
+	# if [ "$(exists_command "tput")" = "exists" ]; then
+	# 	tput civis
+	# fi
+
+
+	while ps -T | grep $pid > /dev/null; do
+		# for s in / - \|; do
+		# for s in l o a d e r; do
+		for s in . o O °; do
+			# printf "$s\033[0K\r"
+			printf "%s\033[0K\r"
+
+			sleep 0.12
+		done
+	done
+
+
+	# # Get back cursor
+	# if [ "$(exists_command "tput")" = "exists" ]; then
+	# 	tput cnorm
+	# fi
+}
+
 
 
 
@@ -714,7 +733,7 @@ case "$PUBLICATION" in
 		;;
 esac
 
-URL_API_COMMAND="$HOST_URL_API/commands"
+# URL_API_COMMAND="$HOST_URL_API/commands"
 URL_RAW_COMMAND="$HOST_URL_RAW/commands/refs/heads/main/commands"
 
 
@@ -1203,10 +1222,34 @@ display_sourceslist() {
 
 
 
-subcommands_allowed_extensions="\|sh\|py"
+
+# Install required directories and files related to subcommands
+# Usage: command_install_structure
+command_install_structure() {
+
+	# Ensure that sources directory exists
+	if [ ! -d "$dir_sourceslist" ]; then
+		display_info "$dir_sourceslist not found, creating it. "
+		mkdir -p $dir_sourceslist
+	fi
+
+	# Ensure that sources list exists
+	if [ ! -f "$file_sourceslist_subcommands" ] || [ -z "$file_sourceslist_subcommands" ]; then
+		display_info "$file_sourceslist_subcommands not found, creating it. "
+		echo "$URL_RAW_COMMAND" > $file_sourceslist_subcommands
+	fi
+
+	# Ensure that registry exists
+	if [ ! -f "$file_registry" ]; then
+		echo -n "" > $file_registry
+	fi
+}
+
+
+
 
 # List available commands from repository
-# Usages: command_list
+# Usage: command_list
 command_list() {
 
 	local list_tmp="$dir_tmp/$NAME_LOWERCASE-commands-list"
@@ -1214,16 +1257,16 @@ command_list() {
 
 	local installed="[installed]"
 
-	# local url="${1}"
-	# if [ -z "$url" ]; then
-	# 	url="$URL_API_COMMAND/contents/commands"
-	# fi
-
 	local url="${1}"
 
 
+	command_install_structure
 
-	rm -f $file_registry
+
+	# Clean existing registry (it will be updated with fresh values)
+	# rm -f $file_registry
+	# touch $file_registry
+	echo -n "" > $file_registry
 
 
 	if [ -f "$file_sourceslist_subcommands" ] && [ -s "$file_sourceslist_subcommands" ]; then
@@ -1244,10 +1287,8 @@ command_list() {
 
 				if [ "$(exists_command "curl")" = "exists" ]; then
 					loading_process "curl -sLk $url" > $list_tmp
-					# rm -f $file_registry
 				elif [ "$(exists_command "wget")" = "exists" ]; then			
 					loading_process "wget -q --no-check-certificate $url -O $list_tmp"
-					# rm -f $file_registry
 				else
 					display_error "can't list remotes commands with curl or wget."
 				fi
@@ -1309,6 +1350,9 @@ command_list() {
 
 	# Finally display all the subcommands and specify if already installed
 	if [ -f "$list_installed_tmp" ] && [ -s "$list_installed_tmp" ]; then
+
+		display_info "reading registry"
+		
 		while read -r command; do
 			if [ "$command" != "" ]; then
 
@@ -1357,8 +1401,12 @@ command_get() {
 		display_info "command '$command' is already installed."
 
 	else
+		
+		# Ensure that structure exists
+		command_install_structure
 
-		if [ ! -f "$file_registry" ] || [ -z "$file_registry" ]; then
+		# Ensure that registry is not empty to get the URL of the command
+		if [ "$(cat $file_registry)" = "" ]; then
 			command_list
 		fi
 
@@ -1627,17 +1675,18 @@ install_cli() {
 			fi
 
 
-			# Must testing if sources exists to avoid overwrite user customizations 
-			if [ ! -d "$dir_sourceslist" ]; then
-				display_info "$dir_sourceslist not found, creating it. "
-				mkdir -p $dir_sourceslist
-			fi
+			# # Must testing if sources exists to avoid overwrite user customizations 
+			# if [ ! -d "$dir_sourceslist" ]; then
+			# 	display_info "$dir_sourceslist not found, creating it. "
+			# 	mkdir -p $dir_sourceslist
+			# fi
 
-			# Creating default source list
-			if [ ! -f "$file_sourceslist_subcommands" ]; then
-				display_info "$file_sourceslist_subcommands not found, creating it. "
-				echo "$URL_RAW_COMMAND" > $file_sourceslist_subcommands
-			fi
+			# # Creating default source list
+			# if [ ! -f "$file_sourceslist_subcommands" ]; then
+			# 	display_info "$file_sourceslist_subcommands not found, creating it. "
+			# 	echo "$URL_RAW_COMMAND" > $file_sourceslist_subcommands
+			# fi
+			command_install_structure
 
 
 			# Allow users to edit the configuration
