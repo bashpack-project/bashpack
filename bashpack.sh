@@ -677,7 +677,7 @@ download_file() {
 
 
 
-# Dynamically create automation (systemd, cron)
+# Dynamically create automation (systemd, cron, ...)
 # This can be used from subcommand, in the init_command() function to install automation in the same time that the command has been downloaded
 # /!\ If using through $HELPER on subcommands, "$1" must be called to get the subcommand name 
 # Usages:
@@ -687,7 +687,7 @@ create_automation() {
 
 	# Automatically detect command to launch
 	if [ -z "$1" ]; then
-		local name="$NAME_LOWERCASE $CURRENT_SUBCOMMAND"
+		local command="$NAME_LOWERCASE $CURRENT_SUBCOMMAND"
 	else
 		local command="$NAME_LOWERCASE $1"
 	fi
@@ -701,10 +701,13 @@ create_automation() {
 
 	# Automatically create description based on command to launch if nothing given
 	if [ -z "$3" ]; then
-		local description="[$NAME automation] $(echo "$1" | sed 's/-.*//')"
+		local description="$NAME: $(echo "$1" | sed 's/-.*//')"
 	else
-		local description="[$NAME automation] $3"
+		local description="$NAME: $3"
 	fi
+
+
+	local documentation="$NAME_ALIAS $(echo $command | sed 's/.* \(.*\) .*/\1/') --help"
 
 
 	if [ -z "$(ls $dir_systemd | grep $name)" ]; then
@@ -712,6 +715,7 @@ create_automation() {
 			echo "
 				[Unit]
 				Description=$description
+				Documentation=$documentation
 				
 				[Service]
 				ExecStart=$command
@@ -723,6 +727,7 @@ create_automation() {
 			echo "
 				[Unit]
 				Description=$description
+				Documentation=$documentation
 
 				[Timer]
 				OnCalendar=daily
@@ -734,6 +739,7 @@ create_automation() {
 
 
 			systemctl daemon-reload
+			systemctl enable $name.timer 1>&2 /dev/null
 
 		elif [ "$(exists_command "cron")" = "exists" ]; then
 			display_error "to do (cron has not been implemented yet)"
@@ -1702,8 +1708,15 @@ install_cli() {
 
 			# Self update automation
 			display_info "installing self update automation."
-			create_automation "$NAME_ALIAS --self-update" "self-update" "automatically update $NAME CLI."
+			# Since 3.0.0, self update systemd unit name has changed
+			if [ -f "$dir_systemd/$NAME_LOWERCASE.service" ] || [ -f "$dir_systemd/$NAME_LOWERCASE.timer" ]; then
+				rm -f "$dir_systemd/$NAME_LOWERCASE.service"
+				rm -f "$dir_systemd/$NAME_LOWERCASE.timer"
+			fi
+			create_automation "--self-update" "self-update" "automatically update $NAME CLI."
 			
+
+
 
 			# # Systemd services installation
 			# # Checking if systemd is installed (and do nothing if not installed because it means the OS doesn't work with it)
@@ -1862,8 +1875,6 @@ case "$1" in
 					sanitize_confirmation)			sanitize_confirmation "$3" ;;
 					get_config_value)				get_config_value "$3" "$4" ;;
 					create_automation)				create_automation "$3" "$4" "$5" ;;
-					# test)				echo $@ ;;
-					test)				basename $1 ;;
 					*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 				esac
 			fi
