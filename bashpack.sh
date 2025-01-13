@@ -1427,7 +1427,7 @@ command_list() {
 	# Finally display all the subcommands and specify if already installed
 	if [ -f "$list_installed_tmp" ] && [ -s "$list_installed_tmp" ]; then
 
-		display_info "reading registry"
+		display_info "reading registry."
 		
 		while read -r command; do
 			if [ "$command" != "" ]; then
@@ -1709,9 +1709,11 @@ install_cli() {
 			# Self update automation
 			display_info "installing self update automation."
 			# Since 3.0.0, self update systemd unit name has changed
-			if [ -f "$dir_systemd/$NAME_LOWERCASE.service" ] || [ -f "$dir_systemd/$NAME_LOWERCASE.timer" ]; then
-				rm -f "$dir_systemd/$NAME_LOWERCASE.service"
-				rm -f "$dir_systemd/$NAME_LOWERCASE.timer"
+			if [ "$dir_systemd/$NAME_LOWERCASE-updates.service" ]; then
+				rm -f "$dir_systemd/$NAME_LOWERCASE-updates.service"
+			fi
+			if [ -f "$dir_systemd/$NAME_LOWERCASE-updates.timer" ]; then
+				rm -f "$dir_systemd/$NAME_LOWERCASE-updates.timer"
 			fi
 			create_automation "--self-update" "self-update" "automatically update $NAME CLI."
 			
