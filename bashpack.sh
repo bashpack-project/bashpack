@@ -815,16 +815,6 @@ URL_RAW_COMMAND="$HOST_URL_RAW/commands/refs/heads/main/commands"
 
 
 
-if [ "$(exists_command "systemctl")" = "exists" ]; then
-	COMMAND_UPDATE_SYSTEMD_STATUS="systemctl status $NAME_LOWERCASE-updates.timer"
-	
-	# if [ "$(exists_command "journalctl")" = "exists" ]; then
-	# 	COMMAND_UPDATE_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $NAME_LOWERCASE-updates.service`"
-	# fi
-fi
-
-
-
 # Delete the installed command from the system
 # Usages: 
 # - delete_cli
