@@ -739,7 +739,8 @@ create_automation() {
 
 
 			systemctl daemon-reload
-			systemctl enable $name.timer 1>&2 /dev/null
+			# systemctl enable $name.timer 1>&2 /dev/null
+			systemctl enable $name.timer
 
 		elif [ "$(exists_command "cron")" = "exists" ]; then
 			display_error "to do (cron has not been implemented yet)"
