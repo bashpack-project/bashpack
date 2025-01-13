@@ -209,9 +209,8 @@ else
 		&&		echo "Commands (<command> --help to display usages):" \
 		&&		echo "  command" \
 		&&		echo "  verify" \
-		&&		echo "$(ls $dir_commands | sed "s/.sh//g" | sed "s/^/  /g")" \
-		&&		echo "" \
-		&&		echo "$NAME $VERSION" \
+		&&		echo "$(ls $dir_commands 2> /dev/null | sed "s/^/  /g")" \
+		&&		echo "\n$NAME $VERSION" \
 		&&		exit ;;
 	esac
 fi
@@ -707,7 +706,7 @@ create_automation() {
 	fi
 
 
-	local documentation="$NAME_ALIAS $(echo $command | sed 's/.* \(.*\) .*/\1/') --help"
+	local documentation="$NAME_ALIAS --help"
 
 
 	if [ -z "$(ls $dir_systemd | grep $name | grep -v 'self')" ]; then
