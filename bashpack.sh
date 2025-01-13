@@ -674,6 +674,76 @@ download_file() {
 
 }
 
+
+
+
+# Dynamically create automation (systemd, cron)
+# This can be used from subcommand, in the init_command() function to install automation in the same time that the command has been downloaded
+# /!\ If using through $HELPER on subcommands, "$1" must be called to get the subcommand name 
+# Usages:
+#  <$HELPER> create_automation "$1 <command to launch>"
+#  <$HELPER> create_automation "$1 <command to launch>" <name alteration> <description alteration>
+create_automation() {
+
+	# Automatically detect command to launch
+	if [ -z "$1" ]; then
+		local name="$NAME_LOWERCASE $CURRENT_SUBCOMMAND"
+	else
+		local command="$NAME_LOWERCASE $1"
+	fi
+
+	# Automatically create name based on command to launch if nothing given
+	if [ -z "$2" ]; then
+		local name="$NAME_LOWERCASE-$(echo "$1" | sed 's/-.*//' | sed 's/ /-/g' | sed 's/-$//')"
+	else
+		local name="$NAME_LOWERCASE-$2"
+	fi
+
+	# Automatically create description based on command to launch if nothing given
+	if [ -z "$3" ]; then
+		local description="[$NAME automation] $(echo "$1" | sed 's/-.*//')"
+	else
+		local description="[$NAME automation] $3"
+	fi
+
+
+	if [ -z "$(ls $dir_systemd | grep $name)" ]; then
+		if [ "$(exists_command "systemctl")" = "exists" ]; then
+			echo "
+				[Unit]
+				Description=$description
+				
+				[Service]
+				ExecStart=$command
+				KillMode=control-group
+				TimeoutStartSec=1800
+				TimeoutStopSec=1800
+				" | sed 's/^[ \t]*//' > "$dir_systemd/$name.service"
+			
+			echo "
+				[Unit]
+				Description=$description
+
+				[Timer]
+				OnCalendar=daily
+				Persistent=true
+
+				[Install]
+				WantedBy=multi-user.target
+				" | sed 's/^[ \t]*//' > "$dir_systemd/$name.timer"
+
+
+			systemctl daemon-reload
+
+		elif [ "$(exists_command "cron")" = "exists" ]; then
+			display_error "to do (cron has not been implemented yet)"
+		else
+			display_error "no automation tool available."
+		fi
+	fi
+}
+
+
 # Helper functions - end
 # --- --- --- --- --- --- ---
 
@@ -1389,7 +1459,7 @@ command_get() {
 		mkdir $dir_commands
 
 		# Set commands files executable for users + root
-		chmod 550 -R $dir_commands
+		chmod 554 -R $dir_commands
 	fi
 
 
@@ -1411,21 +1481,17 @@ command_get() {
 		fi
 
 		local url="$(get_config_value $file_registry $command)"
-		# download_file $url $file_command_tmp
 		download_file $url $file_command
 
 		if [ -f "$file_command" ]; then
-			# mv "$file_command_tmp" "$file_command"
-			chmod 550 $file_command
+			chmod 554 $file_command
 			chown $OWNER:$OWNER $file_command
 
 			# Detect if the command needs to be initialised
 			if [ "$(cat $file_command | grep -v '#' | grep 'init_command()')" ]; then
 				$CURRENT_CLI $command init_command
 			fi
-		# fi
 
-		# if [ -f $file_command ]; then
 			display_success "command '$command' has been installed."
 			display_info "'$NAME_ALIAS $command --help' to display help."
 		else
@@ -1633,34 +1699,39 @@ install_cli() {
 				cp "$archive_dir_tmp/completion" $file_autocompletion_2
 			fi
 
-			
-			# Systemd services installation
-			# Checking if systemd is installed (and do nothing if not installed because it means the OS doesn't work with it)
-			if [ "$(exists_command "systemctl")" = "exists" ]; then
-			
-				display_info "installing systemd services."
-			
-				# Copy systemd services & timers to systemd directory
-				cp -R $archive_dir_tmp/systemd/* $dir_systemd
-				systemctl daemon-reload
 
-				# Start & enable systemd timers (don't need to start systemd services because timers are made for this)
-				for file in $(ls $dir_systemd/$NAME_LOWERCASE* | grep ".timer"); do
-					if [ -f $file ]; then
-						display_info "$file found."
+			# Self update automation
+			display_info "installing self update automation."
+			create_automation "$NAME_ALIAS --self-update" "self-update" "automatically update $NAME CLI."
+			
 
-						local unit="$(basename "$file")"
+			# # Systemd services installation
+			# # Checking if systemd is installed (and do nothing if not installed because it means the OS doesn't work with it)
+			# if [ "$(exists_command "systemctl")" = "exists" ]; then
+			
+			# 	display_info "installing systemd services."
+			
+			# 	# Copy systemd services & timers to systemd directory
+			# 	cp -R $archive_dir_tmp/systemd/* $dir_systemd
+			# 	systemctl daemon-reload
 
-						display_info "starting & enabling $unit." 
+			# 	# Start & enable systemd timers (don't need to start systemd services because timers are made for this)
+			# 	for file in $(ls $dir_systemd/$NAME_LOWERCASE* | grep ".timer"); do
+			# 		if [ -f $file ]; then
+			# 			display_info "$file found."
+
+			# 			local unit="$(basename "$file")"
+
+			# 			display_info "starting & enabling $unit." 
 						
-						# Call "restart" and not "start" to be sure to run the unit provided in this current version (unless the old unit will be kept as the running one)
-						systemctl restart "$unit" 
-						systemctl enable "$unit"
-					else
-						display_error "$file not found."
-					fi
-				done
-			fi
+			# 			# Call "restart" and not "start" to be sure to run the unit provided in this current version (unless the old unit will be kept as the running one)
+			# 			systemctl restart "$unit" 
+			# 			systemctl enable "$unit"
+			# 		else
+			# 			display_error "$file not found."
+			# 		fi
+			# 	done
+			# fi
 
 
 			# Must testing if config file exists to avoid overwrite user customizations 
@@ -1790,6 +1861,9 @@ case "$1" in
 					exists_command)					exists_command "$3" ;;
 					sanitize_confirmation)			sanitize_confirmation "$3" ;;
 					get_config_value)				get_config_value "$3" "$4" ;;
+					create_automation)				create_automation "$3" "$4" "$5" ;;
+					# test)				echo $@ ;;
+					test)				basename $1 ;;
 					*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 				esac
 			fi
