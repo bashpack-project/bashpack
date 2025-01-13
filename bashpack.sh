@@ -679,7 +679,7 @@ download_file() {
 
 # Dynamically create automation (systemd, cron, ...)
 # This can be used from subcommand, in the init_command() function to install automation in the same time that the command has been downloaded
-# /!\ If using through $HELPER on subcommands, "$1" must be called to get the subcommand name 
+# /!\ If using through $HELPER in subcommands, "$1" must be called to get the subcommand name 
 # Usages:
 #  <$HELPER> create_automation "$1 <command to launch>"
 #  <$HELPER> create_automation "$1 <command to launch>" <name alteration> <description alteration>
@@ -687,7 +687,7 @@ create_automation() {
 
 	# Automatically detect command to launch
 	if [ -z "$1" ]; then
-		local command="$NAME_LOWERCASE $CURRENT_SUBCOMMAND"
+		display_error "missing subcommand name."
 	else
 		local command="$NAME_LOWERCASE $1"
 	fi
@@ -710,13 +710,13 @@ create_automation() {
 	local documentation="$NAME_ALIAS $(echo $command | sed 's/.* \(.*\) .*/\1/') --help"
 
 
-	if [ -z "$(ls $dir_systemd | grep $name)" ]; then
+	if [ -z "$(ls $dir_systemd | grep $name | grep -v 'self')" ]; then
 		if [ "$(exists_command "systemctl")" = "exists" ]; then
 			echo "
 				[Unit]
 				Description=$description
 				Documentation=$documentation
-				
+
 				[Service]
 				ExecStart=$command
 				KillMode=control-group
@@ -1857,6 +1857,8 @@ case "$1" in
 				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
+	# 'self' is a word used in many operations for the CLI, it's preferable to not allow it in subcommand name
+	self)							display_error "reserved operation." && exit ;;
 	# Since "export -f" is not available in Shell, the helper command below permit to use commands from this file in sub scripts
 	helper)
 		# The $allow_helper_functions variable must be exported as "true" in sub scripts that needs the helper functions
