@@ -165,21 +165,21 @@ if [ -z "$1" ]; then
 else
 	case "$1" in
 		-v|--version) echo $VERSION && exit ;;
-		command)
-			case "$2" in
-				--help) echo "$USAGE" \
-				&&		echo "" \
-				&&		echo "Manage $NAME sub commands." \
-				&&		echo "" \
-				&&		echo "Options:" \
-				&&		echo " -l, --list         list available commands." \
-				&&		echo " -g, --get <name>   install a command." \
-				&&		echo " -d, --delete       remove a command." \
-				&&		echo "" \
-				&&		echo "$NAME $VERSION" \
-				&&		exit ;;
-			esac
-		;;
+		# command)
+		# 	case "$2" in
+		# 		--help) echo "$USAGE" \
+		# 		&&		echo "" \
+		# 		&&		echo "Manage $NAME sub commands." \
+		# 		&&		echo "" \
+		# 		&&		echo "Options:" \
+		# 		&&		echo " -l, --list         list available commands." \
+		# 		&&		echo " -g, --get <name>   install a command." \
+		# 		&&		echo " -d, --delete       remove a command." \
+		# 		&&		echo "" \
+		# 		&&		echo "$NAME $VERSION" \
+		# 		&&		exit ;;
+		# 	esac
+		# ;;
 		verify)
 			case "$2" in
 				--help) echo "$USAGE" \
@@ -207,7 +207,6 @@ else
 		&&		echo " -v, --version        display version." \
 		&&		echo "" \
 		&&		echo "Commands (<command> --help to display usages):" \
-		&&		echo "  command" \
 		&&		echo "  verify" \
 		&&		echo "$(ls $dir_commands 2> /dev/null | sed "s/^/  /g")" \
 		&&		echo "\n$NAME $VERSION" \
@@ -709,43 +708,75 @@ create_automation() {
 	local documentation="$NAME_ALIAS --help"
 
 
-	if [ -z "$(ls $dir_systemd | grep $name | grep -v 'self')" ]; then
-		if [ "$(exists_command "systemctl")" = "exists" ]; then
-			echo "
-				[Unit]
-				Description=$description
-				Documentation=$documentation
+	create_systemd() {
+		echo "
+			[Unit]
+			Description=$description
+			Documentation=$documentation
 
-				[Service]
-				ExecStart=$command
-				KillMode=control-group
-				TimeoutStartSec=1800
-				TimeoutStopSec=1800
-				" | sed 's/^[ \t]*//' > "$dir_systemd/$name.service"
+			[Service]
+			ExecStart=$command
+			KillMode=control-group
+			TimeoutStartSec=1800
+			TimeoutStopSec=1800
+			" | sed 's/^[ \t]*//' > "$dir_systemd/$name.service"
 			
-			echo "
-				[Unit]
-				Description=$description
-				Documentation=$documentation
+		echo "
+			[Unit]
+			Description=$description
+			Documentation=$documentation
 
-				[Timer]
-				OnCalendar=daily
-				Persistent=true
+			[Timer]
+			OnCalendar=daily
+			Persistent=true
 
-				[Install]
-				WantedBy=multi-user.target
-				" | sed 's/^[ \t]*//' > "$dir_systemd/$name.timer"
+			[Install]
+			WantedBy=multi-user.target
+			" | sed 's/^[ \t]*//' > "$dir_systemd/$name.timer"
 
 
-			systemctl daemon-reload
-			# systemctl enable $name.timer 1>&2 /dev/null
-			systemctl enable $name.timer
+		systemctl daemon-reload
+		# systemctl enable $name.timer 1>&2 /dev/null
+		systemctl enable $name.timer
+	}
 
-		elif [ "$(exists_command "cron")" = "exists" ]; then
-			display_error "to do (cron has not been implemented yet)"
+
+	if [ "$(exists_command "systemctl")" = "exists" ]; then
+		# Reinstall automation only if 'self' detected (reserved word for CLI itself, and not subcommands)
+		# if [ -z "$(ls $dir_systemd | grep $name | grep 'self')" ]; then
+			create_systemd
+		# fi
+
+	elif [ "$(exists_command "cron")" = "exists" ]; then
+		display_error "to do (cron has not been implemented yet)"
+
+	else
+		display_error "no automation tool available."
+
+	fi
+}
+
+
+
+
+# Calculate checksum of a given file
+# Usages:
+#  file_checksum <file path>
+#  file_checksum <file URL>
+file_checksum() {
+
+	if [ "$(echo $1 | grep -e '^http')" ]; then
+		local url="$1"
+
+		if [ "$(exists_command "curl")" = "exists" ]; then
+			curl -sk $url | cksum -a sha1 | sed 's/^.*= //'
+		elif [ "$(exists_command "wget")" = "exists" ]; then
+			wget -q -O - --no-check-certificate $url | cksum -a sha1 | sed 's/^.*= //'
 		else
-			display_error "no automation tool available."
+			display_error "can't get remote checksum with curl or wget."
 		fi
+	else
+		cat $1 | cksum -a sha1 | sed 's/^.*= //'
 	fi
 }
 
@@ -1315,8 +1346,8 @@ command_install_structure() {
 
 
 # List available commands from repository
-# Usage: command_list
-command_list() {
+# Usage: subcommand_list
+subcommand_list() {
 
 	local list_tmp="$dir_tmp/$NAME_LOWERCASE-commands-list"
 	local list_installed_tmp="$dir_tmp/$NAME_LOWERCASE-commands-installed"
@@ -1368,28 +1399,50 @@ command_list() {
 				if [ "$(echo $url | grep '.com' | grep 'github' | grep 'api.')" ]; then
 					while read -r line; do
 						if [ "$(echo $line | grep 'download_url')" ]; then
-							# And get back the raw URL to be able to download the script from sourceslist
+							# And get back the raw URL to be able to download the script from sourceslist + calculate checksum
 							local real_url="$(echo $line | grep 'download_url' | cut -d '"' -f 4)"
+							local checksum="$(file_checksum $real_url)"
 
 							echo $line \
 								| cut -d "\"" -f 4 \
 								| cut -d "/" -f 8 \
 								| grep -iw "\.$subcommands_allowed_extensions" \
 								| sed "s/\.[$subcommands_allowed_extensions]*//" \
-								| sed "s|$| $real_url|" \
+								| sed "s|$| $real_url $checksum|" \
 								| sort -u >> $file_registry
 						fi
 					done < $list_tmp
 				else
 					# ...Or from a basic web server with directory listing
-					cat $list_tmp \
-						| grep -oP '(?<=href=")[^"]*' \
-						| sed '/\/.*/d' \
-						| sed '/^\(?.=\).*/d' \
-						| grep -iw "\.$subcommands_allowed_extensions" \
-						| sed "s/\.[$subcommands_allowed_extensions]*//" \
-						| sed "s|$| $url|" \
-						| sort -u >> $file_registry
+					while read -r line; do
+
+						local file_name="$(echo $line \
+							| grep -oP '(?<=href=")[^"]*' \
+							| sed '/\/.*/d' \
+							| sed '/^\(?.=\).*/d')"
+
+						# Get the entire file URL to be able to calculate checksum
+						local real_url="$url/$file_name"
+						local checksum="$(file_checksum $real_url)"
+
+						echo $line \
+							| grep -oP '(?<=href=")[^"]*' \
+							| sed '/\/.*/d' \
+							| sed '/^\(?.=\).*/d' \
+							| grep -iw "\.$subcommands_allowed_extensions" \
+							| sed "s/\.[$subcommands_allowed_extensions]*//" \
+							| sed "s|$| $real_url $checksum|" \
+							| sort -u >> $file_registry
+					done < $list_tmp
+
+					# cat $list_tmp \
+					# 	| grep -oP '(?<=href=")[^"]*' \
+					# 	| sed '/\/.*/d' \
+					# 	| sed '/^\(?.=\).*/d' \
+					# 	| grep -iw "\.$subcommands_allowed_extensions" \
+					# 	| sed "s/\.[$subcommands_allowed_extensions]*//" \
+					# 	| sed "s|$| $url|" \
+					# 	| sort -u >> $file_registry
 				fi
 
 				rm -f $list_tmp
@@ -1442,8 +1495,8 @@ command_list() {
 
 
 # Get a command from repository
-# Usage: command_get <command>
-command_get() {
+# Usage: subcommand_get <command>
+subcommand_get() {
 
 	local command="${1}"
 	local file_command="$dir_commands/$command"
@@ -1461,7 +1514,7 @@ command_get() {
 
 	if [ -z "$command" ]; then
 		display_info "please specify a command from the list below."
-		command_list
+		subcommand_list
 
 	elif [ -f "$file_command" ]; then
 		display_info "command '$command' is already installed."
@@ -1471,10 +1524,13 @@ command_get() {
 		# Ensure that structure exists
 		command_install_structure
 
-		# Ensure that registry is not empty to get the URL of the command
-		if [ "$(cat $file_registry)" = "" ]; then
-			command_list
-		fi
+		# # Ensure that registry is not empty to get the URL of the command
+		# if [ "$(cat $file_registry)" = "" ]; then
+		# 	subcommand_list
+		# fi
+
+		# Refresh list according to sources list (repositories might be commented or removed since last time) 
+		subcommand_list
 
 		local url="$(get_config_value $file_registry $command)"
 		download_file $url $file_command
@@ -1500,8 +1556,8 @@ command_get() {
 
 
 # Remove an installed command
-# Usage: command_delete <command>
-command_delete() {
+# Usage: subcommand_delete <command>
+subcommand_delete() {
 
 	local command="${1}"
 	local file_command="$dir_commands/$command"
@@ -1824,17 +1880,20 @@ case "$1" in
 		fi ;;
 	--self-delete)					loading_process "delete_all" ;;
 	--get-logs)						get_logs "$file_log_main" ;;
-	command)
-		if [ -z "$2" ]; then
-									command_list
-		else
-			case "$2" in
-				-l|--list)			command_list ;;
-				-g|--get)			command_get $3 ;;
-				-d|--delete)		command_delete $3 ;;
-				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
-			esac
-		fi ;;
+	-l|--list)						subcommand_list ;;
+	-g|--get)						subcommand_get $2 ;;
+	-d|--delete)					subcommand_delete $2 ;;
+	# command)
+	# 	if [ -z "$2" ]; then
+	# 								subcommand_list
+	# 	else
+	# 		case "$2" in
+	# 			-l|--list)			subcommand_list ;;
+	# 			-g|--get)			subcommand_get $3 ;;
+	# 			-d|--delete)		subcommand_delete $3 ;;
+	# 			*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
+	# 		esac
+	# 	fi ;;
 	verify)
 		if [ -z "$2" ]; then
 									loading_process "verify_dependencies $3";  loading_process "verify_files"; loading_process "verify_repository_reachability "$URL_RAW/main/$NAME_LOWERCASE.sh""; loading_process "verify_repository_reachability "$URL_API/tarball/$VERSION""
