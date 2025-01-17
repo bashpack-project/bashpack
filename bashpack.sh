@@ -1419,7 +1419,8 @@ subcommand_list() {
 						local file_name="$(echo $line \
 							| grep -oP '(?<=href=")[^"]*' \
 							| sed '/\/.*/d' \
-							| sed '/^\(?.=\).*/d')"
+							| sed '/^\(?.=\).*/d' \
+							| grep -iw "\.$subcommands_allowed_extensions")"
 
 						# Get the entire file URL to be able to calculate checksum
 						local real_url="$url/$file_name"
