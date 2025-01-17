@@ -201,10 +201,13 @@ else
 		&&		echo " -i, --self-install   install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
 		&&		echo " -u, --self-update    update $NAME to the latest available version on the chosen publication (--force option available)." \
 		&&		echo "     --self-delete    delete $NAME from your system." \
-		&&		echo "     --get-logs       display logs." \
-		&&		echo "     --help           display this information." \
+		&&		echo "     --logs           display logs." \
+		&&		echo " -h, --help           display this information." \
 		&&		echo " -p, --publication    display the current installed $NAME publication." \
 		&&		echo " -v, --version        display version." \
+		&&		echo " -l, --list           list available subcommands (local and remote). " \
+		&&		echo " -g, --get <name>     install a subcommand." \
+		&&		echo " -d, --delete <name>  uninstall a subcommand." \
 		&&		echo "" \
 		&&		echo "Commands (<command> --help to display usages):" \
 		&&		echo "  verify" \
@@ -1880,7 +1883,7 @@ case "$1" in
 			esac
 		fi ;;
 	--self-delete)					loading_process "delete_all" ;;
-	--get-logs)						get_logs "$file_log_main" ;;
+	--logs)						get_logs "$file_log_main" ;;
 	-l|--list)						subcommand_list ;;
 	-g|--get)						subcommand_get $2 ;;
 	-d|--delete)					subcommand_delete $2 ;;
@@ -1929,6 +1932,7 @@ case "$1" in
 					sanitize_confirmation)			sanitize_confirmation "$3" ;;
 					get_config_value)				get_config_value "$3" "$4" ;;
 					create_automation)				create_automation "$3" "$4" "$5" ;;
+					file_checksum)					file_checksum "$3" ;;
 					*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 				esac
 			fi
