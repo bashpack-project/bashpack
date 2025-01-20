@@ -42,9 +42,9 @@ export HELPER="$CURRENT_CLI helper"
 export OWNER="$(ls -l $CURRENT_CLI | cut -d " " -f 3)"
 
 # BASE_URL="https://api.github.com/repos/$NAME_LOWERCASE-project"
-REPO_URL="$NAME_LOWERCASE-project"
-HOST_URL_API="https://api.github.com/repos/$REPO_URL"
-HOST_URL_RAW="https://raw.githubusercontent.com/$REPO_URL"
+# REPO_URL="$NAME_LOWERCASE-project"
+# HOST_URL_API="https://api.github.com/repos/$REPO_URL"
+# HOST_URL_RAW="https://raw.githubusercontent.com/$REPO_URL"
 
 
 if [ "$(echo $CURRENT_CLI | grep -v '.sh')" ]; then
@@ -1310,7 +1310,7 @@ declare_config_file() {
 
 		# [option] cli_url
 		# This option allows to change remote repository to get futures updates.
-		cli_url $URL_RAW
+		cli_url "https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE"
 
 		# [option] debug
 		# This option allows to enable various debug information displayed during execution
@@ -1911,7 +1911,7 @@ case "$1" in
 			esac
 		fi ;;
 	--self-delete)					loading_process "delete_all" ;;
-	--logs)						get_logs "$file_log_main" ;;
+	--logs)							get_logs "$file_log_main" ;;
 	-l|--list)						subcommand_list ;;
 	-g|--get)						subcommand_get $2 ;;
 	-d|--delete)					subcommand_delete $2 ;;
@@ -1928,12 +1928,13 @@ case "$1" in
 	# 	fi ;;
 	verify)
 		if [ -z "$2" ]; then
-									loading_process "verify_dependencies $3";  loading_process "verify_files"; loading_process "verify_repository_reachability "$URL_RAW/main/$NAME_LOWERCASE.sh""; loading_process "verify_repository_reachability "$URL_API/tarball/$VERSION""
+									loading_process "verify_dependencies $3";  loading_process "verify_files"; loading_process "verify_repository_reachability $(match_url_repository $(get_config_value $file_config cli_url) github_raw)"
 		else
 			case "$2" in
 				-f|--files)			loading_process "verify_files $3" ;;
 				-d|--dependencies)	loading_process "verify_dependencies $3" ;;
-				-r|--repository)	loading_process "verify_repository_reachability "$URL_RAW/main/$NAME_LOWERCASE.sh""; loading_process "verify_repository_reachability "$URL_API/tarball/$VERSION"" ;;
+				# -r|--repository)	loading_process "verify_repository_reachability "$URL_RAW/main/$NAME_LOWERCASE.sh""; loading_process "verify_repository_reachability "$URL_API/tarball/$VERSION"" ;;
+				-r|--repository)	loading_process "verify_repository_reachability $(match_url_repository $(get_config_value $file_config cli_url) github_raw)" ;;
 				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 			esac
 		fi ;;
