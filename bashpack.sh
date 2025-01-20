@@ -783,22 +783,48 @@ file_checksum() {
 
 
 
-# # Get "API" or "raw" Github URL from the other one
-# # Usage: match_url_github <url>
-# match_url_github() {
+# Get "API", "raw" or the "default web" Github URL from the others one
+# Usage: match_url_repository <url> <want: github_api|github_raw|github_web>
+match_url_repository() {
 
-# 	local url="$1"
+	local url="$1"
+	local want="$2"
 
-# 	if [ "$(echo $url | grep 'com' | grep 'github' | grep 'api')" ]; then
-# 		project="$(echo $url  | cut -d "/" -f 5-6)"
-# 		echo "https://raw.githubusercontent.com/$project"
 
-# 	elif [ $(echo $url | grep 'com' | grep 'github' | grep 'raw') ]; then
-# 		project="$(echo $url  | cut -d "/" -f 4-5)"
-# 		echo "https://api.github.com/repos/$project"
+	# Displayed the asked URL according to $want
+	get_url() {
+		local project="$1"
 
-# 	fi
-# }
+		if [ "$want" = "github_api" ]; then
+			echo "https://api.github.com/repos/$project"
+		elif [ "$want" = "github_raw" ]; then
+			echo "https://raw.githubusercontent.com/$project"
+		elif [ "$want" = "github_web" ]; then
+			echo "https://github.com/$project"	
+		fi
+	}
+
+
+	# https://api.github.com/repos/maintainer/repository
+	if [ "$(echo $url | grep 'com' | grep 'github' | grep 'api')" ]; then
+		project="$(echo $url  | cut -d "/" -f 5-6)"
+		get_url "$project"
+
+	# https://raw.githubusercontent.com/maintainer/repository
+	elif [ "$(echo $url | grep 'com' | grep 'github' | grep 'raw')" ]; then
+		project="$(echo $url  | cut -d "/" -f 4-5)"
+		get_url "$project"
+
+	# https://github.com/maintainer/repository
+	elif [ "$(echo $url | grep 'com' | grep 'github')" ]; then
+		project="$(echo $url  | cut -d "/" -f 4-5)"
+		get_url "$project"
+
+	# Finally just echo the given URL because it probably means that it's hosted on a basic directory listing web server
+	else
+		echo $url
+	fi
+}
 
 
 
@@ -1649,9 +1675,12 @@ subcommand_delete() {
 update_cli() {
 
 	local downloaded_cli="$dir_tmp/$NAME_LOWERCASE.sh"
-	local remote_archive="$URL_API/releases/latest"
-	local force="${1}"
-	# local chosen_publication="${2}"
+	# local remote_archive="$URL_API/releases/latest"
+	local force="$1"
+
+	local url="$(match_url_repository $(get_config_value $file_config cli_url) github_api)"
+	local url_latest="$url/releases/latest"
+
 
 	update_process() {
 		display_info "starting self update."
@@ -1666,7 +1695,7 @@ update_cli() {
 		# fi
 
 
-		if [ -z "$(get_config_value $file_config cli_url)" ]; then
+		if [ ! -z "$(get_config_value $file_config cli_url)" ]; then
 	
 			# Download the file from the configured URL
 			download_file "$(get_config_value $file_config cli_url)" "$downloaded_cli"
@@ -1693,11 +1722,13 @@ update_cli() {
 		update_process
 	else
 		# Testing if a new version exists on the current publication to avoid reinstall if not.
-		if [ "$(exists_command "curl")" = "exists" ] && [ "$(curl -s "$remote_archive" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
-			display_info "latest version is already installed ($VERSION-$(detect_publication))."
+		# if [ "$(exists_command "curl")" = "exists" ] && [ "$(curl -s "$remote_archive" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
+		if [ "$(exists_command "curl")" = "exists" ] && [ "$(curl -s "$url_latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ]; then
+			display_info "latest version is already installed ($VERSION)."
 
-		elif [ "$(exists_command "wget")" = "exists" ] && [ "$(wget -q -O- "$remote_archive" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
-			display_info "latest version is already installed ($VERSION-$(detect_publication))."
+		# elif [ "$(exists_command "wget")" = "exists" ] && [ "$(wget -q -O- "$remote_archive" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
+		elif [ "$(exists_command "wget")" = "exists" ] && [ "$(wget -q -O- "$url_latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ]; then
+			display_info "latest version is already installed ($VERSION)."
 
 		else
 			update_process
