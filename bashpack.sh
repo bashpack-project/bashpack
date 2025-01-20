@@ -1678,27 +1678,72 @@ update_cli() {
 	# local remote_archive="$URL_API/releases/latest"
 	local force="$1"
 
-	local url="$(match_url_repository $(get_config_value $file_config cli_url) github_api)"
-	local url_latest="$url/releases/latest"
+
+	# local url_api="$(match_url_repository $(get_config_value $file_config cli_url) github_api)"
+	# local url_latest="$(match_url_repository $(get_config_value $file_config cli_url) github_api)/releases/latest"
+
+	# local url_raw="$(match_url_repository $(get_config_value $file_config cli_url) github_raw)"
+	# local url_raw_latest="$url_raw/refs/tags/$latest/$NAME_LOWERCASE.sh"
+	# local url_raw_latest="$(match_url_repository $(get_config_value $file_config cli_url) github_raw)/refs/tags/$latest/$NAME_LOWERCASE.sh"
 
 
+	# echo url_latest $url_latest
+	# echo url_raw $url_raw
+
+
+
+
+
+
+
+	# Get the latest available version from the remote repository
+	get_latest_version() {
+		# Check from Github if the repository is a Github URL
+		if [ "$(get_config_value $file_config cli_url | grep 'com' | grep 'github')" ]; then
+
+			local url_latest="$(match_url_repository $(get_config_value $file_config cli_url) github_api)/releases/latest"
+
+			if [ "$(exists_command "curl")" = "exists" ]; then
+				echo "$(curl -s "$url_latest" | grep tag_name | cut -d \" -f 4)"
+
+			elif [ "$(exists_command "wget")" = "exists" ]; then
+				echo "$(wget -q -O- "$url_latest" | grep tag_name | cut -d \" -f 4)"
+			fi
+		else
+			display_info "can't get version from $url_latest"
+		fi
+	}
+
+	
+
+	# Finally getting the URL of the file to download
+	# If the remote repository is Github
+	if [ "$(get_config_value $file_config cli_url | grep 'com' | grep 'github')" ]; then
+		local url_file_to_download="$(match_url_repository $(get_config_value $file_config cli_url) github_raw)/refs/tags/$(get_latest_version)/$NAME_LOWERCASE.sh"
+
+	# If the remote repository is a basic directory listing web server
+	else
+		local url_file_to_download="$(get_config_value $file_config cli_url)"
+	fi
+	# echo url_raw_latest $url_file_to_download
+
+
+
+
+	# Update the CLI
 	update_process() {
+
+		# local url_to_get_update="$1"
+
+
 		display_info "starting self update."
 
-		# # Download only the main file (main by default, or the one of the chosen publication if specified)
-		# if [ -z "$chosen_publication" ]; then
-		# 	download_file "$URL_RAW/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
-		# elif [ "$chosen_publication" = "main" ]; then
-		# 	download_file "$HOST_URL_RAW/$NAME_LOWERCASE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
-		# else
-		# 	download_file "$HOST_URL_RAW/$NAME_LOWERCASE-$chosen_publication/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
-		# fi
-
-
-		if [ ! -z "$(get_config_value $file_config cli_url)" ]; then
+		# if [ ! -z "$(get_config_value $file_config cli_url)" ]; then
+		if [ ! -z "$url_file_to_download" ]; then
 	
 			# Download the file from the configured URL
-			download_file "$(get_config_value $file_config cli_url)" "$downloaded_cli"
+			# download_file "$(get_config_value $file_config cli_url)" "$downloaded_cli"
+			download_file "$url_file_to_download" "$downloaded_cli"
 
 
 			if [ -f "$downloaded_cli" ]; then
@@ -1722,17 +1767,17 @@ update_cli() {
 		update_process
 	else
 		# Testing if a new version exists on the current publication to avoid reinstall if not.
-		# if [ "$(exists_command "curl")" = "exists" ] && [ "$(curl -s "$remote_archive" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
-		if [ "$(exists_command "curl")" = "exists" ] && [ "$(curl -s "$url_latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ]; then
-			display_info "latest version is already installed ($VERSION)."
+		# # if [ "$(exists_command "curl")" = "exists" ] && [ "$(curl -s "$remote_archive" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
+		# if [ "$(exists_command "curl")" = "exists" ] && [ "$(curl -s "$url_latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ]; then
+		# 	display_info "latest version is already installed ($VERSION)."
 
-		# elif [ "$(exists_command "wget")" = "exists" ] && [ "$(wget -q -O- "$remote_archive" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
-		elif [ "$(exists_command "wget")" = "exists" ] && [ "$(wget -q -O- "$url_latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ]; then
-			display_info "latest version is already installed ($VERSION)."
+		# # elif [ "$(exists_command "wget")" = "exists" ] && [ "$(wget -q -O- "$remote_archive" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
+		# elif [ "$(exists_command "wget")" = "exists" ] && [ "$(wget -q -O- "$url_latest" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ]; then
+		# 	display_info "latest version is already installed ($VERSION)."
 
-		else
+		# else
 			update_process
-		fi
+		# fi
 	fi
 }
 
