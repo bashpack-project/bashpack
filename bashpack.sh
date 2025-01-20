@@ -1289,9 +1289,6 @@ declare_config_file() {
 		# - false = deactivated
 		# - true = activated
 		debug false
-
-
-		# just a test
 		" | sed 's/^[ \t]*//' > "$file"
 }
 
@@ -1299,8 +1296,8 @@ declare_config_file() {
 
 
 # This function will install the new config file given within new versions, while keeping user configured values
-# Usage: install_new_config_file
-install_new_config_file() {
+# Usage: rotate_config_file
+rotate_config_file() {
 
 	local file_config_current="$file_config"
 	# local file_config_tmp="$archive_dir_tmp/config/$NAME_LOWERCASE.conf"
@@ -1316,8 +1313,8 @@ install_new_config_file() {
 			value=$(echo $line | cut -d " " -f 2)
 
 			# Replacing options values in temp config file with current configured values
-			# /^#/! is to avoid commented lines
-			sed -i "/^#/! s/$option.*/$line/g" $file_config_tmp
+			# sed here using "|" instead of "/" to be able to store URL in the values without getting a sed error
+			sed -i "s|^$option.*|$line|g" $file_config_tmp
 
 		fi	
 	done < "$file_config_current"
@@ -1654,29 +1651,38 @@ update_cli() {
 	local downloaded_cli="$dir_tmp/$NAME_LOWERCASE.sh"
 	local remote_archive="$URL_API/releases/latest"
 	local force="${1}"
-	local chosen_publication="${2}"
+	# local chosen_publication="${2}"
 
 	update_process() {
 		display_info "starting self update."
 
-		# Download only the main file (main by default, or the one of the chosen publication if specified)
-		if [ -z "$chosen_publication" ]; then
-			download_file "$URL_RAW/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
-		elif [ "$chosen_publication" = "main" ]; then
-			download_file "$HOST_URL_RAW/$NAME_LOWERCASE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
-		else
-			download_file "$HOST_URL_RAW/$NAME_LOWERCASE-$chosen_publication/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
+		# # Download only the main file (main by default, or the one of the chosen publication if specified)
+		# if [ -z "$chosen_publication" ]; then
+		# 	download_file "$URL_RAW/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
+		# elif [ "$chosen_publication" = "main" ]; then
+		# 	download_file "$HOST_URL_RAW/$NAME_LOWERCASE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
+		# else
+		# 	download_file "$HOST_URL_RAW/$NAME_LOWERCASE-$chosen_publication/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
+		# fi
+
+
+		if [ -z "$(get_config_value $file_config cli_url)" ]; then
+	
+			# Download the file from the configured URL
+			download_file "$(get_config_value $file_config cli_url)" "$downloaded_cli"
+
+
+			if [ -f "$downloaded_cli" ]; then
+				# Delete old files
+				delete_cli "exclude_main"
+				
+				# Execute the installation from the downloaded file 
+				chmod +x "$downloaded_cli"
+				"$downloaded_cli" -i
+			fi
 		fi
 
-
-		# Delete old files
-		delete_cli "exclude_main"
-		
-		# Execute the installation from the downloaded file 
-		chmod +x "$downloaded_cli"
-		"$downloaded_cli" -i
-
-		display_info "end of self update or publication rotation."
+		display_info "end of self update."
 	}
 
 
@@ -1741,7 +1747,7 @@ install_cli() {
 			display_info "$file_config already exists, installing new file and inserting current configured options."
 
 			declare_config_file "$dir_tmp/$NAME_LOWERCASE.conf"
-			install_new_config_file
+			rotate_config_file
 		fi
 
 
