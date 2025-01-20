@@ -117,7 +117,7 @@ export file_log_main="$dir_log/main.log"
 
 
 # Display a warning in case of using the script and not a command installed on the system
-# Export a variable that permit to avoid this message duplication (because this file is called multiple times over the differents process)
+# Export a variable that permits to avoid this message duplication (because this file is called multiple times over the differents process)
 if [ "$WARNING_ALREADY_SENT" != "true" ]; then
 	if [ "$CURRENT_CLI" = "./$NAME_LOWERCASE.sh" ]; then
 		echo "Warning: currently using '$CURRENT_CLI' which is located at $(pwd)."
@@ -423,7 +423,7 @@ posix_which() {
 	}
 
 	# Some commands are builtin and doesn't have path on the system.
-	# This permit to 
+	# This permits to 
 	# - test if any command exists
 	# - get the path of the command if it has one
 	# - still display an output in case of no path but the command exist
@@ -578,7 +578,7 @@ detect_cli() {
 
 
 
-# Permit to verify if the remote repository is reachable with HTTP.
+# Permits to verify if the remote repository is reachable with HTTP.
 # Usage: verify_repository_reachability <URL>
 verify_repository_reachability() {
 
@@ -656,7 +656,7 @@ download_file() {
 						rm -rf $dir_extract_tmp
 						mkdir -p $dir_extract_tmp
 
-						# "tar --strip-components 1" permit to extract sources in /tmp/$NAME_LOWERCASE and don't create a new directory /tmp/$NAME_LOWERCASE/$NAME_LOWERCASE
+						# "tar --strip-components 1" permits to extract sources in /tmp/$NAME_LOWERCASE and don't create a new directory /tmp/$NAME_LOWERCASE/$NAME_LOWERCASE
 						tar -xf "$file_tmp" -C "$dir_extract_tmp" --strip-components 1
 					fi
 				else
@@ -899,7 +899,7 @@ URL_RAW_SUBCOMMAND="$HOST_URL_RAW/commands/refs/heads/main/commands"
 # - delete_cli "exclude_main"
 delete_cli() {
 	
-	# $exclude_main permit to not delete main command "$NAME_ALIAS" and "$NAME_LOWERCASE".
+	# $exclude_main permits to not delete main command "$NAME_ALIAS" and "$NAME_LOWERCASE".
 	#	(i) This is useful in case when the CLI tries to update itself, but the latest release is not accessible.
 	#	/!\ Unless it can happen that the CLI destroys itself, and then the user must reinstall it.
 	#	(i) Any new update will overwrite the "$NAME_ALIAS" and "$NAME_LOWERCASE" command, so it doesn't matter to not delete it during update.
@@ -914,13 +914,13 @@ delete_cli() {
 		if [ "$exclude_main" = "exclude_main" ]; then
 			# Delete everything except main files and directories
 			
-			# The "find" command below permit to delete everything in $dir_src_cli except:
+			# The "find" command below permits to delete everything in $dir_src_cli except:
 			# - main CLI file
 			# - "core" directory (because some functions needed for main CLI file are stored in it)
 			#
 			# Notes: 
-			# - "exec rm -rv {} +" is the part that permit to remove the files and directory
-			# - "mindepth 1" permit to avoid the $dir_src_cli directory to be itself deleted
+			# - "exec rm -rv {} +" is the part that permits to remove the files and directory
+			# - "mindepth 1" permits to avoid the $dir_src_cli directory to be itself deleted
 			#
 			# This command can be used to list concerned files and directories : 
 			# find $dir_src_cli -mindepth 1 -maxdepth 1 ! -name "$NAME_LOWERCASE.sh" -print
@@ -1104,7 +1104,7 @@ verify_dependencies() {
 	local total=0
 
 
-	# Permit to find all the commands listed in a file (1 line = 1 command)
+	# Permits to find all the commands listed in a file (1 line = 1 command)
 	# Usage: find_command <file>
 	find_command() {
 		local file_tmp="${1}"
@@ -1300,18 +1300,20 @@ declare_config_file() {
 	echo " \
 		# This is the main Bashpack configuration file.
 		# Here are provided defaults options, and their values can be changed.
-		# This file can meet several modifications within futures updates. Any value configured here will remain after updates.
+		# This file can meet several modifications within futures updates.
+		# Any value configured here will remain after updates.
+		# Any comment starting with '#' will be removed.
 
 		# How to use ?
 		# A single space is necessary to match options with their values:
 		# <option> <value>
 
 		# [option] cli_url
-		# This option allow to change remote repository to get futures updates.
+		# This option allows to change remote repository to get futures updates.
 		cli_url $URL_RAW
 
 		# [option] debug
-		# This option permit to enable various debug information displayed during execution
+		# This option allows to enable various debug information displayed during execution
 		# - false = deactivated
 		# - true = activated
 		debug false
@@ -1352,7 +1354,7 @@ rotate_config_file() {
 
 
 
-# # Permit to set an option in the main config file to activate or not the automation of a sub command 
+# # Permits to set an option in the main config file to activate or not the automation of a sub command 
 # # Usage: command_config_activation <command> <description> <option>
 # command_config_activation() {
 
@@ -1678,16 +1680,24 @@ subcommand_delete() {
 update_cli() {
 
 	local downloaded_cli="$dir_tmp/$NAME_LOWERCASE.sh"
+	local cli_url="$(get_config_value $file_config cli_url)"
 	local force="$1"
+
+
+	# Ensure the $cli_url value is starting with HTTP, unless the rest of the function will not works due to automatic values calculations from URL format
+	if [ "$(echo $cli_url | grep -v '^http://')')" ]; then
+		cli_url="$(echo 'http://'$cli_url)"
+	fi
+
 
 
 	# Function to get the latest available version from the remote repository
 	# Usage: get_latest_version
 	get_latest_version() {
 		# Check from Github if the repository is a Github URL
-		if [ "$(get_config_value $file_config cli_url | grep 'com' | grep 'github')" ]; then
+		if [ "$(echo $cli_url | grep 'github' | grep 'com')" ]; then
 
-			local url_latest="$(match_url_repository $(get_config_value $file_config cli_url) github_api)/releases/latest"
+			local url_latest="$(match_url_repository $cli_url github_api)/releases/latest"
 
 			if [ "$(exists_command "curl")" = "exists" ]; then
 				echo "$(curl -s "$url_latest" | grep tag_name | cut -d \" -f 4)"
@@ -1712,7 +1722,6 @@ update_cli() {
 			# Download the file from the configured URL
 			download_file "$url_file_to_download" "$downloaded_cli"
 
-
 			if [ -f "$downloaded_cli" ]; then
 				# Delete old files
 				delete_cli "exclude_main"
@@ -1730,12 +1739,12 @@ update_cli() {
 
 	# Get the URL of the file to download
 	# If the remote repository is Github
-	if [ "$(get_config_value $file_config cli_url | grep 'com' | grep 'github')" ]; then
-		local url_file_to_download="$(match_url_repository $(get_config_value $file_config cli_url) github_raw)/refs/tags/$(get_latest_version)/$NAME_LOWERCASE.sh"
+	if [ "$(echo $cli_url | grep 'github' | grep 'com')" ]; then
+		local url_file_to_download="$(match_url_repository $cli_url github_raw)/refs/tags/$(get_latest_version)/$NAME_LOWERCASE.sh"
 
 	# If the remote repository is a basic directory listing web server
 	else
-		local url_file_to_download="$(get_config_value $file_config cli_url)"
+		local url_file_to_download="$cli_url"
 	fi
 
 
@@ -1930,10 +1939,10 @@ case "$1" in
 		fi ;;
 	# 'self' is a word used in many operations for the CLI, it's preferable to not allow it in subcommand name
 	self)							display_error "reserved operation." && exit ;;
-	# Since "export -f" is not available in Shell, the helper command below permit to use commands from this file in sub scripts
+	# Since "export -f" is not available in Shell, the helper command below permits to use commands from this file in sub scripts
 	helper)
 		# The $allow_helper_functions variable must be exported as "true" in sub scripts that needs the helper functions
-		# This permit to avoid these commands to be used directly from the command line by the users
+		# This permits to avoid these commands to be used directly from the command line by the users
 		if [ "$allow_helper_functions" != "true" ]; then
 			display_error "reserved operation."
 		else
