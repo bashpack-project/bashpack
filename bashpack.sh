@@ -34,7 +34,7 @@ export VERSION="3.0.0"
 
 export NAME="Bashpack"
 export NAME_LOWERCASE="$(echo "$NAME" | tr A-Z a-z)"
-export NAME_UPPERCASE="$(echo "$NAME" | tr a-z A-Z)"
+# export NAME_UPPERCASE="$(echo "$NAME" | tr a-z A-Z)"
 export NAME_ALIAS="bp"
 
 export CURRENT_CLI="$0"
@@ -105,7 +105,7 @@ export file_main="$dir_src_cli/$NAME_LOWERCASE.sh"
 export file_main_alias_1="$dir_bin/$NAME_LOWERCASE"
 export file_main_alias_2="$dir_bin/$NAME_ALIAS"
 
-file_current_publication="$dir_config/.current_publication"
+# file_current_publication="$dir_config/.current_publication"
 
 
 # Log creations
@@ -145,6 +145,7 @@ fi
 
 
 dir_sourceslist="$dir_config/sources"
+# file_sourceslist_cli="$dir_sourceslist/cli.list"
 file_sourceslist_subcommands="$dir_sourceslist/subcommands.list"
 file_registry="$dir_sourceslist/.subcommands.registry"
 
@@ -199,11 +200,10 @@ else
 		&&		echo "" \
 		&&		echo "Options:" \
 		&&		echo " -i, --self-install   install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
-		&&		echo " -u, --self-update    update $NAME to the latest available version on the chosen publication (--force option available)." \
+		&&		echo " -u, --self-update    update $NAME to the latest available version (--force option available)." \
 		&&		echo "     --self-delete    delete $NAME from your system." \
 		&&		echo "     --logs           display logs." \
 		&&		echo " -h, --help           display this information." \
-		&&		echo " -p, --publication    display the current installed $NAME publication." \
 		&&		echo " -v, --version        display version." \
 		&&		echo " -l, --list           list available subcommands (local and remote). " \
 		&&		echo " -g, --get <name>     install a subcommand." \
@@ -262,7 +262,8 @@ current_cli_info() {
 
 	# "False" option doesn't really exist as described in the config file, anything other that "true" will just disable this function.
 	if [ "$(get_config_value "$dir_config/$NAME_LOWERCASE.conf" "debug")" = "true" ]; then
-		echo " cli:$CURRENT_CLI pub:$PUBLICATION ver:$VERSION   "
+		# echo " cli:$CURRENT_CLI pub:$PUBLICATION ver:$VERSION   "
+		echo " cli:$CURRENT_CLI url:<todo> ver:$VERSION   "
 	fi
 }
 
@@ -316,12 +317,7 @@ display_info() {
 	fi
 }
 
-tee_2(){
-  [ "$1" = '-a' ] && shift || rm -f "$1"
-  sed 's/\x0/¤¤¤¤¤¤¤¤¤¤!/g' - | while read line; do
-    echo "$line" | sed 's/¤¤¤¤¤¤¤¤¤¤!/\x0/g' >> "$1"
-  done
-}
+
 
 
 # Write output of a command in logs
@@ -562,7 +558,8 @@ get_logs() {
 detect_cli() {
 	if [ "$(exists_command "$NAME_LOWERCASE")" = "exists" ]; then
 		if [ -n "$($NAME_LOWERCASE --version)" ]; then
-			display_info "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) detected at $(posix_which $NAME_LOWERCASE)"
+			# display_info "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) detected at $(posix_which $NAME_LOWERCASE)"
+			display_info "$NAME $($NAME_ALIAS --version) detected at $(posix_which $NAME_LOWERCASE)"
 		fi
 	fi
 }
@@ -570,14 +567,14 @@ detect_cli() {
 
 
 
-# Detect what is the current publication installed
-detect_publication() {
-	if [ -f "$file_current_publication" ]; then
-		cat "$file_current_publication" | head -n 1
-	else
-		display_error "publication not found."
-	fi
-}
+# # Detect what is the current publication installed
+# detect_publication() {
+# 	if [ -f "$file_current_publication" ]; then
+# 		cat "$file_current_publication" | head -n 1
+# 	else
+# 		display_error "publication not found."
+# 	fi
+# }
 
 
 
@@ -647,7 +644,7 @@ download_file() {
 
 		# Success message
 		if [ -f "$file_tmp" ]; then
-			display_success "file '$file_tmp' has been downloaded."
+			display_success "file '$file_tmp' downloaded."
 
 			# Test if the "$dir_extract_tmp" variable is empty to know if we downloaded an archive that we need to extract
 			if [ -n "$dir_extract_tmp" ]; then
@@ -667,7 +664,7 @@ download_file() {
 				fi
 			fi
 		else
-			display_error "file '$file_tmp' has not been downloaded."
+			display_error "file '$file_tmp' not downloaded."
 		fi
 		
 	fi
@@ -739,8 +736,8 @@ create_automation() {
 
 
 		systemctl daemon-reload
-		# systemctl enable $name.timer 1>&2 /dev/null
-		systemctl enable $name.timer
+		systemctl enable $name.timer > /dev/null
+		# systemctl enable $name.timer
 	}
 
 
@@ -751,7 +748,7 @@ create_automation() {
 		# fi
 
 	elif [ "$(exists_command "cron")" = "exists" ]; then
-		display_error "to do (cron has not been implemented yet)"
+		display_error "cron has not been implemented yet."
 
 	else
 		display_error "no automation tool available."
@@ -776,12 +773,33 @@ file_checksum() {
 		elif [ "$(exists_command "wget")" = "exists" ]; then
 			wget -q -O - --no-check-certificate $url | cksum -a sha1 | sed 's/^.*= //'
 		else
-			display_error "can't get remote checksum with curl or wget."
+			display_error "can't get '$url' remote checksum with curl or wget."
 		fi
 	else
 		cat $1 | cksum -a sha1 | sed 's/^.*= //'
 	fi
 }
+
+
+
+
+# # Get "API" or "raw" Github URL from the other one
+# # Usage: match_url_github <url>
+# match_url_github() {
+
+# 	local url="$1"
+
+# 	if [ "$(echo $url | grep 'com' | grep 'github' | grep 'api')" ]; then
+# 		project="$(echo $url  | cut -d "/" -f 5-6)"
+# 		echo "https://raw.githubusercontent.com/$project"
+
+# 	elif [ $(echo $url | grep 'com' | grep 'github' | grep 'raw') ]; then
+# 		project="$(echo $url  | cut -d "/" -f 4-5)"
+# 		echo "https://api.github.com/repos/$project"
+
+# 	fi
+# }
+
 
 
 # Helper functions - end
@@ -815,36 +833,36 @@ fi
 
 
 
-# Depending on the chosen publication, the repository will be different:
-# - Main (= stable) releases:	https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE
-# - Unstable releases:			https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-unstable
-# - Dev releases:				https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-dev
-if [ -f "$file_config" ]; then
-	PUBLICATION="$(get_config_value "$file_config" "publication")"
-else
-	PUBLICATION="main"
-fi
+# # Depending on the chosen publication, the repository will be different:
+# # - Main (= stable) releases:	https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE
+# # - Unstable releases:			https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-unstable
+# # - Dev releases:				https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-dev
+# if [ -f "$file_config" ]; then
+# 	PUBLICATION="$(get_config_value "$file_config" "publication")"
+# else
+# 	PUBLICATION="main"
+# fi
 
-case "$PUBLICATION" in
-	unstable|dev)
-		URL_API="$HOST_URL_API/$NAME_LOWERCASE-$PUBLICATION"
-		URL_RAW="$HOST_URL_RAW/$NAME_LOWERCASE-$PUBLICATION"
-		;;
-	main)
-		URL_API="$HOST_URL_API/$NAME_LOWERCASE"
-		URL_RAW="$HOST_URL_RAW/$NAME_LOWERCASE"
-		;;
-	*)
-		display_info "publication '$PUBLICATION' not found, using default 'main'."
-		PUBLICATION="main"
-		echo "main" > $file_current_publication
-		URL_API="$HOST_URL_API/$NAME_LOWERCASE"
-		URL_RAW="$HOST_URL_RAW/$NAME_LOWERCASE"
-		;;
-esac
+# case "$PUBLICATION" in
+# 	unstable|dev)
+# 		URL_API="$HOST_URL_API/$NAME_LOWERCASE-$PUBLICATION"
+# 		URL_RAW="$HOST_URL_RAW/$NAME_LOWERCASE-$PUBLICATION"
+# 		;;
+# 	main)
+# 		URL_API="$HOST_URL_API/$NAME_LOWERCASE"
+# 		URL_RAW="$HOST_URL_RAW/$NAME_LOWERCASE"
+# 		;;
+# 	*)
+# 		display_info "publication '$PUBLICATION' not found, using default 'main'."
+# 		PUBLICATION="main"
+# 		echo "main" > $file_current_publication
+# 		URL_API="$HOST_URL_API/$NAME_LOWERCASE"
+# 		URL_RAW="$HOST_URL_RAW/$NAME_LOWERCASE"
+# 		;;
+# esac
 
 # URL_API_COMMAND="$HOST_URL_API/commands"
-URL_RAW_COMMAND="$HOST_URL_RAW/commands/refs/heads/main/commands"
+URL_RAW_SUBCOMMAND="$HOST_URL_RAW/commands/refs/heads/main/commands"
 
 
 
@@ -1103,9 +1121,16 @@ verify_dependencies() {
 	# - Sort & remove duplications
 
 	# - Get most of "command" from this pattern: command text
-	# - Remove text strings inside ""
+	# - Remove text from this pattern: "text"
+	# - Remove this pattern (to avoid unique words that starts a line and could be detected as a command):
+	#       echo " \
+	#         text
+	#         text
+	#         text
+	#       " | sed
 	local list1="$(cat $file_to_test \
 		| sed 's/#.*$//' \
+		| sed -n '/echo \" \\/, /\" \| sed /!p' \
 		| sed 's/\([a-z]\) .*/\1/' \
 		| sed 's/"[^*]*"//' \
 		| sort -ud)"
@@ -1239,13 +1264,47 @@ verify_dependencies() {
 
 
 
+# Declare config file and default values
+# Usage: declare_config_file
+declare_config_file() {
+
+	local file="$1"
+
+	# Create temporary config file to be able to copy new options to the current config file
+	echo " \
+		# This is the main Bashpack configuration file.
+		# Here are provided defaults options, and their values can be changed.
+		# This file can meet several modifications within futures updates. Any value configured here will remain after updates.
+
+		# How to use ?
+		# A single space is necessary to match options with their values:
+		# <option> <value>
+
+		# [option] cli_url
+		# This option allow to change remote repository to get futures updates.
+		cli_url $URL_RAW
+
+		# [option] debug
+		# This option permit to enable various debug information displayed during execution
+		# - false = deactivated
+		# - true = activated
+		debug false
+
+
+		# just a test
+		" | sed 's/^[ \t]*//' > "$file"
+}
+
+
+
+
 # This function will install the new config file given within new versions, while keeping user configured values
 # Usage: install_new_config_file
 install_new_config_file() {
 
 	local file_config_current="$file_config"
-	# local file_config_tmp="$archive_dir_tmp/config/$file_config"
-	local file_config_tmp="$archive_dir_tmp/config/$NAME_LOWERCASE.conf"
+	# local file_config_tmp="$archive_dir_tmp/config/$NAME_LOWERCASE.conf"
+	local file_config_tmp="$dir_tmp/$NAME_LOWERCASE.conf"
 
 	while read -r line; do
 		local first_char="$(echo $line | cut -c1-1)"
@@ -1290,56 +1349,41 @@ install_new_config_file() {
 
 
 
-# Display all sources from sourceslist
-# Usage: display_sourceslist <sourceslist file>
-display_sourceslist() {
+# # Display all sources from sourceslist
+# # Usage: display_sourceslist <sourceslist file>
+# display_sourceslist() {
 
-	local file="$1"
+# 	local file="$1"
 
-	grep '^http' $file
-}
-
-
-
-
-# # Get all Github URL matching a repository from a given URL 
-# # Usage: match_url_github <url>
-# match_url_github() {
-
-# 	local url="${1}"
-
-	
-# 	if [ "$(echo $url | grep 'com' | grep 'github' | grep 'api')" ]; then
-# 		project="$(echo $url  | cut -d "/" -f 5-6)"
-# 		echo "https://raw.githubusercontent.com/$project"
-
-# 	# elif [ $(echo $url | grep 'com' | grep 'github' | grep 'raw') ]; then
-# 	# 	project="$(echo $url  | cut -d "/" -f 4-5)"
-# 	# 	echo "https://api.github.com/repos/$project"
-
-# 	fi
+# 	grep '^http' $file
 # }
 
 
 
 
 # Install required directories and files related to subcommands
-# Usage: command_install_structure
-command_install_structure() {
+# Usage: sourceslist_install_structure
+sourceslist_install_structure() {
 
 	# Ensure that sources directory exists
 	if [ ! -d "$dir_sourceslist" ]; then
-		display_info "$dir_sourceslist not found, creating it. "
+		display_info "$dir_sourceslist not found, creating it."
 		mkdir -p $dir_sourceslist
 	fi
 
-	# Ensure that sources list exists
+	# # Ensure that sources list exists for CLI
+	# if [ ! -f "$file_sourceslist_cli" ] || [ -z "$file_sourceslist_cli" ]; then
+	# 	display_info "$file_sourceslist_cli not found, creating it."
+	# 	echo "$URL_RAW" > $file_sourceslist_cli
+	# fi
+
+	# Ensure that sources list exists for subcommands
 	if [ ! -f "$file_sourceslist_subcommands" ] || [ -z "$file_sourceslist_subcommands" ]; then
-		display_info "$file_sourceslist_subcommands not found, creating it. "
-		echo "$URL_RAW_COMMAND" > $file_sourceslist_subcommands
+		display_info "$file_sourceslist_subcommands not found, creating it."
+		echo "$URL_RAW_SUBCOMMAND" > $file_sourceslist_subcommands
 	fi
 
-	# Ensure that registry exists
+	# Ensure that registry exists for subcommands
 	if [ ! -f "$file_registry" ]; then
 		echo -n "" > $file_registry
 	fi
@@ -1360,7 +1404,7 @@ subcommand_list() {
 	local url="${1}"
 
 
-	command_install_structure
+	sourceslist_install_structure
 
 
 	# Clean existing registry (it will be updated with fresh values)
@@ -1526,7 +1570,7 @@ subcommand_get() {
 	else
 		
 		# Ensure that structure exists
-		command_install_structure
+		sourceslist_install_structure
 
 		# # Ensure that registry is not empty to get the URL of the command
 		# if [ "$(cat $file_registry)" = "" ]; then
@@ -1671,7 +1715,7 @@ update_cli() {
 #  install_cli <chosen publication>
 install_cli() {
 
-	local chosen_publication="${1}"
+	# local chosen_publication="${1}"
 
 	# Test if all required commands are on the system before install anything
 	if [ "$(verify_dependencies "$CURRENT_CLI" "print-missing-required-command-only")" = "0" ]; then
@@ -1679,187 +1723,108 @@ install_cli() {
 		display_info "starting self installation."
 		detect_cli
 
-		
+	
 		# Config directory installation
 		# Checking if the config directory exists and create it if doesn't exists
-		# This must be the first thing to do since $chosen_publication needs to be stored in this directory but it would not exists if it's the first time the CLI is installed
-		display_info "installing configuration."
 		if [ ! -d "$dir_config" ]; then
 			display_info "$dir_config not found, creating it."
-			mkdir $dir_config
+			mkdir -p $dir_config
 		fi
 
 
-		# Just a log message
-		if [ -n "$chosen_publication" ]; then
-			display_info "publication '$chosen_publication' entered manually."
+		# Must testing if config file exists to avoid overwrite user customizations 
+		if [ ! -f "$file_config" ]; then
+			display_info "$file_config not found, creating it. "
+
+			declare_config_file "$file_config"
 		else
-			display_info "using current '$($NAME_ALIAS --publication)' publication."
+			display_info "$file_config already exists, installing new file and inserting current configured options."
+
+			declare_config_file "$dir_tmp/$NAME_LOWERCASE.conf"
+			install_new_config_file
 		fi
 
 
-		# Check if a publication has been chosen, and allow to reinstall if the specified publication is the same as the current or is empty
-		if [ "$chosen_publication" = "" ] || [ "$chosen_publication" = "$($NAME_ALIAS --publication)" ]; then
+		# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
+		# Remove them to allow installation of the CLI
+		if [ -f "$file_main_alias_1" ] || [ -f "$file_main_alias_2" ]; then
+			display_info "removing old aliases."
+			rm -f $file_main_alias_1
+			rm -f $file_main_alias_2
+		fi
 
-			# Download tarball archive with the default way
-			download_file "$URL_API/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
-			echo "$($NAME_ALIAS --publication)" > $file_current_publication
+		# Create aliases to use this script as a CLI
+		# (-f to force overwrite existing)
+		display_info "installing aliases."
+		ln -sf $file_main $file_main_alias_1
+		ln -sf $file_main $file_main_alias_2
+
+			
+		# Sources files installation
+		display_info "installing sources."
+		if [ ! -d "$dir_src_cli" ]; then
+			display_info "$dir_src_cli not found, creating it."
+			mkdir -p $dir_src_cli
+		fi
+		cp $CURRENT_CLI $file_main
+
+
+		# Creating License file
+		echo "$(cat $CURRENT_CLI | grep -A 21 "MIT License")" > "$dir_src_cli/LICENSE.md"
+
+
+		# # Autocompletion installation
+		# # Install autocompletion only if the directory has been found.
+		# if [ -n "$dir_autocompletion" ]; then
+		# 	display_info "installing autocompletion."
+		# 	cp "$archive_dir_tmp/completion" $file_autocompletion_1
+		# 	cp "$archive_dir_tmp/completion" $file_autocompletion_2
+		# fi
+
+
+		# Self update automation
+		display_info "installing self update automation."
+		# Since 3.0.0, self update systemd unit name has changed
+		if [ "$dir_systemd/$NAME_LOWERCASE-updates.service" ]; then
+			rm -f "$dir_systemd/$NAME_LOWERCASE-updates.service"
+		fi
+		if [ -f "$dir_systemd/$NAME_LOWERCASE-updates.timer" ]; then
+			rm -f "$dir_systemd/$NAME_LOWERCASE-updates.timer"
+		fi
+		create_automation "--self-update" "self-update" "automatically update $NAME CLI."
+
+
+		# Install sourceslist
+		sourceslist_install_structure
+
+
+		# Remove unwanted files from the installed sources (keep only main, sub commands and .md files)
+		find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -not -name "*.md" -not -name "commands" -exec rm -rf {} +
+
+
+		# Set the rights rights ;)
+		chmod 555 -R $dir_src_cli				# Set everyting in read+exec by default
+		chmod 555 $file_main					# Set main file executable for everyone (autcompletion of the command itself requires it)
+		chmod 444 -R "$dir_src_cli/"*.md		# Set .md files read-only for everyone
+		chmod +rw -R $dir_config				# Allow users to edit the configuration
+
+
+		# Success message
+		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
+			display_success "'$NAME_ALIAS' installed."
 		else
-			# Force using chosen publication, unless it always will be installed under the main publication
-			set_config_value "$file_config" "publication" "$chosen_publication"
-
-			# # Download tarball archive from the given publication
-			# download_file "$HOST_URL_API/$NAME_LOWERCASE-$chosen_publication/tarball/$VERSION" $archive_tmp $archive_dir_tmp
-
-			# update_cli
-			update_cli -f "$chosen_publication"
-
-			echo "$chosen_publication" > $file_current_publication
+			# Remove config dir that might have been created
+			rm -rf "$dir_config"
+			display_error "$NAME installation failed."
 		fi
 
-
-		
-		# Process to the installation
-		if [ -d "$archive_dir_tmp" ]; then
-		
-			# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
-			# Remove them to allow installation of the CLI
-			if [ -f "$file_main_alias_1" ] || [ -f "$file_main_alias_2" ]; then
-				display_info "removing old aliases."
-				rm -f $file_main_alias_1
-				rm -f $file_main_alias_2
-			fi
-
-			
-			# Sources files installation
-			display_info "installing sources."
-			cp -RT $archive_dir_tmp $dir_src_cli	# -T used to overwrite the source dir and not creating a new inside
-			chmod 555 -R $dir_src_cli				# Set everyting in read+exec by default
-			chmod 555 $file_main					# Set main file executable for everyone (autcompletion of the command itself requires it)
-			# chmod 550 -R "$dir_src_cli/commands/"	# Set commands files executable for users + root
-			chmod 444 -R "$dir_src_cli/"*.md		# Set .md files read-only for everyone
-
-
-			# Create an alias so the listed package are clear on the system (-f to force overwrite existing)
-			display_info "installing aliases."
-			ln -sf $file_main $file_main_alias_1
-			ln -sf $file_main $file_main_alias_2
-
-
-			# Autocompletion installation
-			# Install autocompletion only if the directory has been found.
-			if [ -n "$dir_autocompletion" ]; then
-				display_info "installing autocompletion."
-				cp "$archive_dir_tmp/completion" $file_autocompletion_1
-				cp "$archive_dir_tmp/completion" $file_autocompletion_2
-			fi
-
-
-			# Self update automation
-			display_info "installing self update automation."
-			# Since 3.0.0, self update systemd unit name has changed
-			if [ "$dir_systemd/$NAME_LOWERCASE-updates.service" ]; then
-				rm -f "$dir_systemd/$NAME_LOWERCASE-updates.service"
-			fi
-			if [ -f "$dir_systemd/$NAME_LOWERCASE-updates.timer" ]; then
-				rm -f "$dir_systemd/$NAME_LOWERCASE-updates.timer"
-			fi
-			create_automation "--self-update" "self-update" "automatically update $NAME CLI."
-			
-
-
-
-			# # Systemd services installation
-			# # Checking if systemd is installed (and do nothing if not installed because it means the OS doesn't work with it)
-			# if [ "$(exists_command "systemctl")" = "exists" ]; then
-			
-			# 	display_info "installing systemd services."
-			
-			# 	# Copy systemd services & timers to systemd directory
-			# 	cp -R $archive_dir_tmp/systemd/* $dir_systemd
-			# 	systemctl daemon-reload
-
-			# 	# Start & enable systemd timers (don't need to start systemd services because timers are made for this)
-			# 	for file in $(ls $dir_systemd/$NAME_LOWERCASE* | grep ".timer"); do
-			# 		if [ -f $file ]; then
-			# 			display_info "$file found."
-
-			# 			local unit="$(basename "$file")"
-
-			# 			display_info "starting & enabling $unit." 
-						
-			# 			# Call "restart" and not "start" to be sure to run the unit provided in this current version (unless the old unit will be kept as the running one)
-			# 			systemctl restart "$unit" 
-			# 			systemctl enable "$unit"
-			# 		else
-			# 			display_error "$file not found."
-			# 		fi
-			# 	done
-			# fi
-
-
-			# Must testing if config file exists to avoid overwrite user customizations 
-			if [ ! -f "$file_config" ]; then
-				display_info "$file_config not found, creating it. "
-				# cp "$archive_dir_tmp/config/$file_config" "$file_config"
-				cp "$archive_dir_tmp/config/$NAME_LOWERCASE.conf" "$file_config"
-
-			else
-				display_info "$file_config already exists, installing new file and inserting current configured options."
-				install_new_config_file
-			fi
-
-
-			# # Must testing if sources exists to avoid overwrite user customizations 
-			# if [ ! -d "$dir_sourceslist" ]; then
-			# 	display_info "$dir_sourceslist not found, creating it. "
-			# 	mkdir -p $dir_sourceslist
-			# fi
-
-			# # Creating default source list
-			# if [ ! -f "$file_sourceslist_subcommands" ]; then
-			# 	display_info "$file_sourceslist_subcommands not found, creating it. "
-			# 	echo "$URL_RAW_COMMAND" > $file_sourceslist_subcommands
-			# fi
-			command_install_structure
-
-
-			# Allow users to edit the configuration
-			chmod +rw -R $dir_config
-
-
-			# Remove unwanted files from the installed sources (keep only main, sub commands and .md files)
-			find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -not -name "*.md" -not -name "commands" -exec rm -rf {} +
-
-
-			# Success message
-			if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
-				# display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) has been installed."
-				display_success "command '$NAME_ALIAS' has been installed."
-			else
-				# Remove config dir that might have been created just to store the publication name
-				rm -rf "$dir_config"
-
-				display_error "$NAME installation failed."
-			fi
-			
-		fi
-		
 
 		# Clear temporary files & directories
 		rm -rf $dir_tmp/$NAME_LOWERCASE*
 		
 
 		display_info "end of self installation."
-
-
-		# Success message
-		if [ "$chosen_publication" = "" ] || [ "$chosen_publication" = "$($NAME_ALIAS --publication)" ]; then
-			if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
-				display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) is ready."
-			fi
-		fi
 
 	else
 		verify_dependencies
@@ -1872,8 +1837,9 @@ install_cli() {
 
 # The options (except --help) must be called with root
 case "$1" in
-	-p|--publication)				loading_process "detect_publication" ;;
-	-i|--self-install)				loading_process "install_cli $2" ;;		# Critical option, see the comments at function declaration for more info	
+	# -p|--publication)				loading_process "detect_publication" ;;
+	# -i|--self-install)				loading_process "install_cli $2" ;;		# Critical option, see the comments at function declaration for more info	
+	-i|--self-install)				loading_process "install_cli" ;;		# Critical option, see the comments at function declaration for more info	
 	-u|--self-update)
 		if [ -z "$2" ]; then
 									loading_process "update_cli"			# Critical option, see the comments at function declaration for more info
