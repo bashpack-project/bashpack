@@ -237,8 +237,8 @@ fi
 # Getting values stored in configuration files.
 # Usage: get_config_value "<file>" "<option>"
 get_config_value() {
-	local file="${1}"
-	local option="${2}"
+	local file="$1"
+	local option="$2"
 
 	while read -r line; do
 		local first_char="$(echo $line | cut -c1-1)"
@@ -274,10 +274,10 @@ current_cli_info() {
 # Usage: display_error <message> <log file to duplicate the message>
 display_error() {
 
-	local format="$now error:    $(current_cli_info) ${1}"
+	local format="$now error:    $(current_cli_info) $1"
 
-	if [ -n "${2}" ]; then
-		echo "$format" | tee -a "$file_log_main" "${2}"
+	if [ -n "$2" ]; then
+		echo "$format" | tee -a "$file_log_main" "$2"
 	else
 		echo "$format" | tee -a "$file_log_main"
 	fi
@@ -291,10 +291,10 @@ display_error() {
 # Usage: display_success <message> <log file to duplicate the message>
 display_success() {
 
-	local format="$now success:  $(current_cli_info) ${1}"
+	local format="$now success:  $(current_cli_info) $1"
 
-	if [ -n "${2}" ]; then
-		echo "$format" | tee -a "$file_log_main" "${2}"
+	if [ -n "$2" ]; then
+		echo "$format" | tee -a "$file_log_main" "$2"
 	else
 		echo "$format" | tee -a "$file_log_main"
 	fi
@@ -308,10 +308,10 @@ display_success() {
 # Usage: display_info <message> <log file to duplicate the message>
 display_info() {
 
-	local format="$now info:     $(current_cli_info) ${1}"
+	local format="$now info:     $(current_cli_info) $1"
 
-	if [ -n "${2}" ]; then
-		echo "$format" | tee -a "$file_log_main" "${2}"
+	if [ -n "$2" ]; then
+		echo "$format" | tee -a "$file_log_main" "$2"
 	else
 		echo "$format" | tee -a "$file_log_main"
 	fi
@@ -325,7 +325,7 @@ display_info() {
 # Usage: <command> | append_log <log file>		(append to the given file)
 append_log() {
 
-	local file_log="${1}"
+	local file_log="$1"
 	
 	# # Get process name to write it in log file
 	# local command="${0}"
@@ -404,7 +404,7 @@ posix_which() {
 			# Bash isn't creating new lines if command is used in "$(quotes)"
 			for directory_raw in $(echo "$PATH" | tr ":" "\n" | tr " " "$special_char"); do
 				local directory="$(echo $directory_raw | tr "$special_char" " ")"
-				local command="$directory/${1}"
+				local command="$directory/$1"
 
 				if [ -f "$command" ]; then
 					echo "$command"
@@ -413,7 +413,7 @@ posix_which() {
 		else 
 			for directory_raw in "$(echo "$PATH" | tr ":" "\n" | tr " " "$special_char")"; do
 				local directory="$(echo $directory_raw | tr "$special_char" " ")"
-				local command="$directory/${1}"
+				local command="$directory/$1"
 
 				if [ -f "$command" ]; then
 					echo "$command"
@@ -428,11 +428,11 @@ posix_which() {
 	# - get the path of the command if it has one
 	# - still display an output in case of no path but the command exist
 	# - don't display anything if the command doesn't exist at all
-	if [ -n "$(command -v "${1}")" ]; then
-		if [ -n "$(find_path "${1}")" ]; then
-			find_path "${1}"
+	if [ -n "$(command -v "$1")" ]; then
+		if [ -n "$(find_path "$1")" ]; then
+			find_path "$1"
 		else
-			echo "${1}"
+			echo "$1"
 		fi
 	fi
 	
@@ -444,7 +444,7 @@ posix_which() {
 # Function to know if commands exist on the system, with always the same output to easily use it in conditions statements.
 # Usage: exists_command <command>
 exists_command() {
-	local command="${1}"
+	local command="$1"
 
 	# if ! which $command > /dev/null; then
 	if [ ! -z "$(posix_which "$command")" ]; then
@@ -460,7 +460,7 @@ exists_command() {
 # loading_process animation so we know the process has not crashed.
 # Usage: loading_process "<command that takes time>"
 loading_process() {
-	${1} & local pid=$!
+	$1 & local pid=$!
 
 	# # Hide cursor
 	# if [ "$(exists_command "tput")" = "exists" ]; then
@@ -494,9 +494,9 @@ loading_process() {
 # Usage: set_config_value "<file>" "<option>" "<new value>"
 set_config_value() {
 
-	local file="${1}"
-	local option="${2}"
-	local value_new="${3}"
+	local file="$1"
+	local option="$2"
+	local value_new="$3"
 	local value_old="$(get_config_value $file $option)"
 
 	display_info "set '$option' from '$value_old' to '$value_new'."
@@ -507,12 +507,12 @@ set_config_value() {
 		# If both the file and the option exist
 		# = Replace the option old value with the new value
 		if [ -f "$file" ] && [ -n "$value_old" ]; then
-			sed -i "s/$option $value_old/$option $value_new/g" "$file"
+			sed -i "s|$option $value_old|$option $value_new|" "$file"
 
 		# If the file exists but the option doesn't exist
 		# = Add the option and the value at the begin of the file (this is a curative way to just quickly get the option setted up)
 		elif [ -f "$file" ] && [ -z "$value_old" ]; then
-			sed -i "1s/^/$option $value_new/" "$file"
+			sed -i "1s|^|$option $value_new|" "$file"
 
 		# If the file doesn't exist (also meaning the option can't exist)
 		# = Create the file and add the option with the value (this is a curative way to just quickly get the option setted up)
@@ -542,12 +542,12 @@ sanitize_confirmation() {
 # Usage: get_logs <file>
 get_logs() {
 
-	display_info "getting logs from ${1}"
+	display_info "getting logs from $1"
 
 	if [ "$(exists_command "less")" = "exists" ]; then
-		cat "${1}" | less +G
+		cat "$1" | less +G
 	else
-		cat "${1}"
+		cat "$1"
 	fi
 }
 
@@ -582,7 +582,7 @@ detect_cli() {
 # Usage: verify_repository_reachability <URL>
 verify_repository_reachability() {
 
-	local url="${1}"
+	local url="$1"
 
 	display_info "try reach: $url"
 
@@ -619,9 +619,9 @@ verify_repository_reachability() {
 # - download_file <url of n.n.n archive> <temp archive> <temp dir for extraction>
 download_file() {
 
-	local file_url="${1}"
-	local file_tmp="${2}"
-	local dir_extract_tmp="${3}"
+	local file_url="$1"
+	local file_tmp="$2"
+	local dir_extract_tmp="$3"
 
 	# Testing if repository is reachable with HTTP before doing anything.
 	loading_process "verify_repository_reachability $file_url"
@@ -904,7 +904,7 @@ delete_cli() {
 	#	/!\ Unless it can happen that the CLI destroys itself, and then the user must reinstall it.
 	#	(i) Any new update will overwrite the "$NAME_ALIAS" and "$NAME_LOWERCASE" command, so it doesn't matter to not delete it during update.
 	#	(i) It's preferable to delete all others files since updates can remove files from olders releases 
-	local exclude_main="${1}"
+	local exclude_main="$1"
 
 	if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
 		display_error "$NAME is not installed on your system."
@@ -993,10 +993,10 @@ delete_systemd() {
 # - delete_all "exclude_main" (Please check the explaination of $exclude_main at the delete_cli() function declaration)
 delete_all() {
 	
-	local exclude_main=${1}
+	local exclude_main=$1
 
-	delete_systemd && delete_cli ${1}
-	# delete_cli ${1}
+	delete_systemd && delete_cli $1
+	# delete_cli $1
 }
 
 
@@ -1010,7 +1010,7 @@ verify_files() {
 
 	display_info  "checking if required files and directories are available on the system."
 
-	local file_to_test="${1}"
+	local file_to_test="$1"
 	if [ -z "$file_to_test" ]; then
 		file_to_test="$CURRENT_CLI"
 	fi
@@ -1080,12 +1080,12 @@ verify_files() {
 #  verify_dependencies <file to test> "print-missing-required-command-only"
 verify_dependencies() {
 
-	local file_to_test="${1}"
+	local file_to_test="$1"
 	if [ -z "$file_to_test" ]; then
 		file_to_test="$CURRENT_CLI"
 	fi	
 
-	local print_missing_required_command_only="${2}"
+	local print_missing_required_command_only="$2"
 	if [ "$print_missing_required_command_only" = "print-missing-required-command-only" ]; then
 		print_missing_required_command_only="true"
 	else
@@ -1107,8 +1107,8 @@ verify_dependencies() {
 	# Permits to find all the commands listed in a file (1 line = 1 command)
 	# Usage: find_command <file>
 	find_command() {
-		local file_tmp="${1}"
-		local type="${2}"		# "required" or "optional" command
+		local file_tmp="$1"
+		local type="$2"		# "required" or "optional" command
 
 		while read -r command; do
 			if [ "$(exists_command "$command")" = "exists" ]; then
@@ -1298,22 +1298,22 @@ declare_config_file() {
 
 	# Create temporary config file to be able to copy new options to the current config file
 	echo " \
-		# This is the main Bashpack configuration file.
-		# Here are provided defaults options, and their values can be changed.
+		# This is the main $NAME configuration file.
+		# Here are provided defaults options, and their values can be changed according to your needs.
 		# This file can meet several modifications within futures updates.
 		# Any value configured here will remain after updates.
-		# Any comment starting with '#' will be removed.
+		# Any comment starting with '#' that are not part of the CLI will be removed.
 
 		# How to use ?
 		# A single space is necessary to match options with their values:
 		# <option> <value>
 
 		# [option] cli_url
-		# This option allows to change remote repository to get futures updates.
+		# Declare remote repository of the CLI itself to get futures updates.
 		cli_url "https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE"
 
 		# [option] debug
-		# This option allows to enable various debug information displayed during execution
+		# Display various debug information during CLI execution.
 		# - false = deactivated
 		# - true = activated
 		debug false
@@ -1358,9 +1358,9 @@ rotate_config_file() {
 # # Usage: command_config_activation <command> <description> <option>
 # command_config_activation() {
 
-# 	local command="${1}"
-# 	local description="${2}"
-# 	local option="${3}"
+# 	local command="$1"
+# 	local description="$2"
+# 	local option="$3"
 
 
 # 	echo "" >> $file_config
@@ -1426,7 +1426,7 @@ subcommand_list() {
 
 	local installed="[installed]"
 
-	local url="${1}"
+	local url="$1"
 
 
 	sourceslist_install_structure
@@ -1571,7 +1571,7 @@ subcommand_list() {
 # Usage: subcommand_get <command>
 subcommand_get() {
 
-	local command="${1}"
+	local command="$1"
 	local file_command="$dir_commands/$command"
 	# local file_command_tmp="$dir_tmp/$NAME_LOWERCASE-$command"
 
@@ -1632,7 +1632,7 @@ subcommand_get() {
 # Usage: subcommand_delete <command>
 subcommand_delete() {
 
-	local command="${1}"
+	local command="$1"
 	local file_command="$dir_commands/$command"
 
 	# Just init to set it local
@@ -1666,6 +1666,32 @@ subcommand_delete() {
 
 
 
+# Function to get the latest available version from the remote repository
+# Usage: get_latest_version
+get_latest_version() {
+
+	# local cli_url="$(get_config_value $file_config cli_url)"
+	local cli_url="$1"
+
+	# Check from Github if the repository is a Github URL
+	if [ "$(echo $cli_url | grep 'github' | grep 'com')" ]; then
+
+		local url_latest="$(match_url_repository $cli_url github_api)/releases/latest"
+
+		if [ "$(exists_command "curl")" = "exists" ]; then
+			echo "$(curl -s "$url_latest" | grep tag_name | cut -d \" -f 4)"
+
+		elif [ "$(exists_command "wget")" = "exists" ]; then
+			echo "$(wget -q -O- "$url_latest" | grep tag_name | cut -d \" -f 4)"
+		fi
+	else
+		display_error "can't get version from $url_latest."
+	fi
+}
+
+
+
+
 # Update the installed CLI on the system
 #
 # !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1685,31 +1711,10 @@ update_cli() {
 
 
 	# Ensure the $cli_url value is starting with HTTP, unless the rest of the function will not works due to automatic values calculations from URL format
-	if [ "$(echo $cli_url | grep -v '^http://')')" ]; then
+	if [ "$(echo $cli_url | grep -v '^http')" ]; then
 		cli_url="$(echo 'http://'$cli_url)"
 	fi
-
-
-
-	# Function to get the latest available version from the remote repository
-	# Usage: get_latest_version
-	get_latest_version() {
-		# Check from Github if the repository is a Github URL
-		if [ "$(echo $cli_url | grep 'github' | grep 'com')" ]; then
-
-			local url_latest="$(match_url_repository $cli_url github_api)/releases/latest"
-
-			if [ "$(exists_command "curl")" = "exists" ]; then
-				echo "$(curl -s "$url_latest" | grep tag_name | cut -d \" -f 4)"
-
-			elif [ "$(exists_command "wget")" = "exists" ]; then
-				echo "$(wget -q -O- "$url_latest" | grep tag_name | cut -d \" -f 4)"
-			fi
-		else
-			display_info "can't get version from $url_latest."
-		fi
-	}
-
+	
 
 	# Function to update the CLI
 	# Usage: update_process
@@ -1729,18 +1734,19 @@ update_cli() {
 				# Execute the installation from the downloaded file 
 				chmod +x "$downloaded_cli"
 				"$downloaded_cli" -i
+			else
+				display_error "file '$downloaded_cli' not found, aborting."
 			fi
 		fi
 
 		display_info "end of self update."
 	}
 
-	
 
 	# Get the URL of the file to download
 	# If the remote repository is Github
 	if [ "$(echo $cli_url | grep 'github' | grep 'com')" ]; then
-		local url_file_to_download="$(match_url_repository $cli_url github_raw)/refs/tags/$(get_latest_version)/$NAME_LOWERCASE.sh"
+		local url_file_to_download="$(match_url_repository $cli_url github_raw)/refs/tags/$(get_latest_version $cli_url)/$NAME_LOWERCASE.sh"
 
 	# If the remote repository is a basic directory listing web server
 	else
@@ -1755,7 +1761,7 @@ update_cli() {
 		update_process
 	else
 		# Testing if a new version exists on the current publication to avoid reinstall if not.
-		if [ "$(get_latest_version)" = "$VERSION" ]; then
+		if [ "$(get_latest_version $cli_url)" = "$VERSION" ]; then
 			display_info "latest version is already installed ($VERSION)."
 
 		else
@@ -1777,7 +1783,11 @@ update_cli() {
 #		Because it's called by the update function.
 # Usages: 
 #  install_cli
+#  install_cli <url of remote repository>
 install_cli() {
+
+	# Overwrite the cli_url option from the config file
+	local url="$1"
 
 	# Test if all required commands are on the system before install anything
 	if [ "$(verify_dependencies "$CURRENT_CLI" "print-missing-required-command-only")" = "0" ]; then
@@ -1785,7 +1795,7 @@ install_cli() {
 		display_info "starting self installation."
 		detect_cli
 
-	
+
 		# Config directory installation
 		# Checking if the config directory exists and create it if doesn't exists
 		if [ ! -d "$dir_config" ]; then
@@ -1810,26 +1820,64 @@ install_cli() {
 		# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
 		# Remove them to allow installation of the CLI
 		if [ -f "$file_main_alias_1" ] || [ -f "$file_main_alias_2" ]; then
-			display_info "removing old aliases."
 			rm -f $file_main_alias_1
 			rm -f $file_main_alias_2
+			if [ ! -f "$file_main_alias_1" ]; then
+				display_info "file '$file_main_alias_1' removed."
+			fi
+			if [ ! -f "$file_main_alias_2" ]; then
+				display_info "file '$file_main_alias_2' removed."
+			fi
+		fi
+
+
+		# Sources files installation
+		if [ ! -d "$dir_src_cli" ]; then
+			display_info "$dir_src_cli not found, creating it."
+			mkdir -p $dir_src_cli
+		fi
+
+		# Download + install the CLI from another repository...
+		# ...from the given URL
+		if [ "$(echo $url | grep '^http')" ]; then		
+			set_config_value $file_config "cli_url" $url
+			update_cli "force"
+
+		# ...from an official but not "main" repository by using a shortcut
+		elif [ "$url" = "unstable" ] || [ "$url" = "dev" ]; then
+
+			local publication="$url"
+
+			# Get the URL that allows to get the last version number
+			local url="$(match_url_repository https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-$publication github_api)"
+			local latest_version_of_repository="$(get_latest_version $url)"
+
+			# Get the URL that allows to get the CLI file of the given version found before
+			local url="$(match_url_repository https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-$publication github_raw)/refs/tags/$latest_version_of_repository/$NAME_LOWERCASE.sh"
+
+			set_config_value $file_config "cli_url" "$url"
+			update_cli "force"
+
+		# Or do the basic offline installation
+		else
+			cp -f $CURRENT_CLI $file_main
+		fi
+
+		if [ -f "$file_main" ]; then
+			display_info "file '$file_main' installed."
 		fi
 
 
 		# Create aliases to use this script as a CLI
 		# (-f to force overwrite existing)
-		display_info "installing aliases."
 		ln -sf $file_main $file_main_alias_1
 		ln -sf $file_main $file_main_alias_2
-
-			
-		# Sources files installation
-		display_info "installing sources."
-		if [ ! -d "$dir_src_cli" ]; then
-			display_info "$dir_src_cli not found, creating it."
-			mkdir -p $dir_src_cli
+		if [ -f "$file_main_alias_1" ]; then
+			display_info "file '$file_main_alias_1' installed."
 		fi
-		cp $CURRENT_CLI $file_main
+		if [ -f "$file_main_alias_2" ]; then
+			display_info "file '$file_main_alias_2' installed."
+		fi
 
 
 		# Creating License file
@@ -1884,7 +1932,7 @@ install_cli() {
 
 		# Clear temporary files & directories
 		rm -rf $dir_tmp/$NAME_LOWERCASE*
-		
+
 
 		display_info "end of self installation."
 
@@ -1899,9 +1947,8 @@ install_cli() {
 
 # The options (except --help) must be called with root
 case "$1" in
-	# -p|--publication)				loading_process "detect_publication" ;;
-	# -i|--self-install)				loading_process "install_cli $2" ;;		# Critical option, see the comments at function declaration for more info	
-	-i|--self-install)				loading_process "install_cli" ;;		# Critical option, see the comments at function declaration for more info	
+	# -i|--self-install)				loading_process "install_cli" ;;		# Critical option, see the comments at function declaration for more info	
+	-i|--self-install)				loading_process "install_cli $2" ;;		# Critical option, see the comments at function declaration for more info	
 	-u|--self-update)
 		if [ -z "$2" ]; then
 									loading_process "update_cli"			# Critical option, see the comments at function declaration for more info
@@ -1915,17 +1962,6 @@ case "$1" in
 	-l|--list)						subcommand_list ;;
 	-g|--get)						subcommand_get $2 ;;
 	-d|--delete)					subcommand_delete $2 ;;
-	# command)
-	# 	if [ -z "$2" ]; then
-	# 								subcommand_list
-	# 	else
-	# 		case "$2" in
-	# 			-l|--list)			subcommand_list ;;
-	# 			-g|--get)			subcommand_get $3 ;;
-	# 			-d|--delete)		subcommand_delete $3 ;;
-	# 			*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
-	# 		esac
-	# 	fi ;;
 	verify)
 		if [ -z "$2" ]; then
 									loading_process "verify_dependencies $3";  loading_process "verify_files"; loading_process "verify_repository_reachability $(match_url_repository $(get_config_value $file_config cli_url) github_raw)"
