@@ -1319,7 +1319,7 @@ declare_config_file() {
 		# [option] loglevel
 		# Display various debug information during CLI execution.
 		# Available values (all the values can be used at the same time): success, error, info, debug
-		loglevel error
+		loglevel error, success
 		" | sed 's/^[ \t]*//' > "$file"
 }
 
