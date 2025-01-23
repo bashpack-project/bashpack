@@ -41,11 +41,6 @@ export CURRENT_CLI="$0"
 export HELPER="$CURRENT_CLI helper"
 export OWNER="$(ls -l $CURRENT_CLI | cut -d " " -f 3)"
 
-# BASE_URL="https://api.github.com/repos/$NAME_LOWERCASE-project"
-# REPO_URL="$NAME_LOWERCASE-project"
-# HOST_URL_API="https://api.github.com/repos/$REPO_URL"
-# HOST_URL_RAW="https://raw.githubusercontent.com/$REPO_URL"
-
 
 if [ "$(echo $CURRENT_CLI | grep -v '.sh')" ]; then
 	usage_cli="$NAME_ALIAS"
@@ -257,6 +252,7 @@ get_config_value() {
 
 
 
+
 # Display current CLI informations
 # Usage: current_cli_info
 # /!\ This function is intended for development purpose, it's just called in logs to clarify some situations
@@ -268,6 +264,7 @@ current_cli_info() {
 		echo " cli:$CURRENT_CLI url:<todo> ver:$VERSION   "
 	fi
 }
+
 
 
 
@@ -402,6 +399,7 @@ append_log() {
 
 
 
+
 # Find if and where the command exists on the system (like 'which' but compatible with POSIX systems).
 # Usage: posix_which <command>
 posix_which() {
@@ -503,7 +501,6 @@ loading_process() {
 
 
 
-
 # Setting values in configuration file during script execution
 # Usage: set_config_value "<file>" "<option>" "<new value>"
 set_config_value() {
@@ -581,17 +578,6 @@ detect_cli() {
 
 
 
-# # Detect what is the current publication installed
-# detect_publication() {
-# 	if [ -f "$file_current_publication" ]; then
-# 		cat "$file_current_publication" | head -n 1
-# 	else
-# 		display_error "publication not found."
-# 	fi
-# }
-
-
-
 # Permits to verify if the remote repository is reachable with HTTP.
 # Usage: verify_repository_reachability <URL>
 verify_repository_reachability() {
@@ -622,7 +608,6 @@ verify_repository_reachability() {
 		exit
 	fi
 }
-
 
 
 
@@ -841,7 +826,6 @@ match_url_repository() {
 }
 
 
-
 # Helper functions - end
 # --- --- --- --- --- --- ---
 
@@ -863,44 +847,10 @@ fi
 
 
 
-# # Depending on the chosen publication, the repository will be different:
-# # - Main (= stable) releases:	https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE
-# # - Unstable releases:			https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-unstable
-# # - Dev releases:				https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-dev
-# if [ -f "$file_config" ]; then
-# 	PUBLICATION="$(get_config_value "$file_config" "publication")"
-# else
-# 	PUBLICATION="main"
-# fi
-
-# case "$PUBLICATION" in
-# 	unstable|dev)
-# 		URL_API="$HOST_URL_API/$NAME_LOWERCASE-$PUBLICATION"
-# 		URL_RAW="$HOST_URL_RAW/$NAME_LOWERCASE-$PUBLICATION"
-# 		;;
-# 	main)
-# 		URL_API="$HOST_URL_API/$NAME_LOWERCASE"
-# 		URL_RAW="$HOST_URL_RAW/$NAME_LOWERCASE"
-# 		;;
-# 	*)
-# 		display_info "publication '$PUBLICATION' not found, using default 'main'."
-# 		PUBLICATION="main"
-# 		echo "main" > $file_current_publication
-# 		URL_API="$HOST_URL_API/$NAME_LOWERCASE"
-# 		URL_RAW="$HOST_URL_RAW/$NAME_LOWERCASE"
-# 		;;
-# esac
-
-# URL_API_COMMAND="$HOST_URL_API/commands"
-URL_RAW_SUBCOMMAND="$HOST_URL_RAW/commands/refs/heads/main/commands"
-
-
-
-
 # Delete the installed command from the system
 # Usages: 
-# - delete_cli
-# - delete_cli "exclude_main"
+#  delete_cli
+#  delete_cli "exclude_main"
 delete_cli() {
 	
 	# $exclude_main permits to not delete main command "$NAME_ALIAS" and "$NAME_LOWERCASE".
@@ -975,9 +925,9 @@ delete_systemd() {
 				rm -f $file
 
 				if [ -f $file ]; then
-					display_error "$file has not been removed."
+					display_error "$file not removed."
 				else
-					display_success "$file has been removed."
+					display_info "$file removed."
 				fi
 			else
 				display_error "$file not found."
@@ -986,21 +936,6 @@ delete_systemd() {
 
 		systemctl daemon-reload
 	fi
-}
-
-
-
-
-# Helper function to assemble all functions that delete something
-# Usages: 
-# - delete_all
-# - delete_all "exclude_main" (Please check the explaination of $exclude_main at the delete_cli() function declaration)
-delete_all() {
-	
-	local exclude_main=$1
-
-	delete_systemd && delete_cli $1
-	# delete_cli $1
 }
 
 
@@ -1408,7 +1343,7 @@ sourceslist_install_structure() {
 	# Ensure that sources list exists for subcommands
 	if [ ! -f "$file_sourceslist_subcommands" ] || [ -z "$file_sourceslist_subcommands" ]; then
 		display_info "$file_sourceslist_subcommands not found, creating it."
-		echo "$URL_RAW_SUBCOMMAND" > $file_sourceslist_subcommands
+		echo "$(match_url_repository "https://github.com/$NAME_LOWERCASE-project/commands" github_raw)/refs/heads/main/commands" > $file_sourceslist_subcommands
 	fi
 
 	# Ensure that registry exists for subcommands
@@ -1960,7 +1895,7 @@ case "$1" in
 				-f|--force)			loading_process "update_cli force" ;;	# Shortcut to quickly reinstall the CLI
 			esac
 		fi ;;
-	--self-delete)					loading_process "delete_all" ;;
+	--self-delete)					delete_systemd && delete_cli ;;
 	--logs)							get_logs "$file_log_main" ;;
 	-l|--list)						subcommand_list ;;
 	-g|--get)						subcommand_get $2 ;;
