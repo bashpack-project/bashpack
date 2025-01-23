@@ -1987,20 +1987,20 @@ case "$1" in
 				display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit
 			else
 				case "$2" in
-					append_log)						append_log "$@" ;;
-					create_automation)				create_automation "$@" ;;
-					display_error)					display_error "$@" ;;
-					display_info)					display_info "$@" ;;
-					display_success)				display_success "$@" ;;
-					download_file)					download_file "$@" ;;
-					exists_command)					exists_command "$@" ;;
-					file_checksum)					file_checksum "$@" ;;
-					get_config_value)				get_config_value "$@" ;;
-					get_logs)						get_logs "$@" ;;
-					loading_process)				loading_process "$@" ;;
-					match_url_repository)			match_url_repository "$@" ;;
-					sanitize_confirmation)			sanitize_confirmation "$@" ;;
-					set_config_value)				set_config_value "$@" ;;
+					append_log)						append_log "$3" ;;
+					create_automation)				create_automation "$3" ;;
+					display_error)					display_error "$3" "$4" ;;
+					display_info)					display_info "$3" "$4" ;;
+					display_success)				display_success "$3" "$4" ;;
+					download_file)					download_file "$3" "$4" "$5" ;;
+					exists_command)					exists_command "$3" ;;
+					file_checksum)					file_checksum "$3" ;;
+					get_config_value)				get_config_value "$3" "$4" ;;
+					get_logs)						get_logs "$3" ;;
+					loading_process)				loading_process "$3" ;;
+					match_url_repository)			match_url_repository "$3" "$4" ;;
+					sanitize_confirmation)			sanitize_confirmation "$3" ;;
+					set_config_value)				set_config_value "$3" "$4" "$5" ;;
 					*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
 				esac
 			fi
