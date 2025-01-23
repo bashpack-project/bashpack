@@ -611,7 +611,7 @@ verify_repository_reachability() {
 	http_family="$(echo $http_code | cut -c 1)"
 	if [ "$http_family" = "1" ] || [ "$http_family" = "2" ] || [ "$http_family" = "3" ]; then
 		echo "true" > $file_repository_reachable_tmp
-		display_success "[HTTP $http_code] $url is reachable."
+		display_info "[HTTP $http_code] $url is reachable."
 	else 
 		echo "false" > $file_repository_reachable_tmp
 		if [ -z $http_code ]; then
