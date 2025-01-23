@@ -60,6 +60,9 @@ export file_config="$dir_config/$NAME_LOWERCASE.conf"
 export dir_log="/var/log/$NAME_LOWERCASE"
 dir_src_cli="/opt/$NAME_LOWERCASE"
 
+
+
+
 # Automatically detect the best PATH for the installation 
 # Usage: define_installation_path
 define_installation_path() {
@@ -91,6 +94,7 @@ dir_bin="$(define_installation_path)"
 
 
 
+
 export archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
 export archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
 
@@ -102,7 +106,7 @@ export file_main="$dir_src_cli/$NAME_LOWERCASE.sh"
 export file_main_alias_1="$dir_bin/$NAME_LOWERCASE"
 export file_main_alias_2="$dir_bin/$NAME_ALIAS"
 
-# file_current_publication="$dir_config/.current_publication"
+
 
 
 # Log creations
@@ -259,7 +263,7 @@ get_config_value() {
 current_cli_info() {
 
 	# "False" option doesn't really exist as described in the config file, anything other that "true" will just disable this function.
-	if [ "$(get_config_value $file_config loglevel | grep debug)" ]; then
+	if [ "$(get_config_value $file_config display_loglevel | grep debug)" ]; then
 		# echo " cli:$CURRENT_CLI pub:$PUBLICATION ver:$VERSION   "
 		echo " cli:$CURRENT_CLI url:<todo> ver:$VERSION   "
 	fi
@@ -269,20 +273,21 @@ current_cli_info() {
 
 
 # Display always the same message in error messages.
-# Usage: display_error <message>
-# Usage: display_error <message> <log file to duplicate the message>
-display_error() {
+# Usages:
+#  log_error <message>
+#  log_error <message> <log file to duplicate the message>
+log_error() {
 
 	local format="$now error:    $(current_cli_info) $1"
 
-	if [ "$(get_config_value $file_config loglevel | grep error)" ]; then
-		if [ -n "$2" ]; then
-			echo $1
-			echo "$format" >> "$file_log_main" "$2"
-		else
-			echo $1
-			echo "$format" >> "$file_log_main"
-		fi
+	if [ "$(get_config_value $file_config display_loglevel | grep error)" ]; then
+		echo $1
+	fi
+
+	if [ -n "$2" ]; then
+		echo "$format" >> "$2"
+	else
+		echo "$format" >> "$file_log_main"
 	fi
 }
 
@@ -290,20 +295,21 @@ display_error() {
 
 
 # Display always the same message in success messages.
-# Usage: display_success <message>
-# Usage: display_success <message> <log file to duplicate the message>
-display_success() {
+# Usages:
+#  log_success <message>
+#  log_success <message> <log file to duplicate the message>
+log_success() {
 
 	local format="$now success:  $(current_cli_info) $1"
 
-	if [ "$(get_config_value $file_config loglevel | grep success)" ]; then
-		if [ -n "$2" ]; then
-			echo $1
-			echo "$format" >> "$file_log_main" "$2"
-		else
-			echo $1
-			echo "$format" >> "$file_log_main"
-		fi
+	if [ "$(get_config_value $file_config display_loglevel | grep success)" ]; then
+		echo $1
+	fi
+
+	if [ -n "$2" ]; then
+		echo "$format" >> "$2"
+	else
+		echo "$format" >> "$file_log_main"
 	fi
 }
 
@@ -311,20 +317,21 @@ display_success() {
 
 
 # Display always the same message in info messages.
-# Usage: display_info <message>
-# Usage: display_info <message> <log file to duplicate the message>
-display_info() {
+# Usages:
+#  log_info <message>
+#  log_info <message> <log file to duplicate the message>
+log_info() {
 
 	local format="$now info:     $(current_cli_info) $1"
 
-	if [ "$(get_config_value $file_config loglevel | grep info)" ]; then
-		if [ -n "$2" ]; then
-			echo $1
-			echo "$format" >> "$file_log_main" "$2"
-		else
-			echo $1
-			echo "$format" >> "$file_log_main"
-		fi
+	if [ "$(get_config_value $file_config display_loglevel | grep info)" ]; then
+		echo $1
+	fi
+
+	if [ -n "$2" ]; then
+		echo "$format" >> "$2"
+	else
+		echo "$format" >> "$file_log_main"
 	fi
 }
 
@@ -332,8 +339,9 @@ display_info() {
 
 
 # Write output of a command in logs
-# Usage: <command> | append_log					(append to the default file)
-# Usage: <command> | append_log <log file>		(append to the given file)
+# Usages:
+#  <command> | append_log					(append to the default file)
+#  <command> | append_log <log file>		(append to the given file)
 append_log() {
 
 	local file_log="$1"
@@ -342,7 +350,7 @@ append_log() {
 	# local command="${0}"
 	# $command & local pid=$!
 	# local process_name="$(ps -o cmd -fp $pid | cut -d " " -f 1 -s)"
-	# display_info "launching: $command"
+	# log_info "launching: $command"
 
 
 	local output
@@ -387,13 +395,40 @@ append_log() {
 	# 	echo $line
 	# done
 
-	exec 3>&1
+	# exec 3>&1
 
 
-	sed "s/^/$now op.sys:   $(current_cli_info) /"
+	# local format="$now op.sys:     $(current_cli_info) "
+
+	# sed "s/^/$now op.sys:   $(current_cli_info) /"
+
+	# sed 's/\(*\)/\1/'
 
 
-	exec 3>&-
+
+
+	# The trick is just to call the text in a sed command that doesn't do anything to display it, and add another sed to format for the logs files
+	local text="$(sed 's/\(*\)/\1/')"
+	
+
+	if [ -n "$2" ]; then
+		echo $text
+		echo $text | sed "s/^/$now op.sys:   $(current_cli_info) /" >> "$2"
+	else
+		echo $text
+		echo $text | sed "s/^/$now op.sys:   $(current_cli_info) /" >> "$file_log_main"
+	fi
+
+
+	# if [ -n "$2" ]; then
+	# 	sed "s/^/$now op.sys:   $(current_cli_info) /" >> "$2"
+	# else
+	# 	sed "s/^/$now op.sys:   $(current_cli_info) /" >> "$file_log_main"
+	# fi
+
+
+
+	# exec 3>&-
 
 }
 
@@ -462,7 +497,7 @@ exists_command() {
 	if [ ! -z "$(posix_which "$command")" ]; then
 		echo "exists"
 	else
-		display_error "'$command' command not found"
+		log_error "'$command' command not found"
 	fi
 }
 
@@ -510,7 +545,7 @@ set_config_value() {
 	local value_new="$3"
 	local value_old="$(get_config_value $file $option)"
 
-	display_info "set '$option' from '$value_old' to '$value_new'."
+	log_info "set '$option' from '$value_old' to '$value_new'."
 
 	# Drop if the option or the value are not given
 	if [ -n "$option" ] || [ -n "$value_new" ]; then
@@ -531,7 +566,7 @@ set_config_value() {
 			echo "$option $value_new" > "$file"
 		fi
 	else
-		display_error "missing option/value combination."
+		log_error "missing option/value combination."
 	fi
 }
 
@@ -553,7 +588,7 @@ sanitize_confirmation() {
 # Usage: get_logs <file>
 get_logs() {
 
-	display_info "getting logs from $1"
+	log_info "getting logs from $1"
 
 	if [ "$(exists_command "less")" = "exists" ]; then
 		cat "$1" | less +G
@@ -569,8 +604,8 @@ get_logs() {
 detect_cli() {
 	if [ "$(exists_command "$NAME_LOWERCASE")" = "exists" ]; then
 		if [ -n "$($NAME_LOWERCASE --version)" ]; then
-			# display_info "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) detected at $(posix_which $NAME_LOWERCASE)"
-			display_info "$NAME $($NAME_ALIAS --version) detected at $(posix_which $NAME_LOWERCASE)"
+			# log_info "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) detected at $(posix_which $NAME_LOWERCASE)"
+			log_info "$NAME $($NAME_ALIAS --version) detected at $(posix_which $NAME_LOWERCASE)"
 		fi
 	fi
 }
@@ -584,26 +619,26 @@ verify_repository_reachability() {
 
 	local url="$1"
 
-	display_info "try reach: $url"
+	log_info "try reach: $url"
 
 	if [ "$(exists_command "curl")" = "exists" ]; then
 		http_code="$(curl -s -k -L -I -o /dev/null -w "%{response_code}" $url)"
 	elif [ "$(exists_command "wget")" = "exists" ]; then
 		http_code="$(wget --spider --server-response --no-check-certificate "$url" 2>&1 | awk '/^  HTTP/{print $2}' | tail -n 1)"
 	else
-		display_error "can't get HTTP code with curl or wget."
+		log_error "can't get HTTP code with curl or wget."
 	fi
 
 	http_family="$(echo $http_code | cut -c 1)"
 	if [ "$http_family" = "1" ] || [ "$http_family" = "2" ] || [ "$http_family" = "3" ]; then
 		echo "true" > $file_repository_reachable_tmp
-		display_info "[HTTP $http_code] $url is reachable."
+		log_info "[HTTP $http_code] $url is reachable."
 	else 
 		echo "false" > $file_repository_reachable_tmp
 		if [ -z $http_code ]; then
-			display_error "$url is not reachable."
+			log_error "$url is not reachable."
 		else
-			display_error "[HTTP $http_code] $url is not reachable."
+			log_error "[HTTP $http_code] $url is not reachable."
 		fi
 		exit
 	fi
@@ -628,22 +663,22 @@ download_file() {
 
 		# Try to download with curl if exists
 		if [ "$(exists_command "curl")" = "exists" ]; then
-			display_info "downloading sources from '$file_url' with curl."
+			log_info "downloading sources from '$file_url' with curl."
 			loading_process "curl -sLk $file_url -o $file_tmp"
 			
 		# Try to download with wget if exists
 		elif [ "$(exists_command "wget")" = "exists" ]; then
-			display_info "downloading sources from '$file_url' with wget."
+			log_info "downloading sources from '$file_url' with wget."
 			loading_process "wget -q --no-check-certificate $file_url -O $file_tmp"
 
 		else
-			display_error "could not download '$file_url' with curl or wget."
+			log_error "could not download '$file_url' with curl or wget."
 		fi
 
 
 		# Success message
 		if [ -f "$file_tmp" ]; then
-			display_success "file '$file_tmp' downloaded."
+			log_success "file '$file_tmp' downloaded."
 
 			# Test if the "$dir_extract_tmp" variable is empty to know if we downloaded an archive that we need to extract
 			if [ -n "$dir_extract_tmp" ]; then
@@ -659,11 +694,11 @@ download_file() {
 						tar -xf "$file_tmp" -C "$dir_extract_tmp" --strip-components 1
 					fi
 				else
-					display_error "file '$file_url' is a non-working tarball and cannot be used, deleting it."
+					log_error "file '$file_url' is a non-working tarball and cannot be used, deleting it."
 				fi
 			fi
 		else
-			display_error "file '$file_tmp' not downloaded."
+			log_error "file '$file_tmp' not downloaded."
 		fi
 		
 	fi
@@ -684,7 +719,7 @@ create_automation() {
 
 	# Automatically detect command to launch
 	if [ -z "$1" ]; then
-		display_error "missing subcommand name."
+		log_error "missing subcommand name."
 	else
 		local command="$NAME_LOWERCASE $1"
 	fi
@@ -734,8 +769,8 @@ create_automation() {
 			" | sed 's/^[ \t]*//' > "$dir_systemd/$name.timer"
 
 
-		systemctl daemon-reload
-		systemctl enable $name.timer > /dev/null
+		systemctl -q daemon-reload
+		systemctl -q enable $name.timer
 		# systemctl enable $name.timer
 	}
 
@@ -747,10 +782,10 @@ create_automation() {
 		# fi
 
 	elif [ "$(exists_command "cron")" = "exists" ]; then
-		display_error "cron has not been implemented yet."
+		log_error "cron has not been implemented yet."
 
 	else
-		display_error "no automation tool available."
+		log_error "no automation tool available."
 
 	fi
 }
@@ -772,7 +807,7 @@ file_checksum() {
 		elif [ "$(exists_command "wget")" = "exists" ]; then
 			wget -q -O - --no-check-certificate $url | cksum -a sha1 | sed 's/^.*= //'
 		else
-			display_error "can't get '$url' remote checksum with curl or wget."
+			log_error "can't get '$url' remote checksum with curl or wget."
 		fi
 	else
 		cat $1 | cksum -a sha1 | sed 's/^.*= //'
@@ -861,7 +896,7 @@ delete_cli() {
 	local exclude_main="$1"
 
 	if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
-		display_error "$NAME is not installed on your system."
+		log_error "$NAME is not installed on your system."
 	else
 		detect_cli
 
@@ -884,23 +919,24 @@ delete_cli() {
 
 		else
 			# Delete everything
-			rm -rf $dir_config
 			rm -rf $file_autocompletion_1
 			rm -rf $file_autocompletion_2
 			rm -rf $file_main_alias_1
 			rm -rf $file_main_alias_2
 			rm -rf $dir_src_cli
 			rm -rf $dir_log
+			rm -rf $dir_config
 		fi
 
 		if [ -f "$file_main" ]; then
 			if [ "$exclude_main" = "exclude_main" ]; then
-				display_success "all sources removed excepted $file_main."
+				log_success "all sources removed excepted $file_main."
 			else
-				display_error "$NAME $VERSION located at $(posix_which $NAME_ALIAS) has not been uninstalled." && exit
+				log_error "$NAME $VERSION located at $(posix_which $NAME_ALIAS) has not been uninstalled." && exit
 			fi
 		else
-			display_success "uninstallation completed."
+			# Simple echo here and not a display function, because there will no more logs files
+			echo "uninstallation completed."
 		fi
 	fi
 }
@@ -916,25 +952,25 @@ delete_systemd() {
 		# Stop, disable and delete all systemd units
 		for file in $(ls $dir_systemd/$NAME_LOWERCASE* | grep ".timer"); do
 			if [ -f $file ]; then
-				display_info "$file found."
+				log_info "$file found."
 
 				local unit="$(basename "$file")"
 
-				systemctl stop $unit
-				systemctl disable $unit
+				systemctl -q stop $unit
+				systemctl -q disable $unit
 				rm -f $file
 
 				if [ -f $file ]; then
-					display_error "$file not removed."
+					log_error "$file not removed."
 				else
-					display_info "$file removed."
+					log_info "$file removed."
 				fi
 			else
-				display_error "$file not found."
+				log_error "$file not found."
 			fi
 		done
 
-		systemctl daemon-reload
+		systemctl -q daemon-reload
 	fi
 }
 
@@ -947,7 +983,7 @@ delete_systemd() {
 #  verify_files <file to test>
 verify_files() {
 
-	display_info  "checking if required files and directories are available on the system."
+	log_info  "checking if required files and directories are available on the system."
 
 	local file_to_test="$1"
 	if [ -z "$file_to_test" ]; then
@@ -980,16 +1016,16 @@ verify_files() {
 				if [ "$previous_path" != "$path_variable" ]; then
 
 					if [ -f "$path_value" ]; then
-						# display_success "found file -> $path_variable -> $path_value"
-						display_success "found file -> $path_value"
+						# log_success "found file -> $path_variable -> $path_value"
+						log_success "found file -> $path_value"
 						found=$((found+1))
 					elif [ -d "$path_value" ]; then
-						# display_success "found dir  -> $path_variable -> $path_value"
-						display_success "found dir. -> $path_value"
+						# log_success "found dir  -> $path_variable -> $path_value"
+						log_success "found dir. -> $path_value"
 						found=$((found+1))
 					else
-						# display_error "miss.      -> $path_variable -> $path_value"
-						display_error "miss.      -> $path_value"
+						# log_error "miss.      -> $path_variable -> $path_value"
+						log_error "miss.      -> $path_value"
 						missing=$((missing+1))
 					fi
 				
@@ -1003,10 +1039,10 @@ verify_files() {
 		fi
 	done < "$file_to_test"
 
-	display_info "$found/$total paths found."
+	log_info "$found/$total paths found."
 
 	if [ "$missing" != "0" ]; then
-		display_error "at least one file or directory is missing."
+		log_error "at least one file or directory is missing."
 	fi
 }
 
@@ -1028,14 +1064,14 @@ verify_dependencies() {
 	if [ "$print_missing_required_command_only" = "print-missing-required-command-only" ]; then
 		print_missing_required_command_only="true"
 	else
-		display_info "checking if required commands are available on the system."
+		log_info "checking if required commands are available on the system."
 	fi
 
 	
 	# Must store the commands in a file to be able to use the counters
 	local file_tmp_all="$dir_tmp/$NAME_LOWERCASE-commands-all"
 	local file_tmp_required="$dir_tmp/$NAME_LOWERCASE-commands-required"
-	local file_tmp_optional="$dir_tmp/$NAME_LOWERCASE-commands-optional"
+	local file_tmp_external="$dir_tmp/$NAME_LOWERCASE-commands-external"
 
 	local found=0
 	local missing=0
@@ -1047,19 +1083,21 @@ verify_dependencies() {
 	# Usage: find_command <file>
 	find_command() {
 		local file_tmp="$1"
-		local type="$2"		# "required" or "optional" command
+		local type="$2"		# "required" or "external" command
 
 		while read -r command; do
 			if [ "$(exists_command "$command")" = "exists" ]; then
 
 				if [ "$print_missing_required_command_only" != "true" ]; then
-					display_success "found ($type) $command"
+					# log_info "found ($type) $command"
+					echo "found ($type) $command" | append_log
 				fi
 
 				found=$((found+1))
 			else 
 				if [ "$print_missing_required_command_only" != "true" ]; then
-					display_error "miss. ($type) $command"
+					# log_info "miss. ($type) $command"
+					echo "miss. ($type) $command" | append_log
 				fi
 
 				missing=$((missing+1))
@@ -1175,46 +1213,35 @@ verify_dependencies() {
 		| sort -ud > $file_tmp_all
 
 
-
-	# # Manually set optional commands
-	# echo "\
-	# 	less
-	# 	pkg-config
-	# 	curl
-	# 	wget
-	# 	systemctl \
-	# " | sort -d | tr -d "[:blank:]" > $file_tmp_optional
-
-
-	# Automatically detect all optional commands
+	# Automatically detect all external commands
 	# Get "command" from this pattern: exists_command "command"
 	cat $file_to_test \
 		| sed 's/#.*$//' \
 		| grep 'exists_command "' \
 		| sed 's/.*exists_command "\([a-z-]*\)".*/\1/' \
 		| grep -v 'exists_command' \
-		| sort -ud > $file_tmp_optional
+		| sort -ud > $file_tmp_external
 
 
 	# Get required commands
-	# local commands_required="$(diff --changed-group-format='%<' --unchanged-group-format='' $file_tmp_all $file_tmp_optional | cut -d " " -f 2)"
-	local commands_required="$(comm -23 $file_tmp_all $file_tmp_optional)"
+	# local commands_required="$(diff --changed-group-format='%<' --unchanged-group-format='' $file_tmp_all $file_tmp_external | cut -d " " -f 2)"
+	local commands_required="$(comm -23 $file_tmp_all $file_tmp_external)"
 	echo "$commands_required" | sort -d > $file_tmp_required
 
 
 
 	find_command $file_tmp_required "required"
-	find_command $file_tmp_optional "optional"
+	find_command $file_tmp_external "external"
 
 
 	if [ "$print_missing_required_command_only" != "true" ]; then
 		
-		display_info "$found/$total commands found."	
+		log_info "$found/$total commands found."	
 
 		if [ "$missing_required" = "0" ] && [ "$missing" != "0" ]; then
-			display_error "at least one optional command is missing but will not prevent proper functioning."
+			log_error "at least one external command is missing but will not prevent proper functioning."
 		elif [ "$missing_required" != "0" ]; then
-			display_error "at least one required command is missing."
+			log_error "at least one required command is missing."
 		fi
 	else
 		echo $missing_required		
@@ -1223,7 +1250,7 @@ verify_dependencies() {
 
 	rm $file_tmp_all
 	rm $file_tmp_required
-	rm $file_tmp_optional
+	rm $file_tmp_external
 }
 
 
@@ -1251,10 +1278,11 @@ declare_config_file() {
 		# Declare remote repository of the CLI itself to get futures updates.
 		cli_url "https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE"
 
-		# [option] loglevel
+		# [option] display_loglevel
 		# Display various debug information during CLI execution.
-		# Available values (all the values can be used at the same time): success, error, info, debug
-		loglevel error, success
+		# Available values: error,success,info,debug
+		# All the values can be used at the same time. Don't set any whitespace.
+		display_loglevel error,success,info
 		" | sed 's/^[ \t]*//' > "$file"
 }
 
@@ -1330,19 +1358,19 @@ sourceslist_install_structure() {
 
 	# Ensure that sources directory exists
 	if [ ! -d "$dir_sourceslist" ]; then
-		display_info "$dir_sourceslist not found, creating it."
+		log_info "$dir_sourceslist not found, creating it."
 		mkdir -p $dir_sourceslist
 	fi
 
 	# # Ensure that sources list exists for CLI
 	# if [ ! -f "$file_sourceslist_cli" ] || [ -z "$file_sourceslist_cli" ]; then
-	# 	display_info "$file_sourceslist_cli not found, creating it."
+	# 	log_info "$file_sourceslist_cli not found, creating it."
 	# 	echo "$URL_RAW" > $file_sourceslist_cli
 	# fi
 
 	# Ensure that sources list exists for subcommands
 	if [ ! -f "$file_sourceslist_subcommands" ] || [ -z "$file_sourceslist_subcommands" ]; then
-		display_info "$file_sourceslist_subcommands not found, creating it."
+		log_info "$file_sourceslist_subcommands not found, creating it."
 		echo "$(match_url_repository "https://github.com/$NAME_LOWERCASE-project/commands" github_raw)/refs/heads/main/commands" > $file_sourceslist_subcommands
 	fi
 
@@ -1397,7 +1425,7 @@ subcommand_list() {
 				elif [ "$(exists_command "wget")" = "exists" ]; then			
 					loading_process "wget -q --no-check-certificate $url -O $list_tmp"
 				else
-					display_error "can't list remotes commands with curl or wget."
+					log_error "can't list remotes commands with curl or wget."
 				fi
 			fi
 			rm -f $file_repository_reachable_tmp
@@ -1468,7 +1496,7 @@ subcommand_list() {
 		fi
 
 	else
-		display_error "'$file_sourceslist_subcommands' is empty."
+		log_error "'$file_sourceslist_subcommands' is empty."
 	fi
 
 
@@ -1481,7 +1509,7 @@ subcommand_list() {
 	# Finally display all the subcommands and specify if already installed
 	if [ -f "$list_installed_tmp" ] && [ -s "$list_installed_tmp" ]; then
 
-		display_info "reading registry."
+		log_info "reading registry."
 		
 		while read -r command; do
 			if [ "$command" != "" ]; then
@@ -1497,7 +1525,7 @@ subcommand_list() {
 
 		rm -f $list_installed_tmp
 	else
-		display_info "no command installed."
+		log_info "no command installed."
 	fi
 
 }
@@ -1524,11 +1552,11 @@ subcommand_get() {
 
 
 	if [ -z "$command" ]; then
-		display_info "please specify a command from the list below."
+		log_info "please specify a command from the list below."
 		subcommand_list
 
 	elif [ -f "$file_command" ]; then
-		display_info "command '$command' is already installed."
+		log_info "command '$command' is already installed."
 
 	else
 		
@@ -1555,10 +1583,10 @@ subcommand_get() {
 				$CURRENT_CLI $command init_command
 			fi
 
-			display_success "command '$command' has been installed."
-			display_info "'$NAME_ALIAS $command --help' to display help."
+			log_success "command '$command' has been installed."
+			log_info "'$NAME_ALIAS $command --help' to display help."
 		else
-			display_error "command '$command' has not been installed."
+			log_error "command '$command' has not been installed."
 		fi
 	fi
 }
@@ -1588,15 +1616,15 @@ subcommand_delete() {
 			sed -i '/\[command\] firewall/,/^\s*$/{d}' $file_config
 
 			if [ -f "$file_command" ]; then
-				display_error "command '$command' has not been removed."
+				log_error "command '$command' has not been removed."
 			else
-				display_success "command '$command' has been removed."
+				log_success "command '$command' has been removed."
 			fi
 		else
-			display_info "uninstallation aborted."
+			log_info "uninstallation aborted."
 		fi
 	else
-		display_error "command '$command' not found."
+		log_error "command '$command' not found."
 	fi
 
 }
@@ -1623,7 +1651,7 @@ get_latest_version() {
 			echo "$(wget -q -O- "$url_latest" | grep tag_name | cut -d \" -f 4)"
 		fi
 	else
-		display_error "can't get version from $url_latest."
+		log_error "can't get version from $url_latest."
 	fi
 }
 
@@ -1658,7 +1686,7 @@ update_cli() {
 	# Usage: update_process
 	update_process() {
 
-		display_info "starting self update."
+		log_info "starting self update."
 
 		if [ ! -z "$url_file_to_download" ]; then
 	
@@ -1673,11 +1701,11 @@ update_cli() {
 				chmod +x "$downloaded_cli"
 				"$downloaded_cli" -i
 			else
-				display_error "file '$downloaded_cli' not found, aborting."
+				log_error "file '$downloaded_cli' not found, aborting."
 			fi
 		fi
 
-		display_info "end of self update."
+		log_info "end of self update."
 	}
 
 
@@ -1695,12 +1723,12 @@ update_cli() {
 	# Option to force update (just bypass the version check)
 	# If the newest version already installed, it will just install it again
 	if [ "$force" = "force" ]; then
-		display_info "using force option."
+		log_info "using force option."
 		update_process
 	else
 		# Testing if a new version exists on the current publication to avoid reinstall if not.
 		if [ "$(get_latest_version $cli_url)" = "$VERSION" ]; then
-			display_info "latest version is already installed ($VERSION)."
+			log_info "latest version is already installed ($VERSION)."
 
 		else
 			update_process
@@ -1730,28 +1758,41 @@ install_cli() {
 	# Test if all required commands are on the system before install anything
 	if [ "$(verify_dependencies "$CURRENT_CLI" "print-missing-required-command-only")" = "0" ]; then
 
-		display_info "starting self installation."
-		detect_cli
+		# Must store the log text in a variable because the display_loglevel option doesn't exist for now (because config file doesn't exist)
+		local future_log_start_install="starting self installation"
+
+		# detect_cli
 
 
 		# Config directory installation
 		# Checking if the config directory exists and create it if doesn't exists
 		if [ ! -d "$dir_config" ]; then
-			display_info "$dir_config not found, creating it."
+			# Must store the log text in a variable because the display_loglevel option doesn't exist for now (because config file doesn't exist)
+			local future_log_dir_config="$dir_config not found, creating it."
+
 			mkdir -p $dir_config
 		fi
 
 
 		# Must testing if config file exists to avoid overwrite user customizations 
 		if [ ! -f "$file_config" ]; then
-			display_info "$file_config not found, creating it. "
+			# Must store the log text in a variable because the display_loglevel option doesn't exist for now (because config file doesn't exist)
+			local future_log_file_config="$file_config not found, creating it. "
 
 			declare_config_file "$file_config"
 		else
-			display_info "$file_config already exists, installing new file and inserting current configured options."
+			log_info "$file_config already exists, installing new file and inserting current configured options."
 
 			declare_config_file "$dir_tmp/$NAME_LOWERCASE.conf"
 			rotate_config_file
+		fi
+
+
+		# Test again if config file exists to be 100% sure to be able to use the display_loglevel 
+		if [ -f "$file_config" ]; then
+			log_info "$future_log_start_install"
+			log_info "$future_log_dir_config"
+			log_info "$future_log_file_config"
 		fi
 
 
@@ -1761,17 +1802,17 @@ install_cli() {
 			rm -f $file_main_alias_1
 			rm -f $file_main_alias_2
 			if [ ! -f "$file_main_alias_1" ]; then
-				display_info "file '$file_main_alias_1' removed."
+				log_info "file '$file_main_alias_1' removed."
 			fi
 			if [ ! -f "$file_main_alias_2" ]; then
-				display_info "file '$file_main_alias_2' removed."
+				log_info "file '$file_main_alias_2' removed."
 			fi
 		fi
 
 
 		# Sources files installation
 		if [ ! -d "$dir_src_cli" ]; then
-			display_info "$dir_src_cli not found, creating it."
+			log_info "$dir_src_cli not found, creating it."
 			mkdir -p $dir_src_cli
 		fi
 
@@ -1802,7 +1843,7 @@ install_cli() {
 		fi
 
 		if [ -f "$file_main" ]; then
-			display_info "file '$file_main' installed."
+			log_info "file '$file_main' installed."
 		fi
 
 
@@ -1811,10 +1852,10 @@ install_cli() {
 		ln -sf $file_main $file_main_alias_1
 		ln -sf $file_main $file_main_alias_2
 		if [ -f "$file_main_alias_1" ]; then
-			display_info "file '$file_main_alias_1' installed."
+			log_info "file '$file_main_alias_1' installed."
 		fi
 		if [ -f "$file_main_alias_2" ]; then
-			display_info "file '$file_main_alias_2' installed."
+			log_info "file '$file_main_alias_2' installed."
 		fi
 
 
@@ -1825,14 +1866,14 @@ install_cli() {
 		# # Autocompletion installation
 		# # Install autocompletion only if the directory has been found.
 		# if [ -n "$dir_autocompletion" ]; then
-		# 	display_info "installing autocompletion."
+		# 	log_info "installing autocompletion."
 		# 	cp "$archive_dir_tmp/completion" $file_autocompletion_1
 		# 	cp "$archive_dir_tmp/completion" $file_autocompletion_2
 		# fi
 
 
 		# Self update automation
-		display_info "installing self update automation."
+		log_info "installing self update automation."
 		# Since 3.0.0, self update systemd unit name has changed
 		if [ "$dir_systemd/$NAME_LOWERCASE-updates.service" ]; then
 			rm -f "$dir_systemd/$NAME_LOWERCASE-updates.service"
@@ -1860,11 +1901,11 @@ install_cli() {
 
 		# Success message
 		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
-			display_success "'$NAME_ALIAS' installed."
+			log_success "'$NAME_ALIAS' installed."
 		else
 			# Remove config dir that might have been created
 			rm -rf "$dir_config"
-			display_error "$NAME installation failed."
+			log_error "$NAME installation failed."
 		fi
 
 
@@ -1872,7 +1913,7 @@ install_cli() {
 		rm -rf $dir_tmp/$NAME_LOWERCASE*
 
 
-		display_info "end of self installation."
+		log_info "end of self installation."
 
 	else
 		verify_dependencies
@@ -1909,27 +1950,27 @@ case "$1" in
 				-d|--dependencies)	loading_process "verify_dependencies $3" ;;
 				# -r|--repository)	loading_process "verify_repository_reachability "$URL_RAW/main/$NAME_LOWERCASE.sh""; loading_process "verify_repository_reachability "$URL_API/tarball/$VERSION"" ;;
 				-r|--repository)	loading_process "verify_repository_reachability $(match_url_repository $(get_config_value $file_config cli_url) github_raw)" ;;
-				*)					display_error "unknown option [$1] '$2'." && echo "$USAGE" && exit ;;
+				*)					log_error "unknown option [$1] '$2'." && echo "$USAGE" && exit ;;
 			esac
 		fi ;;
 	# 'self' is a word used in many operations for the CLI, it's preferable to not allow it in subcommand name
-	self)							display_error "reserved operation." && exit ;;
+	self)							log_error "reserved operation." && exit ;;
 	# Since "export -f" is not available in Shell, the helper command below permits to use commands from this file in sub scripts
 	helper)
 		# The $allow_helper_functions variable must be exported as "true" in sub scripts that needs the helper functions
 		# This permits to avoid these commands to be used directly from the command line by the users
 		if [ "$allow_helper_functions" != "true" ]; then
-			display_error "reserved operation."
+			log_error "reserved operation."
 		else
 			if [ -z "$2" ]; then
-				display_error "unknown option [$1] '$2'." && echo "$USAGE" && exit
+				log_error "unknown option [$1] '$2'." && echo "$USAGE" && exit
 			else
 				case "$2" in
 					append_log)						append_log "$3" ;;
 					create_automation)				create_automation "$3" ;;
-					display_error)					display_error "$3" "$4" ;;
-					display_info)					display_info "$3" "$4" ;;
-					display_success)				display_success "$3" "$4" ;;
+					log_error)					log_error "$3" "$4" ;;
+					log_info)					log_info "$3" "$4" ;;
+					log_success)				log_success "$3" "$4" ;;
 					download_file)					download_file "$3" "$4" "$5" ;;
 					exists_command)					exists_command "$3" ;;
 					file_checksum)					file_checksum "$3" ;;
@@ -1939,7 +1980,7 @@ case "$1" in
 					match_url_repository)			match_url_repository "$3" "$4" ;;
 					sanitize_confirmation)			sanitize_confirmation "$3" ;;
 					set_config_value)				set_config_value "$3" "$4" "$5" ;;
-					*)								display_error "unknown option [$1] '$2'." && echo "$USAGE" && exit ;;
+					*)								log_error "unknown option [$1] '$2'." && echo "$USAGE" && exit ;;
 				esac
 			fi
 		fi ;;
@@ -1949,7 +1990,7 @@ case "$1" in
 		if [ -d $dir_commands ] && [ "$1" = "$(ls $dir_commands | grep -w $1)" ]; then
 			"$dir_commands/$1" "$@"
 		else
-			display_error "unknown command '$1'." && echo "$USAGE" && exit
+			log_error "unknown command '$1'." && echo "$USAGE" && exit
 		fi
 		;;
 esac
