@@ -60,6 +60,8 @@ dir_bin="/usr/local/sbin"
 dir_systemd="/lib/systemd/system"
 
 export dir_config="/etc/$NAME_LOWERCASE"
+export file_config="$dir_config/$NAME_LOWERCASE.conf"
+
 export dir_log="/var/log/$NAME_LOWERCASE"
 dir_src_cli="/opt/$NAME_LOWERCASE"
 
@@ -261,7 +263,7 @@ get_config_value() {
 current_cli_info() {
 
 	# "False" option doesn't really exist as described in the config file, anything other that "true" will just disable this function.
-	if [ "$(get_config_value "$dir_config/$NAME_LOWERCASE.conf" "debug")" = "true" ]; then
+	if [ "$(get_config_value $file_config loglevel | grep debug)" ]; then
 		# echo " cli:$CURRENT_CLI pub:$PUBLICATION ver:$VERSION   "
 		echo " cli:$CURRENT_CLI url:<todo> ver:$VERSION   "
 	fi
@@ -276,10 +278,14 @@ display_error() {
 
 	local format="$now error:    $(current_cli_info) $1"
 
-	if [ -n "$2" ]; then
-		echo "$format" | tee -a "$file_log_main" "$2"
-	else
-		echo "$format" | tee -a "$file_log_main"
+	if [ "$(get_config_value $file_config loglevel | grep error)" ]; then
+		if [ -n "$2" ]; then
+			echo $1
+			echo "$format" >> "$file_log_main" "$2"
+		else
+			echo $1
+			echo "$format" >> "$file_log_main"
+		fi
 	fi
 }
 
@@ -293,10 +299,14 @@ display_success() {
 
 	local format="$now success:  $(current_cli_info) $1"
 
-	if [ -n "$2" ]; then
-		echo "$format" | tee -a "$file_log_main" "$2"
-	else
-		echo "$format" | tee -a "$file_log_main"
+	if [ "$(get_config_value $file_config loglevel | grep success)" ]; then
+		if [ -n "$2" ]; then
+			echo $1
+			echo "$format" >> "$file_log_main" "$2"
+		else
+			echo $1
+			echo "$format" >> "$file_log_main"
+		fi
 	fi
 }
 
@@ -310,10 +320,14 @@ display_info() {
 
 	local format="$now info:     $(current_cli_info) $1"
 
-	if [ -n "$2" ]; then
-		echo "$format" | tee -a "$file_log_main" "$2"
-	else
-		echo "$format" | tee -a "$file_log_main"
+	if [ "$(get_config_value $file_config loglevel | grep info)" ]; then
+		if [ -n "$2" ]; then
+			echo $1
+			echo "$format" >> "$file_log_main" "$2"
+		else
+			echo $1
+			echo "$format" >> "$file_log_main"
+		fi
 	fi
 }
 
@@ -849,16 +863,6 @@ fi
 
 
 
-export file_config="$dir_config/$NAME_LOWERCASE.conf"
-# Since 1.2.0 the main config file has been renamed from $NAME_LOWERCASE_config to $NAME_LOWERCASE.conf
-# The old file is not needed anymore and must be removed (here it's automatically renamed)
-if [ -f "$dir_config/"$NAME_LOWERCASE"_config" ]; then
-	mv "$dir_config/"$NAME_LOWERCASE"_config" "$file_config"
-fi
-
-
-
-
 # # Depending on the chosen publication, the repository will be different:
 # # - Main (= stable) releases:	https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE
 # # - Unstable releases:			https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-unstable
@@ -1312,11 +1316,10 @@ declare_config_file() {
 		# Declare remote repository of the CLI itself to get futures updates.
 		cli_url "https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE"
 
-		# [option] debug
+		# [option] loglevel
 		# Display various debug information during CLI execution.
-		# - false = deactivated
-		# - true = activated
-		debug false
+		# Available values (all the values can be used at the same time): success, error, info, debug
+		loglevel error
 		" | sed 's/^[ \t]*//' > "$file"
 }
 
@@ -1971,7 +1974,7 @@ case "$1" in
 				-d|--dependencies)	loading_process "verify_dependencies $3" ;;
 				# -r|--repository)	loading_process "verify_repository_reachability "$URL_RAW/main/$NAME_LOWERCASE.sh""; loading_process "verify_repository_reachability "$URL_API/tarball/$VERSION"" ;;
 				-r|--repository)	loading_process "verify_repository_reachability $(match_url_repository $(get_config_value $file_config cli_url) github_raw)" ;;
-				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
+				*)					display_error "unknown option [$1] '$2'." && echo "$USAGE" && exit ;;
 			esac
 		fi ;;
 	# 'self' is a word used in many operations for the CLI, it's preferable to not allow it in subcommand name
@@ -1984,7 +1987,7 @@ case "$1" in
 			display_error "reserved operation."
 		else
 			if [ -z "$2" ]; then
-				display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit
+				display_error "unknown option [$1] '$2'." && echo "$USAGE" && exit
 			else
 				case "$2" in
 					append_log)						append_log "$3" ;;
@@ -2001,7 +2004,7 @@ case "$1" in
 					match_url_repository)			match_url_repository "$3" "$4" ;;
 					sanitize_confirmation)			sanitize_confirmation "$3" ;;
 					set_config_value)				set_config_value "$3" "$4" "$5" ;;
-					*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
+					*)								display_error "unknown option [$1] '$2'." && echo "$USAGE" && exit ;;
 				esac
 			fi
 		fi ;;
@@ -2011,7 +2014,7 @@ case "$1" in
 		if [ -d $dir_commands ] && [ "$1" = "$(ls $dir_commands | grep -w $1)" ]; then
 			"$dir_commands/$1" "$@"
 		else
-			display_error "unknown command '$1'."'\n'"$USAGE" && exit
+			display_error "unknown command '$1'." && echo "$USAGE" && exit
 		fi
 		;;
 esac
