@@ -1545,7 +1545,7 @@ subcommand_list() {
 
 		rm -f $list_installed_tmp
 	else
-		log_info "no command installed."
+		log_error "no command installed."
 	fi
 
 }
