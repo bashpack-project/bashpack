@@ -515,15 +515,16 @@ loading_process() {
 	# fi
 
 
+	# while ps -p $pid > /dev/null; do
 	while ps -T | grep $pid > /dev/null; do
 		# for s in / - \|; do
 		# for s in l o a d e r; do
 		for s in . o O °; do
-			# printf "$s\033[0K\r"
-			printf "%s\033[0K\r"
+			printf "$s\033[0K\r"
 
 			sleep 0.12
 		done
+		i=$((i+1))
 	done
 
 
