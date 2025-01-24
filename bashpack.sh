@@ -1665,13 +1665,22 @@ get_latest_version() {
 		local url_latest="$(match_url_repository $cli_url github_api)/releases/latest"
 
 		if [ "$(exists_command "curl")" = "exists" ]; then
-			echo "$(curl -s "$url_latest" | grep tag_name | cut -d \" -f 4)"
+			# echo "$(curl -s "$url_latest" | grep tag_name | cut -d \" -f 4)"
+			version_found="$(curl -s "$url_latest" | grep tag_name | cut -d \" -f 4)"
 
 		elif [ "$(exists_command "wget")" = "exists" ]; then
-			echo "$(wget -q -O- "$url_latest" | grep tag_name | cut -d \" -f 4)"
+			# echo "$(wget -q -O- "$url_latest" | grep tag_name | cut -d \" -f 4)"
+			version_found="$(wget -q -O- "$url_latest" | grep tag_name | cut -d \" -f 4)"
 		fi
 	else
 		log_error "can't get version from $url_latest."
+	fi
+
+	# Get current $VERSION if can't reach the remote version in case of API reach limit to avoid having none data where this function is used
+	if [ -z "$version_found" ]; then
+		echo $VERSION
+	else
+		echo $version_found
 	fi
 }
 
