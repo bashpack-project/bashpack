@@ -140,8 +140,8 @@ fi
 
 if [ "$(echo $1 | grep -v '-' )" ]; then
 	export CURRENT_SUBCOMMAND="$1"
-	export file_LOG_CURRENT_SUBCOMMAND="$dir_log/$CURRENT_SUBCOMMAND.log"
-	export file_CONFIG_CURRENT_SUBCOMMAND="$dir_config/$CURRENT_SUBCOMMAND.conf"
+	export LOG_CURRENT_SUBCOMMAND="$dir_log/$CURRENT_SUBCOMMAND.log"
+	export CONFIG_CURRENT_SUBCOMMAND="$dir_config/$CURRENT_SUBCOMMAND.conf"
 fi
 
 
@@ -1012,7 +1012,7 @@ verify_files() {
 
 	# Automatically detect every files and directories used in the CLI (every paths that we want to test here must be used through variables from this file)
 	while read -r line; do
-		if [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "file_" | grep -v "\$file")" ] || [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "dir_" | grep -v "\$dir")" ]; then
+		if [ -n "$(echo $line | grep -v '^#' | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "file_" | grep -v "\$file")" ] || [ -n "$(echo $line | grep -v '^#' | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "dir_" | grep -v "\$dir")" ]; then
 
 			local path_variable="$(echo $line | cut -d "=" -f 1 | sed s/"export "//)"
 
