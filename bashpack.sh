@@ -1666,11 +1666,11 @@ get_latest_version() {
 
 		if [ "$(exists_command "curl")" = "exists" ]; then
 			# echo "$(curl -s "$url_latest" | grep tag_name | cut -d \" -f 4)"
-			version_found="$(curl -s "$url_latest" | grep tag_name | cut -d \" -f 4)"
+			local version_found="$(curl -s "$url_latest" | grep tag_name | cut -d \" -f 4)"
 
 		elif [ "$(exists_command "wget")" = "exists" ]; then
 			# echo "$(wget -q -O- "$url_latest" | grep tag_name | cut -d \" -f 4)"
-			version_found="$(wget -q -O- "$url_latest" | grep tag_name | cut -d \" -f 4)"
+			local version_found="$(wget -q -O- "$url_latest" | grep tag_name | cut -d \" -f 4)"
 		fi
 	else
 		log_error "can't get version from $url_latest."
@@ -1717,6 +1717,18 @@ update_cli() {
 
 		log_info "starting self update."
 
+
+		# Get the URL of the file to download
+		# If the remote repository is Github
+		if [ "$(echo $cli_url | grep 'github' | grep 'com')" ]; then
+			local url_file_to_download="$(match_url_repository $cli_url github_raw)/refs/tags/$(get_latest_version $cli_url)/$NAME_LOWERCASE.sh"
+
+		# If the remote repository is a basic directory listing web server
+		else
+			local url_file_to_download="$cli_url"
+		fi
+
+
 		if [ ! -z "$url_file_to_download" ]; then
 	
 			# Download the file from the configured URL
@@ -1738,15 +1750,15 @@ update_cli() {
 	}
 
 
-	# Get the URL of the file to download
-	# If the remote repository is Github
-	if [ "$(echo $cli_url | grep 'github' | grep 'com')" ]; then
-		local url_file_to_download="$(match_url_repository $cli_url github_raw)/refs/tags/$(get_latest_version $cli_url)/$NAME_LOWERCASE.sh"
+	# # Get the URL of the file to download
+	# # If the remote repository is Github
+	# if [ "$(echo $cli_url | grep 'github' | grep 'com')" ]; then
+	# 	local url_file_to_download="$(match_url_repository $cli_url github_raw)/refs/tags/$(get_latest_version $cli_url)/$NAME_LOWERCASE.sh"
 
-	# If the remote repository is a basic directory listing web server
-	else
-		local url_file_to_download="$cli_url"
-	fi
+	# # If the remote repository is a basic directory listing web server
+	# else
+	# 	local url_file_to_download="$cli_url"
+	# fi
 
 
 	# Option to force update (just bypass the version check)
