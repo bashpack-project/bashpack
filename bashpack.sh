@@ -904,7 +904,7 @@ delete_cli() {
 	local exclude_main="$1"
 
 	if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
-		log_error "$NAME is not installed on your system."
+		log_info "$NAME is not installed on your system."
 	else
 		detect_cli
 
@@ -938,7 +938,7 @@ delete_cli() {
 
 		if [ -f "$file_main" ]; then
 			if [ "$exclude_main" = "exclude_main" ]; then
-				log_success "all sources removed excepted $file_main."
+				log_info "all sources removed excepted $file_main."
 			else
 				log_error "$NAME $VERSION located at $(posix_which $NAME_ALIAS) has not been uninstalled." && exit
 			fi
@@ -1798,9 +1798,15 @@ install_cli() {
 
 		# Test again if config file exists to be 100% sure to be able to use the display_loglevel 
 		if [ -f "$file_config" ]; then
-			log_info "$future_log_start_install"
-			log_info "$future_log_dir_config"
-			log_info "$future_log_file_config"
+			if [ ! -z "$future_log_start_install" ]; then
+				log_info "$future_log_start_install"
+			fi
+			if [ ! -z "$future_log_dir_config" ]; then
+				log_info "$future_log_dir_config"
+			fi
+			if [ ! -z "$future_log_file_config" ]; then
+				log_info "$future_log_file_config"
+			fi
 		fi
 
 
@@ -1808,10 +1814,11 @@ install_cli() {
 		# Remove them to allow installation of the CLI
 		if [ -f "$file_main_alias_1" ] || [ -f "$file_main_alias_2" ]; then
 			rm -f $file_main_alias_1
-			rm -f $file_main_alias_2
 			if [ ! -f "$file_main_alias_1" ]; then
 				log_info "file '$file_main_alias_1' removed."
 			fi
+
+			rm -f $file_main_alias_2
 			if [ ! -f "$file_main_alias_2" ]; then
 				log_info "file '$file_main_alias_2' removed."
 			fi
