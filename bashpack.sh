@@ -57,6 +57,18 @@ dir_systemd="/lib/systemd/system"
 export dir_config="/etc/$NAME_LOWERCASE"
 export file_config="$dir_config/$NAME_LOWERCASE.conf"
 
+
+# Quickly ensure to have a structure for the config file to avoid errors
+if [ ! -d "$dir_config" ]; then
+	mkdir -p $dir_config
+fi
+
+# Quickly ensure to have a config file ready to avoid errors
+if [ ! -f "$file_config" ]; then
+	echo "" > $file_config
+fi
+
+
 export dir_log="/var/log/$NAME_LOWERCASE"
 dir_src_cli="/opt/$NAME_LOWERCASE"
 
@@ -1770,6 +1782,7 @@ install_cli() {
 		local future_log_start_install="starting self installation"
 
 		# detect_cli
+
 
 
 		# Config directory installation
