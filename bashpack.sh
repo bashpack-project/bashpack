@@ -522,6 +522,7 @@ loading_process() {
 	
 
 	while ps -T | grep $pid > /dev/null; do
+		i=$((i+1))
 		# for s in / - \|; do
 		# for s in l o a d e r; do
 		# for s in . o O °; do
@@ -531,7 +532,6 @@ loading_process() {
 
 			sleep 0.12
 		done
-		i=$((i+1))
 	done
 
 
@@ -1943,11 +1943,11 @@ case "$1" in
 				-f|--force)			loading_process "update_cli force" ;;	# Shortcut to quickly reinstall the CLI
 			esac
 		fi ;;
-	--self-delete)					delete_systemd && delete_cli ;;
+	--self-delete)					loading_process "delete_systemd" && loading_process "delete_cli" ;;
 	--logs)							get_logs "$file_log_main" ;;
-	-l|--list)						subcommand_list ;;
-	-g|--get)						subcommand_get $2 ;;
-	-d|--delete)					subcommand_delete $2 ;;
+	-l|--list)						loading_process "subcommand_list" ;;
+	-g|--get)						loading_process "subcommand_get $2" ;;
+	-d|--delete)					loading_process "subcommand_delete $2" ;;
 	verify)
 		if [ -z "$2" ]; then
 									loading_process "verify_dependencies $3";  loading_process "verify_files"; loading_process "verify_repository_reachability $(match_url_repository $(get_config_value $file_config cli_url) github_raw)"
