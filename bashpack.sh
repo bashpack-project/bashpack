@@ -507,19 +507,26 @@ exists_command() {
 # loading_process animation so we know the process has not crashed.
 # Usage: loading_process "<command that takes time>"
 loading_process() {
+
 	$1 & local pid=$!
 
-	# # Hide cursor
-	# if [ "$(exists_command "tput")" = "exists" ]; then
-	# 	tput civis
-	# fi
 
+	if [ "$(exists_command "trap")" = "exists" ] && [ "$(exists_command "tput")" = "exists" ]; then
 
-	# while ps -p $pid > /dev/null; do
+		# Trap the future CTRL+C to get back the cursor
+		trap "tput cnorm" INT
+
+		# Hide cursor
+		tput civis
+	fi
+	
+
 	while ps -T | grep $pid > /dev/null; do
 		# for s in / - \|; do
 		# for s in l o a d e r; do
-		for s in . o O °; do
+		# for s in . o O °; do
+		for s in . .. ... .. . ' '; do
+		# for s in '⠋' '⠙' '⠹' '⠸' '⠼' '⠴'  '⠦'  '⠧' '⠇' '⠏'; do
 			printf "$s\033[0K\r"
 
 			sleep 0.12
@@ -528,10 +535,10 @@ loading_process() {
 	done
 
 
-	# # Get back cursor
-	# if [ "$(exists_command "tput")" = "exists" ]; then
-	# 	tput cnorm
-	# fi
+	# Get back the cursor because the process has finished
+	if [ "$(exists_command "tput")" = "exists" ]; then
+		tput cnorm
+	fi
 }
 
 
@@ -1927,7 +1934,6 @@ install_cli() {
 
 # The options (except --help) must be called with root
 case "$1" in
-	# -i|--self-install)				loading_process "install_cli" ;;		# Critical option, see the comments at function declaration for more info	
 	-i|--self-install)				loading_process "install_cli $2" ;;		# Critical option, see the comments at function declaration for more info	
 	-u|--self-update)
 		if [ -z "$2" ]; then
@@ -1969,9 +1975,9 @@ case "$1" in
 				case "$2" in
 					append_log)						append_log "$3" ;;
 					create_automation)				create_automation "$3" ;;
-					log_error)					log_error "$3" "$4" ;;
-					log_info)					log_info "$3" "$4" ;;
-					log_success)				log_success "$3" "$4" ;;
+					log_error)						log_error "$3" "$4" ;;
+					log_info)						log_info "$3" "$4" ;;
+					log_success)					log_success "$3" "$4" ;;
 					download_file)					download_file "$3" "$4" "$5" ;;
 					exists_command)					exists_command "$3" ;;
 					file_checksum)					file_checksum "$3" ;;
