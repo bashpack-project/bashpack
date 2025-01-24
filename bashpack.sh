@@ -686,7 +686,7 @@ download_file() {
 
 		# Success message
 		if [ -f "$file_tmp" ]; then
-			log_success "file '$file_tmp' downloaded."
+			log_info "file '$file_tmp' downloaded."
 
 			# Test if the "$dir_extract_tmp" variable is empty to know if we downloaded an archive that we need to extract
 			if [ -n "$dir_extract_tmp" ]; then
