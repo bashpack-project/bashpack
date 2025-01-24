@@ -1025,15 +1025,15 @@ verify_files() {
 
 					if [ -f "$path_value" ]; then
 						# log_success "found file -> $path_variable -> $path_value"
-						log_success "found file -> $path_value"
+						echo "found file -> $path_value" | append_log
 						found=$((found+1))
 					elif [ -d "$path_value" ]; then
 						# log_success "found dir  -> $path_variable -> $path_value"
-						log_success "found dir. -> $path_value"
+						echo "found dir. -> $path_value" | append_log
 						found=$((found+1))
 					else
 						# log_error "miss.      -> $path_variable -> $path_value"
-						log_error "miss.      -> $path_value"
+						echo "miss.      -> $path_value" | append_log
 						missing=$((missing+1))
 					fi
 				
