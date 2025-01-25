@@ -1236,7 +1236,7 @@ declare_config_file() {
 		cli_url "https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE"
 
 		# [option] display_loglevel
-		# Display various debug information during CLI execution.
+		# Display various information during CLI execution.
 		# Available values: error,success,info,debug
 		# All the values can be used at the same time. Don't set any whitespace.
 		display_loglevel error,success,info
