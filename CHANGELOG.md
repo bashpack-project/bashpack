@@ -12,7 +12,7 @@ The released versions changelogs below are only about the main repository.
 - Repositories are compatibles with Github, but can also be simple directories listing web servers
 - The CLI helper can now easily create an automation from a simple function to be able to automatically run a subcommand on the system (systemd only for now)
 - When creating subcommands, the function "init_command()" can be used to run any requirements on the system (create automation, file etc... or anything else)
-- Subcommands provided from this project has moved to the [commands repository](https://github.com/bashpack-project/commands)
+- Subcommands provided from this repository has moved to the [commands repository](https://github.com/bashpack-project/commands)
 - Subcommands "update" and "install" are now merged in the "package" subcommand
 - Subcommand "verify" option "-c/--commands" replaced by "-d/--dependencies"
 - Publication system has been removed and replaced by the configuration option "cli_url"
