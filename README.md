@@ -63,11 +63,11 @@ sudo bp --list
 
 ## Configuration
 
-Bashpack uses a configuration file located at `/etc/bashpack/bashpack.conf`. It is created and maintained automatically, but you can customize it according to your needs.
+A configuration file is located at `/etc/bashpack/bashpack.conf`. It is created and maintained automatically, and you can customize it according to your needs.
 
 ## Logs
 
-Bashpack maintains logs in `/var/log/bashpack`. You can view the logs using the following command:
+Logs are maintained in `/var/log/bashpack`. You can quickly view the logs using the following command:
 
 ```sh
 sudo bp --logs
