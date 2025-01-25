@@ -1706,7 +1706,7 @@ update_cli() {
 	else
 		# Testing if a new version exists on the current publication to avoid reinstall if not.
 		if [ "$(get_latest_version $cli_url)" = "$VERSION" ]; then
-			log_info "latest version is already installed ($VERSION)."
+			log_error "latest version is already installed ($VERSION)."
 
 		else
 			update_process
