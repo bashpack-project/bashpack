@@ -4,12 +4,14 @@ Bashpack CLI is a versatile and user-friendly script manager designed to manage 
 
 Anyone can self-host its own commands repositories, and even its own CLI repository.
 
-## Key Features
+
+## Features
 
 - **Script Management**: Easily install, update, and remove scripts as subcommands.
 - **Automation**: Automate routine tasks to save time and reduce human error.
 - **Security**: Enhance the security of your Linux systems with minimal effort.
 - **User-Friendly**: Accessible to both novice and experienced users.
+
 
 ## Quick Start
 
@@ -24,28 +26,25 @@ curl -sL https://raw.githubusercontent.com/bashpack-project/bashpack/main/bashpa
  && rm bashpack.sh
 ```
 
-### CLI
-#### Update
+### Update
 
 ```sh
 sudo bp -u
 ```
 
-#### Uninstall
+### Uninstall
 
 ```sh
 sudo bp --self-delete
 ```
 
-#### Usage
+### Usage
 
 ```sh
 bp --help
 ```
 
-### Command Examples
-
-#### Managing Scripts
+### Subcommand management
 
 Install subcommand from the repositories
 ```sh
@@ -74,6 +73,7 @@ Bashpack maintains logs in `/var/log/bashpack`. You can view the logs using the 
 sudo bp --logs
 ```
 
+
 ## FAQ
 
 - **POSIX Compatibility**: Bashpack is POSIX-compliant, meaning it can be installed on any POSIX system. It was first written in [Bash](https://en.wikipedia.org/wiki/Bash_(Unix_shell)), but is now written in [Bourne shell](https://en.wikipedia.org/wiki/Bourne_shell). That being said, every specific distro software support needs to be added one by one in the sub commands.
@@ -82,13 +82,10 @@ sudo bp --logs
 - **Repositories**: Multiple repositories exist; for production usage, only the main one should be used.
 
 
-## Contributing
-
-We welcome contributions! Please read our [contribution guidelines](https://github.com/bashpack-project/bashpack-dev/blob/main/HOW_TO_RELEASE) before getting started.
-
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](https://github.com/bashpack-project/bashpack-dev/blob/main/LICENSE.md) file for details.
+This project is licensed under the MIT License. See the [LICENSE](https://github.com/bashpack-project/bashpack/blob/main/LICENSE.md) file for details.
+
 
 ## Links
 
