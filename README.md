@@ -46,7 +46,7 @@ bp --help
 
 ### Subcommand management
 
-Install subcommand from the repositories
+Install a subcommand from the repositories
 ```sh
 sudo bp --get <subcommand>
 ```
