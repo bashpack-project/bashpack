@@ -1,101 +1,98 @@
 # Bashpack
 
-Bashpack is a **user-friendly** Linux toolbox that has been designed to **quickly secure any Linux distro**.
+Bashpack CLI is a versatile and user-friendly script manager designed to manage scripts on any Linux distro and use them as regular commands. It simplifies script management, security, and automation, making your administrative tasks more efficient.
 
-It can be used for deployment purposes, or even by novices users (it doesn't require any specific knowledge).
+Anyone can self-host its own commands repositories, and even its own CLI repository.
 
-<br>
+## Key Features
 
-## Features
-* Unified Linux updates \
-_one command to control them all_
-	- [APT](https://wiki.debian.org/Apt)
-	- [DNF](https://rpm-software-management.github.io/)
-	- [YUM](http://yum.baseurl.org/)
-	- [Snap](https://snapcraft.io/)
-	- [fwupd](https://github.com/fwupd/fwupd) (firmwares)
+- **Script Management**: Easily install, update, and remove scripts as subcommands.
+- **Automation**: Automate routine tasks to save time and reduce human error.
+- **Security**: Enhance the security of your Linux systems with minimal effort.
+- **User-Friendly**: Accessible to both novice and experienced users.
 
-* Secured Linux firewall \
-_block inbound and simplify rule creation_
-	- [nftables](https://wiki.nftables.org/wiki-nftables/index.php/Main_Page)
+## Quick Start
 
-<br>
+To manage your Bashpack installation, copy/paste the following command blocks into your Linux terminal.
 
+### Install
 
-## Quick start
-Copy/paste the following command blocks on your Linux terminal to manage your Bashpack installation.
-
-**Install**
-```javascript
+```sh
 curl -sL https://raw.githubusercontent.com/bashpack-project/bashpack/main/bashpack.sh -o bashpack.sh \
  && chmod +x bashpack.sh \
  && sudo ./bashpack.sh -i \
  && rm bashpack.sh
 ```
 
-**Update**
-```javascript
+### CLI
+#### Update
+
+```sh
 sudo bp -u
 ```
 
-**Uninstall**
-```javascript
+#### Uninstall
+
+```sh
 sudo bp --self-delete
 ```
 
-<br>
+#### Usage
 
-## Usage
-**Commands & options** are listed with the command:
-```javascript
+```sh
 bp --help
 ```
 
-<br>
+### Command Examples
 
-### Command examples
+#### Managing Scripts
 
-#### Unified Linux updates
-Launch a pre-validated update of everything on your system
-```javascript
-sudo bp update -y
+Install subcommand from the repositories
+```sh
+sudo bp --get <subcommand>
 ```
 
-Check next update ([Systemd](https://systemd.io/) installations **only**)
-```javascript
-sudo bp update --when
-```
-Get logs from last update ([Systemd](https://systemd.io/) installations **only**)
-```javascript
-sudo bp update --get-logs
+Remove a subcommand
+```sh
+sudo bp --delete <subcommand>
 ```
 
-<br>
-
-
-#### Secured Linux firewall
-**Install** a ruleset
-```javascript
-sudo bp firewall -i
+List available remotes and installed subcommands 
+```sh
+sudo bp --list
 ```
 
-**Restore** a backuped ruleset (made automatically during an installation)
-```javascript
-sudo bp firewall --restore
-```
+## Configuration
 
-**Disable** the firewall
-```javascript
-sudo bp firewall --disable
-```
+Bashpack uses a configuration file located at `/etc/bashpack/bashpack.conf`. It is created and maintained automatically, but you can customize it according to your needs.
 
-<br>
+## Logs
+
+Bashpack maintains logs in `/var/log/bashpack`. You can view the logs using the following command:
+
+```sh
+sudo bp --logs
+```
 
 ## FAQ
-* Bashpack itself is POSIX, meaning it can be installed on any POSIX system (it was first written in [Bash](https://en.wikipedia.org/wiki/Bash_(Unix_shell)), but is now written in [Bourne shell](https://en.wikipedia.org/wiki/Bourne_shell)). That being said, every specific distro software support needs to be added one by one in the sub commands.
-* Root/sudo access is required.
-* [Systemd](https://systemd.io/) is highly recommanded to benefit all the automations.
-* Bashpack will automatically update itself ([Systemd](https://systemd.io/) installations only).
-* [fwupd](https://github.com/fwupd/fwupd) is installed only if your system is bare-metal (only [Systemd](https://systemd.io/) installations can detect it).
-* Multiple repositories exists. For production usage, only the [main](https://github.com/bashpack-project/bashpack) one should be used.
-* Just a funny command: bp man
+
+- **POSIX Compatibility**: Bashpack is POSIX-compliant, meaning it can be installed on any POSIX system. It was first written in [Bash](https://en.wikipedia.org/wiki/Bash_(Unix_shell)), but is now written in [Bourne shell](https://en.wikipedia.org/wiki/Bourne_shell). That being said, every specific distro software support needs to be added one by one in the sub commands.
+- **Root Access**: Root/sudo access is required for installation and most operations.
+- **Automatic Updates**: Bashpack can automatically update itself.
+- **Repositories**: Multiple repositories exist; for production usage, only the main one should be used.
+
+
+## Contributing
+
+We welcome contributions! Please read our [contribution guidelines](https://github.com/bashpack-project/bashpack-dev/blob/main/HOW_TO_RELEASE) before getting started.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](https://github.com/bashpack-project/bashpack-dev/blob/main/LICENSE.md) file for details.
+
+## Links
+
+- [Homepage](https://bashpack-project.github.io/)
+- [Main Repository](https://github.com/bashpack-project/bashpack)
+- [Unstable Repository](https://github.com/bashpack-project/bashpack-unstable)
+- [Dev Repository](https://github.com/bashpack-project/bashpack-dev)
