@@ -1,8 +1,8 @@
 # Bashpack
 
-Bashpack CLI is a versatile and user-friendly script manager designed to manage scripts on any Linux distro and use them as regular commands. It simplifies script management, security, and automation, making your administrative tasks more efficient.
+The Bashpack CLI is a versatile and user-friendly script manager designed to manage scripts on any Linux distro and use them as regular commands. It simplifies script management, security, and automation, making your administrative tasks more efficient.
 
-Anyone can self-host its own commands repositories, and even its own CLI repository.
+Anyone can self-host its own subcommands repositories, and even its own CLI repository.
 
 
 ## Features
@@ -76,7 +76,7 @@ sudo bp --logs
 
 ## FAQ
 
-- **POSIX Compatibility**: Bashpack is POSIX-compliant, meaning it can be installed on any POSIX system. It was first written in [Bash](https://en.wikipedia.org/wiki/Bash_(Unix_shell)), but is now written in [Bourne shell](https://en.wikipedia.org/wiki/Bourne_shell). That being said, every specific distro software support needs to be added one by one in the sub commands.
+- **POSIX Compatibility**: Bashpack is POSIX-compliant, meaning it can be installed on any POSIX system. It was first written in [Bash](https://en.wikipedia.org/wiki/Bash_(Unix_shell)), but is now written in [Bourne shell](https://en.wikipedia.org/wiki/Bourne_shell). That being said, every specific distro software support needs to be added one by one in the subcommands.
 - **Root Access**: Root/sudo access is required for installation and most operations.
 - **Automatic Updates**: Bashpack can automatically update itself.
 - **Repositories**: Multiple repositories exist; for production usage, only the main one should be used.
@@ -91,5 +91,3 @@ This project is licensed under the MIT License. See the [LICENSE](https://github
 
 - [Homepage](https://bashpack-project.github.io/)
 - [Main Repository](https://github.com/bashpack-project/bashpack)
-- [Unstable Repository](https://github.com/bashpack-project/bashpack-unstable)
-- [Dev Repository](https://github.com/bashpack-project/bashpack-dev)
