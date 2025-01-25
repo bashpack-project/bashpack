@@ -271,13 +271,13 @@ get_config_value() {
 
 # Display current CLI informations
 # Usage: current_cli_info
-# /!\ This function is intended for development purpose, it's just called in logs to clarify some situations
 current_cli_info() {
 
 	# "False" option doesn't really exist as described in the config file, anything other that "true" will just disable this function.
 	if [ "$(get_config_value $file_config display_loglevel | grep debug)" ]; then
 		# echo " cli:$CURRENT_CLI pub:$PUBLICATION ver:$VERSION   "
-		echo " cli:$CURRENT_CLI url:<todo> ver:$VERSION   "
+		# echo " cli:$CURRENT_CLI ver:$VERSION   "
+		echo "cli:$CURRENT_CLI ver:$VERSION "
 	fi
 }
 
@@ -290,10 +290,12 @@ current_cli_info() {
 #  log_error <message> <log file to duplicate the message>
 log_error() {
 
-	local format="$now error:    $(current_cli_info) $1"
+	# local text="$1"
+	local text="$(echo $1 | sed "s|^|$(current_cli_info)|")"
+	local format="$now error:    $text"
 
 	if [ "$(get_config_value $file_config display_loglevel | grep error)" ]; then
-		echo $1
+		echo $text
 	fi
 
 	if [ -n "$2" ]; then
@@ -312,10 +314,12 @@ log_error() {
 #  log_success <message> <log file to duplicate the message>
 log_success() {
 
-	local format="$now success:  $(current_cli_info) $1"
+	# local text="$1"
+	local text="$(echo $1 | sed "s|^|$(current_cli_info)|")"
+	local format="$now success:  $text"
 
 	if [ "$(get_config_value $file_config display_loglevel | grep success)" ]; then
-		echo $1
+		echo $text
 	fi
 
 	if [ -n "$2" ]; then
@@ -334,10 +338,12 @@ log_success() {
 #  log_info <message> <log file to duplicate the message>
 log_info() {
 
-	local format="$now info:     $(current_cli_info) $1"
+	# local text="$1"
+	local text="$(echo $1 | sed "s|^|$(current_cli_info)|")"
+	local format="$now info:     $text"
 
 	if [ "$(get_config_value $file_config display_loglevel | grep info)" ]; then
-		echo $1
+		echo $text
 	fi
 
 	if [ -n "$2" ]; then
@@ -420,15 +426,30 @@ append_log() {
 
 
 	# The trick is just to call the text in a sed command that doesn't do anything to display it, and add another sed to format for the logs files
-	local text="$(sed 's/\(*\)/\1/')"
-	
+	# local text="$(current_cli_info) $(sed 's/\(*\)/\1/')"
+	# local text="$(sed 's/\(*\)/\1/')"
+
+
+
+	local text="$(sed "s|^|$(current_cli_info) |")"
+	local format="$now op.sys:   "
+
+
+	# local text="$(sed "s|^|$(current_cli_info) |")"
+	# local format="$now info:     $text"
+
+
+	echo $text
+	# echo $text | sed "s/^/$(current_cli_info) /"
 
 	if [ -n "$2" ]; then
-		echo $text
-		echo $text | sed "s/^/$now op.sys:   $(current_cli_info) /" >> "$2"
+		# echo $text
+		# echo $text | sed "s/^/$now op.sys:   $(current_cli_info) /" >> "$2"
+		echo $text | sed "s|^|$format|" >> "$2"
 	else
-		echo $text
-		echo $text | sed "s/^/$now op.sys:   $(current_cli_info) /" >> "$file_log_main"
+		# echo $text
+		# echo $text | sed "s/^/$now op.sys:   $(current_cli_info) /" >> "$file_log_main"
+		echo $text | sed "s|^|$format|" >> "$file_log_main"
 	fi
 
 
