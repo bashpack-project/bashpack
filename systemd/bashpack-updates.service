@@ -1,9 +1,0 @@
-[Unit]
-Description=Bashpack update (itself & system)
-
-[Service]
-ExecStartPre=bashpack --self-update
-ExecStart=bashpack update -y
-KillMode=control-group
-TimeoutStartSec=1800
-TimeoutStopSec=1800

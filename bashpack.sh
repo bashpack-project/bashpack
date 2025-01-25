@@ -30,30 +30,50 @@
 
 
 
-export VERSION="2.0.1"
+export VERSION="3.0.0"
 
 export NAME="Bashpack"
 export NAME_LOWERCASE="$(echo "$NAME" | tr A-Z a-z)"
-export NAME_UPPERCASE="$(echo "$NAME" | tr a-z A-Z)"
+# export NAME_UPPERCASE="$(echo "$NAME" | tr a-z A-Z)"
 export NAME_ALIAS="bp"
 
 export CURRENT_CLI="$0"
 export HELPER="$CURRENT_CLI helper"
+export OWNER="$(ls -l $CURRENT_CLI | cut -d " " -f 3)"
 
-# BASE_URL="https://api.github.com/repos/$NAME_LOWERCASE-project"
-REPO_URL="$NAME_LOWERCASE-project"
-HOST_URL_ARCH="https://api.github.com/repos/$REPO_URL"
-HOST_URL_FILE="https://raw.githubusercontent.com/$REPO_URL"
 
-USAGE="Usage: $CURRENT_CLI [COMMAND] [OPTION] \n$CURRENT_CLI --help"
+if [ "$(echo $CURRENT_CLI | grep -v '.sh')" ]; then
+	usage_cli="$NAME_ALIAS"
+else
+	usage_cli="$CURRENT_CLI"
+fi
+export USAGE="Usage: $usage_cli [COMMAND] [OPTION...] \n$usage_cli --help"
+
 
 dir_tmp="/tmp"
 dir_bin="/usr/local/sbin"
 dir_systemd="/lib/systemd/system"
 
 export dir_config="/etc/$NAME_LOWERCASE"
+export file_config="$dir_config/$NAME_LOWERCASE.conf"
+
+
+# Quickly ensure to have a structure for the config file to avoid errors
+if [ ! -d "$dir_config" ]; then
+	mkdir -p $dir_config
+fi
+
+# Quickly ensure to have a config file ready to avoid errors
+if [ ! -f "$file_config" ]; then
+	echo "" > $file_config
+fi
+
+
 export dir_log="/var/log/$NAME_LOWERCASE"
 dir_src_cli="/opt/$NAME_LOWERCASE"
+
+
+
 
 # Automatically detect the best PATH for the installation 
 # Usage: define_installation_path
@@ -86,16 +106,19 @@ dir_bin="$(define_installation_path)"
 
 
 
+
 export archive_tmp="$dir_tmp/$NAME_LOWERCASE-$VERSION.tar.gz"
 export archive_dir_tmp="$dir_tmp/$NAME_LOWERCASE" # Make a generic name for tmp directory, so all versions will delete it
 
 export now="$(date +%y-%m-%d_%H-%M-%S)"
+export question_continue="Do you want to continue? [y/N] "
+
 
 export file_main="$dir_src_cli/$NAME_LOWERCASE.sh"
 export file_main_alias_1="$dir_bin/$NAME_LOWERCASE"
 export file_main_alias_2="$dir_bin/$NAME_ALIAS"
 
-file_current_publication="$dir_config/.current_publication"
+
 
 
 # Log creations
@@ -103,21 +126,47 @@ if [ ! -d "$dir_log" ]; then
 	mkdir -p "$dir_log"
 fi
 export file_log_main="$dir_log/main.log"
-export file_log_update="$dir_log/updates.log"
 
 
 
 # Display a warning in case of using the script and not a command installed on the system
-# Export a variable that permit to avoid this message duplication (because this file is called multiple times over the differents process)
-if [ "$WARNING_ALREADY_SEND" != "true" ]; then
+# Export a variable that permits to avoid this message duplication (because this file is called multiple times over the differents process)
+if [ "$WARNING_ALREADY_SENT" != "true" ]; then
 	if [ "$CURRENT_CLI" = "./$NAME_LOWERCASE.sh" ]; then
-		echo "Warning: you are currently using '$CURRENT_CLI' which is located at $(pwd)."
+		echo "Warning: currently using '$CURRENT_CLI' which is located at $(pwd)."
 		echo ""
 
-		export WARNING_ALREADY_SEND="true"
+		export WARNING_ALREADY_SENT="true"
 	fi
 fi
 
+
+
+if [ "$CURRENT_CLI" = "./$NAME_LOWERCASE.sh" ]; then
+	dir_commands="commands"
+else
+	dir_commands="$dir_src_cli/commands"
+fi
+
+
+
+if [ "$(echo $1 | grep -v '-' )" ]; then
+	export CURRENT_SUBCOMMAND="$1"
+	export LOG_CURRENT_SUBCOMMAND="$dir_log/$CURRENT_SUBCOMMAND.log"
+	export CONFIG_CURRENT_SUBCOMMAND="$dir_config/$CURRENT_SUBCOMMAND.conf"
+fi
+
+
+dir_sourceslist="$dir_config/sources"
+# file_sourceslist_cli="$dir_sourceslist/cli.list"
+file_sourceslist_subcommands="$dir_sourceslist/subcommands.list"
+file_registry="$dir_sourceslist/.subcommands.registry"
+
+
+subcommands_allowed_extensions="\|sh\|py"
+
+
+file_repository_reachable_tmp="$dir_tmp/$NAME_LOWERCASE-last-repository-tested-is-reachable"
 
 
 
@@ -129,78 +178,54 @@ if [ -z "$1" ]; then
 	exit
 else
 	case "$1" in
-		--version) echo $VERSION && exit ;;
-		update)
-			case "$2" in
-				--help) echo "$USAGE" \
-				&&		echo "" \
-				&&		echo "Supported package managers:" \
-				&&		echo " - APT (https://wiki.debian.org/Apt)" \
-				&&		echo " - DNF (https://rpm-software-management.github.io/)" \
-				&&		echo " - YUM (http://yum.baseurl.org/)" \
-				&&		echo " - Canonical Snapcraft (https://snapcraft.io)" \
-				&&		echo " - Firmwares with fwupd (https://github.com/fwupd/fwupd)" \
-				&&		echo "" \
-				&&		echo "Options:" \
-				&&		echo " -y, --assume-yes 	enable automatic installations without asking during the execution." \
-				&&		echo "     --ask    		ask to manually write your choice about updates installations confirmations." \
-				&&		echo "     --get-logs		display logs." \
-				&&		echo "     --when   		display next update cycle." \
-				&&		echo "" \
-				&&		echo "$NAME $VERSION" \
-				&&		exit ;;
-			esac
-		;;
+		-v|--version) echo $VERSION && exit ;;
+		# command)
+		# 	case "$2" in
+		# 		--help) echo "$USAGE" \
+		# 		&&		echo "" \
+		# 		&&		echo "Manage $NAME sub commands." \
+		# 		&&		echo "" \
+		# 		&&		echo "Options:" \
+		# 		&&		echo " -l, --list         list available commands." \
+		# 		&&		echo " -g, --get <name>   install a command." \
+		# 		&&		echo " -d, --delete       remove a command." \
+		# 		&&		echo "" \
+		# 		&&		echo "$NAME $VERSION" \
+		# 		&&		exit ;;
+		# 	esac
+		# ;;
 		verify)
 			case "$2" in
 				--help) echo "$USAGE" \
 				&&		echo "" \
-				&&		echo "Verify current $NAME installation on your system." \
+				&&		echo "Verify current $NAME installation health." \
 				&&		echo "" \
 				&&		echo "Options:" \
-				&&		echo " -f, --files			check that all required files are available." \
-				&&		echo " -c, --commands			check that required commands are available." \
-				&&		echo " -r, --repository-reachability	check that remote repository is reachable." \
+				&&		echo " -f, --files                  check that all required files are available." \
+				&&		echo " -d, --dependencies <file>    check that required dependencies are available." \
+				&&		echo " -r, --repository             check that remote repository is reachable." \
 				&&		echo "" \
 				&&		echo "$NAME $VERSION" \
 				&&		exit ;;
 			esac
 		;;
-		firewall)
-			case "$2" in
-				--help) echo "$USAGE" \
-				&&		echo "" \
-				&&		echo "Configure the firewall of your system." \
-				&&		echo "Custom rules can be added from '$dir_config'." \
-				&&		echo "" \
-				&&		echo "Options:" \
-				&&		echo " -i, --install	install the ruleset." \
-				&&		echo " -d, --display	display the current ruleset." \
-				&&		echo " -r, --restart	restart the firewall." \
-				&&		echo "     --disable	disable the firewall." \
-				&&		echo "     --restore	rollback a previous ruleset version." \
-				&&		echo "" \
-				&&		echo "$NAME $VERSION" \
-				&&		exit ;;
-			esac
-		;;
-		--help) echo "$USAGE" \
+		-h|--help|help) echo "$USAGE" \
 		&&		echo "" \
 		&&		echo "Options:" \
-		&&		echo " -i, --self-install	install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
-		&&		echo " -u, --self-update	update $NAME to the latest available version on the chosen publication (--force option available)." \
-		&&		echo "     --self-delete	delete $NAME from your system." \
-		&&		echo "     --get-logs		display logs." \
-		&&		echo "     --help   		display this information." \
-		&&		echo " -p, --publication	display the current installed $NAME publication stage (main, unstable, dev)." \
-		&&		echo "     --version		display version." \
+		&&		echo " -i, --self-install   install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
+		&&		echo " -u, --self-update    update $NAME to the latest available version (--force option available)." \
+		&&		echo "     --self-delete    delete $NAME from your system." \
+		&&		echo "     --logs           display logs." \
+		&&		echo " -h, --help           display this information." \
+		&&		echo " -v, --version        display version." \
+		&&		echo " -l, --list           list available subcommands (local and remote). " \
+		&&		echo " -g, --get <name>     install a subcommand." \
+		&&		echo " -d, --delete <name>  uninstall a subcommand." \
 		&&		echo "" \
-		&&		echo "Commands (--help for commands options):" \
-		&&		echo " firewall [OPTION]	configure the firewall of your system." \
-		&&		echo " update [OPTION]	update everything on your system." \
-		&&		echo " verify [OPTION]	verify the current $NAME installation health." \
-		&&		echo "" \
-		&&		echo "$NAME $VERSION" \
+		&&		echo "Commands (<command> --help to display usages):" \
+		&&		echo "  verify" \
+		&&		echo "$(ls $dir_commands 2> /dev/null | sed "s/^/  /g")" \
+		&&		echo "\n$NAME $VERSION" \
 		&&		exit ;;
 	esac
 fi
@@ -225,8 +250,8 @@ fi
 # Getting values stored in configuration files.
 # Usage: get_config_value "<file>" "<option>"
 get_config_value() {
-	local file="${1}"
-	local option="${2}"
+	local file="$1"
+	local option="$2"
 
 	while read -r line; do
 		local first_char="$(echo $line | cut -c1-1)"
@@ -243,30 +268,40 @@ get_config_value() {
 
 
 
+
 # Display current CLI informations
 # Usage: current_cli_info
-# /!\ This function is intended for development purpose, it's just called in logs to clarify some situations
 current_cli_info() {
 
 	# "False" option doesn't really exist as described in the config file, anything other that "true" will just disable this function.
-	if [ "$(get_config_value "$dir_config/$NAME_LOWERCASE.conf" "debug")" = "true" ]; then
-		echo " cli:$CURRENT_CLI pub:$PUBLICATION ver:$VERSION   "
+	if [ "$(get_config_value $file_config display_loglevel | grep debug)" ]; then
+		# echo " cli:$CURRENT_CLI pub:$PUBLICATION ver:$VERSION   "
+		# echo " cli:$CURRENT_CLI ver:$VERSION   "
+		echo "cli:$CURRENT_CLI ver:$VERSION "
 	fi
 }
 
 
 
+
 # Display always the same message in error messages.
-# Usage: display_error <message>
-# Usage: display_error <message> <log file to duplicate the message>
-display_error() {
+# Usages:
+#  log_error <message>
+#  log_error <message> <log file to duplicate the message>
+log_error() {
 
-	local format="$now error:    $(current_cli_info) ${1}"
+	# local text="$1"
+	local text="$(echo $1 | sed "s|^|$(current_cli_info)|")"
+	local format="$now error:    $text"
 
-	if [ -n "${2}" ]; then
-		echo "$format" | tee -a "$file_log_main" "${2}"
+	if [ "$(get_config_value $file_config display_loglevel | grep error)" ]; then
+		echo $text
+	fi
+
+	if [ -n "$2" ]; then
+		echo "$format" >> "$2"
 	else
-		echo "$format" | tee -a "$file_log_main"
+		echo "$format" >> "$file_log_main"
 	fi
 }
 
@@ -274,16 +309,23 @@ display_error() {
 
 
 # Display always the same message in success messages.
-# Usage: display_success <message>
-# Usage: display_success <message> <log file to duplicate the message>
-display_success() {
+# Usages:
+#  log_success <message>
+#  log_success <message> <log file to duplicate the message>
+log_success() {
 
-	local format="$now success:  $(current_cli_info) ${1}"
+	# local text="$1"
+	local text="$(echo $1 | sed "s|^|$(current_cli_info)|")"
+	local format="$now success:  $text"
 
-	if [ -n "${2}" ]; then
-		echo "$format" | tee -a "$file_log_main" "${2}"
+	if [ "$(get_config_value $file_config display_loglevel | grep success)" ]; then
+		echo $text
+	fi
+
+	if [ -n "$2" ]; then
+		echo "$format" >> "$2"
 	else
-		echo "$format" | tee -a "$file_log_main"
+		echo "$format" >> "$file_log_main"
 	fi
 }
 
@@ -291,16 +333,23 @@ display_success() {
 
 
 # Display always the same message in info messages.
-# Usage: display_info <message>
-# Usage: display_info <message> <log file to duplicate the message>
-display_info() {
+# Usages:
+#  log_info <message>
+#  log_info <message> <log file to duplicate the message>
+log_info() {
 
-	local format="$now info:     $(current_cli_info) ${1}"
+	# local text="$1"
+	local text="$(echo $1 | sed "s|^|$(current_cli_info)|")"
+	local format="$now info:     $text"
 
-	if [ -n "${2}" ]; then
-		echo "$format" | tee -a "$file_log_main" "${2}"
+	if [ "$(get_config_value $file_config display_loglevel | grep info)" ]; then
+		echo $text
+	fi
+
+	if [ -n "$2" ]; then
+		echo "$format" >> "$2"
 	else
-		echo "$format" | tee -a "$file_log_main"
+		echo "$format" >> "$file_log_main"
 	fi
 }
 
@@ -308,47 +357,28 @@ display_info() {
 
 
 # Write output of a command in logs
-# Usage: <command> | append_log					(append to the default file)
-# Usage: <command> | append_log <log file>		(append to the given file)
+# Usages:
+#  <command> | append_log					(append to the default file)
+#  <command> | append_log <log file>		(append to the given file)
 append_log() {
 
-	local file_log="${1}"
-	
-	# # Get process name to write it in log file
-	# local command="${0}"
-	# $command & local pid=$!
-	# local process_name="$(ps -o cmd -fp $pid | cut -d " " -f 1 -s)"
-	# display_info "launching: $command"
+	local file_log="$1"
 
 
-	# Set the log format on the command and append it to the selected file
+	# Format the message
+	local text="$(sed "s|^|$(current_cli_info) |")"
+	local format="$now op.sys:   "
+
+	# Display the text
+	echo $text
+
+	# Append the text to the logs
 	if [ -n "$file_log" ]; then
-		sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log"
+		echo $text | sed "s|^|$format|" >> "$file_log"
 	else
-		sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log_main"
+		echo $text | sed "s|^|$format|" >> "$file_log_main"
 	fi
 
-}
-
-
-
-
-# Loading animation so we know the process has not crashed.
-# Usage: loading "<command that takes time>"
-loading() {
-	${1} & local pid=$!
-
-	# while ps -p $pid > /dev/null; do
-	while ps -T | grep $pid > /dev/null; do
-		# for s in / - \|; do
-		# for s in l o a d e r; do
-		for s in . o O °; do
-			printf "$s\033[0K\r"
-
-			sleep 0.12
-		done
-		i=$((i+1))
-	done
 }
 
 
@@ -370,7 +400,7 @@ posix_which() {
 			# Bash isn't creating new lines if command is used in "$(quotes)"
 			for directory_raw in $(echo "$PATH" | tr ":" "\n" | tr " " "$special_char"); do
 				local directory="$(echo $directory_raw | tr "$special_char" " ")"
-				local command="$directory/${1}"
+				local command="$directory/$1"
 
 				if [ -f "$command" ]; then
 					echo "$command"
@@ -379,7 +409,7 @@ posix_which() {
 		else 
 			for directory_raw in "$(echo "$PATH" | tr ":" "\n" | tr " " "$special_char")"; do
 				local directory="$(echo $directory_raw | tr "$special_char" " ")"
-				local command="$directory/${1}"
+				local command="$directory/$1"
 
 				if [ -f "$command" ]; then
 					echo "$command"
@@ -389,16 +419,16 @@ posix_which() {
 	}
 
 	# Some commands are builtin and doesn't have path on the system.
-	# This permit to 
+	# This permits to 
 	# - test if any command exists
 	# - get the path of the command if it has one
 	# - still display an output in case of no path but the command exist
 	# - don't display anything if the command doesn't exist at all
-	if [ -n "$(command -v "${1}")" ]; then
-		if [ -n "$(find_path "${1}")" ]; then
-			find_path "${1}"
+	if [ -n "$(command -v "$1")" ]; then
+		if [ -n "$(find_path "$1")" ]; then
+			find_path "$1"
 		else
-			echo "${1}"
+			echo "$1"
 		fi
 	fi
 	
@@ -410,13 +440,53 @@ posix_which() {
 # Function to know if commands exist on the system, with always the same output to easily use it in conditions statements.
 # Usage: exists_command <command>
 exists_command() {
-	local command="${1}"
+	local command="$1"
 
 	# if ! which $command > /dev/null; then
 	if [ ! -z "$(posix_which "$command")" ]; then
 		echo "exists"
 	else
-		display_error "'$command' command not found"
+		log_error "'$command' command not found"
+	fi
+}
+
+
+
+
+# loading_process animation so we know the process has not crashed.
+# Usage: loading_process "<command that takes time>"
+loading_process() {
+
+	$1 & local pid=$!
+
+
+	if [ "$(exists_command "trap")" = "exists" ] && [ "$(exists_command "tput")" = "exists" ]; then
+
+		# Trap the future CTRL+C to get back the cursor
+		trap "tput cnorm" INT
+
+		# Hide cursor
+		tput civis
+	fi
+	
+
+	while ps -T | grep $pid > /dev/null; do
+		i=$((i+1))
+		# for s in / - \|; do
+		# for s in l o a d e r; do
+		# for s in . o O °; do
+		for s in . .. ... .. . ' '; do
+		# for s in '⠋' '⠙' '⠹' '⠸' '⠼' '⠴'  '⠦'  '⠧' '⠇' '⠏'; do
+			printf "$s\033[0K\r"
+
+			sleep 0.12
+		done
+	done
+
+
+	# Get back the cursor because the process has finished
+	if [ "$(exists_command "tput")" = "exists" ]; then
+		tput cnorm
 	fi
 }
 
@@ -427,12 +497,12 @@ exists_command() {
 # Usage: set_config_value "<file>" "<option>" "<new value>"
 set_config_value() {
 
-	local file="${1}"
-	local option="${2}"
-	local value_new="${3}"
+	local file="$1"
+	local option="$2"
+	local value_new="$3"
 	local value_old="$(get_config_value $file $option)"
 
-	display_info "set '$option' from '$value_old' to '$value_new'."
+	log_info "set '$option' from '$value_old' to '$value_new'."
 
 	# Drop if the option or the value are not given
 	if [ -n "$option" ] || [ -n "$value_new" ]; then
@@ -440,12 +510,12 @@ set_config_value() {
 		# If both the file and the option exist
 		# = Replace the option old value with the new value
 		if [ -f "$file" ] && [ -n "$value_old" ]; then
-			sed -i "s/$option $value_old/$option $value_new/g" "$file"
+			sed -i "s|$option $value_old|$option $value_new|" "$file"
 
 		# If the file exists but the option doesn't exist
 		# = Add the option and the value at the begin of the file (this is a curative way to just quickly get the option setted up)
 		elif [ -f "$file" ] && [ -z "$value_old" ]; then
-			sed -i "1s/^/$option $value_new/" "$file"
+			sed -i "1s|^|$option $value_new|" "$file"
 
 		# If the file doesn't exist (also meaning the option can't exist)
 		# = Create the file and add the option with the value (this is a curative way to just quickly get the option setted up)
@@ -453,7 +523,7 @@ set_config_value() {
 			echo "$option $value_new" > "$file"
 		fi
 	else
-		display_error "missing option/value combination."
+		log_error "missing option/value combination."
 	fi
 }
 
@@ -475,12 +545,12 @@ sanitize_confirmation() {
 # Usage: get_logs <file>
 get_logs() {
 
-	display_info "getting logs from ${1}"
+	log_info "getting logs from $1"
 
 	if [ "$(exists_command "less")" = "exists" ]; then
-		cat "${1}" | less +G
+		cat "$1" | less +G
 	else
-		cat "${1}"
+		cat "$1"
 	fi
 }
 
@@ -491,7 +561,8 @@ get_logs() {
 detect_cli() {
 	if [ "$(exists_command "$NAME_LOWERCASE")" = "exists" ]; then
 		if [ -n "$($NAME_LOWERCASE --version)" ]; then
-			display_info "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) detected at $(posix_which $NAME_LOWERCASE)"
+			# log_info "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) detected at $(posix_which $NAME_LOWERCASE)"
+			log_info "$NAME $($NAME_ALIAS --version) detected at $(posix_which $NAME_LOWERCASE)"
 		fi
 	fi
 }
@@ -499,39 +570,33 @@ detect_cli() {
 
 
 
-# Detect what is the current publication installed
-detect_publication() {
-	if [ -f "$file_current_publication" ]; then
-		cat "$file_current_publication"
-	else
-		display_error "publication not found."
-	fi
-}
-
-
-
-
-# Permit to verify if the remote repository is reachable with HTTP.
+# Permits to verify if the remote repository is reachable with HTTP.
 # Usage: verify_repository_reachability <URL>
 verify_repository_reachability() {
 
-	local url="${1}"
+	local url="$1"
+
+	log_info "try reach: $url"
 
 	if [ "$(exists_command "curl")" = "exists" ]; then
-		http_code="$(curl -s -L -I -o /dev/null -w %{response_code} $url)"
+		http_code="$(curl -s -k -L -I -o /dev/null -w "%{response_code}" $url)"
 	elif [ "$(exists_command "wget")" = "exists" ]; then
-		http_code="$(wget --spider --server-response "$url" 2>&1 | awk '/^  HTTP/{print $2}' | tail -n 1)"
+		http_code="$(wget --spider --server-response --no-check-certificate "$url" 2>&1 | awk '/^  HTTP/{print $2}' | tail -n 1)"
 	else
-		display_error "can't get HTTP code with curl or wget."
+		log_error "can't get HTTP code with curl or wget."
 	fi
 
 	http_family="$(echo $http_code | cut -c 1)"
 	if [ "$http_family" = "1" ] || [ "$http_family" = "2" ] || [ "$http_family" = "3" ]; then
-		repository_reachable="true"
-		display_success "[HTTP $http_code] $url is reachable."
+		echo "true" > $file_repository_reachable_tmp
+		log_info "[HTTP $http_code] $url is reachable."
 	else 
-		repository_reachable="false"
-		display_error "[HTTP $http_code] $url is not reachable."
+		echo "false" > $file_repository_reachable_tmp
+		if [ -z $http_code ]; then
+			log_error "$url is not reachable."
+		else
+			log_error "[HTTP $http_code] $url is not reachable."
+		fi
 		exit
 	fi
 }
@@ -541,53 +606,217 @@ verify_repository_reachability() {
 
 # Download releases archives from the repository
 # Usages:
-# - download_cli <url of single file> <temp file>
-# - download_cli <url of n.n.n archive> <temp archive> <temp dir for extraction>
-download_cli() {
+# - download_file <url of single file> <temp file>
+# - download_file <url of n.n.n archive> <temp archive> <temp dir for extraction>
+download_file() {
 
-	local file_url="${1}"
-	local file_tmp="${2}"
-	local dir_extract_tmp="${3}"
+	local file_url="$1"
+	local file_tmp="$2"
+	local dir_extract_tmp="$3"
 
 	# Testing if repository is reachable with HTTP before doing anything.
-	verify_repository_reachability "$file_url"
-	if [ "$repository_reachable" = "true" ]; then
+	loading_process "verify_repository_reachability $file_url"
+	if [ -f "$file_repository_reachable_tmp" ] && [ "$(cat $file_repository_reachable_tmp)" = "true" ]; then
 
 		# Try to download with curl if exists
 		if [ "$(exists_command "curl")" = "exists" ]; then
-			display_info "downloading sources from $file_url with curl."
-			loading "curl -sL $file_url -o $file_tmp"
+			log_info "downloading sources from '$file_url' with curl."
+			loading_process "curl -sLk $file_url -o $file_tmp"
 			
 		# Try to download with wget if exists
 		elif [ "$(exists_command "wget")" = "exists" ]; then
-			display_info "downloading sources from $file_url with wget."
-			loading "wget -q $file_url -O $file_tmp"
+			log_info "downloading sources from '$file_url' with wget."
+			loading_process "wget -q --no-check-certificate $file_url -O $file_tmp"
 
 		else
-			display_error "could not download $file_url with curl or wget."
+			log_error "could not download '$file_url' with curl or wget."
 		fi
 
 
-		# Test if the "$dir_extract_tmp" variable is empty to know if we downloaded an archive that we need to extract
-		if [ -n "$dir_extract_tmp" ]; then
-			# Test if the downloaded file is a tarball
-			if file "$file_tmp" | grep -q "gzip compressed data"; then
-				if [ "$(exists_command "tar")" = "exists" ]; then
-				
-					# Prepare tmp directory
-					rm -rf $dir_extract_tmp
-					mkdir -p $dir_extract_tmp
+		# Success message
+		if [ -f "$file_tmp" ]; then
+			log_info "file '$file_tmp' downloaded."
 
-					# "tar --strip-components 1" permit to extract sources in /tmp/$NAME_LOWERCASE and don't create a new directory /tmp/$NAME_LOWERCASE/$NAME_LOWERCASE
-					tar -xf "$file_tmp" -C "$dir_extract_tmp" --strip-components 1
+			# Test if the "$dir_extract_tmp" variable is empty to know if we downloaded an archive that we need to extract
+			if [ -n "$dir_extract_tmp" ]; then
+				# Test if the downloaded file is a tarball
+				if file "$file_tmp" | grep -q "gzip compressed data"; then
+					if [ "$(exists_command "tar")" = "exists" ]; then
+					
+						# Prepare tmp directory
+						rm -rf $dir_extract_tmp
+						mkdir -p $dir_extract_tmp
+
+						# "tar --strip-components 1" permits to extract sources in /tmp/$NAME_LOWERCASE and don't create a new directory /tmp/$NAME_LOWERCASE/$NAME_LOWERCASE
+						tar -xf "$file_tmp" -C "$dir_extract_tmp" --strip-components 1
+					fi
+				else
+					log_error "file '$file_url' is a non-working tarball and cannot be used, deleting it."
 				fi
-			else
-				display_error "file '$file_url' is a non-working tarball and cannot be used, deleting it."
 			fi
+		else
+			log_error "file '$file_tmp' not downloaded."
 		fi
+		
 	fi
+	rm -f $file_repository_reachable_tmp
 
 }
+
+
+
+
+# Dynamically create automation (systemd, cron, ...)
+# This can be used from subcommand, in the init_command() function to install automation in the same time that the command has been downloaded
+# /!\ If using through $HELPER in subcommands, "$1" must be called to get the subcommand name 
+# Usages:
+#  <$HELPER> create_automation "$1 <command to launch>"
+#  <$HELPER> create_automation "$1 <command to launch>" <name alteration> <description alteration>
+create_automation() {
+
+	# Automatically detect command to launch
+	if [ -z "$1" ]; then
+		log_error "missing subcommand name."
+	else
+		local command="$NAME_LOWERCASE $1"
+	fi
+
+	# Automatically create name based on command to launch if nothing given
+	if [ -z "$2" ]; then
+		local name="$NAME_LOWERCASE-$(echo "$1" | sed 's/-.*//' | sed 's/ /-/g' | sed 's/-$//')"
+	else
+		local name="$NAME_LOWERCASE-$2"
+	fi
+
+	# Automatically create description based on command to launch if nothing given
+	if [ -z "$3" ]; then
+		local description="$NAME: $(echo "$1" | sed 's/-.*//')"
+	else
+		local description="$NAME: $3"
+	fi
+
+
+	local documentation="$NAME_ALIAS --help"
+
+
+	create_systemd() {
+		echo "
+			[Unit]
+			Description=$description
+			Documentation=$documentation
+
+			[Service]
+			ExecStart=$command
+			KillMode=control-group
+			TimeoutStartSec=1800
+			TimeoutStopSec=1800
+			" | sed 's/^[ \t]*//' > "$dir_systemd/$name.service"
+			
+		echo "
+			[Unit]
+			Description=$description
+			Documentation=$documentation
+
+			[Timer]
+			OnCalendar=daily
+			Persistent=true
+
+			[Install]
+			WantedBy=multi-user.target
+			" | sed 's/^[ \t]*//' > "$dir_systemd/$name.timer"
+
+
+		systemctl -q daemon-reload
+		systemctl -q enable $name.timer
+		# systemctl enable $name.timer
+	}
+
+
+	if [ "$(exists_command "systemctl")" = "exists" ]; then
+		# Reinstall automation only if 'self' detected (reserved word for CLI itself, and not subcommands)
+		# if [ -z "$(ls $dir_systemd | grep $name | grep 'self')" ]; then
+			create_systemd
+		# fi
+
+	elif [ "$(exists_command "cron")" = "exists" ]; then
+		log_error "cron has not been implemented yet."
+
+	else
+		log_error "no automation tool available."
+
+	fi
+}
+
+
+
+
+# Calculate checksum of a given file
+# Usages:
+#  file_checksum <file path>
+#  file_checksum <file URL>
+file_checksum() {
+
+	if [ "$(echo $1 | grep -e '^http')" ]; then
+		local url="$1"
+
+		if [ "$(exists_command "curl")" = "exists" ]; then
+			curl -sk $url | cksum -a sha1 | sed 's/^.*= //'
+		elif [ "$(exists_command "wget")" = "exists" ]; then
+			wget -q -O - --no-check-certificate $url | cksum -a sha1 | sed 's/^.*= //'
+		else
+			log_error "can't get '$url' remote checksum with curl or wget."
+		fi
+	else
+		cat $1 | cksum -a sha1 | sed 's/^.*= //'
+	fi
+}
+
+
+
+
+# Get "API", "raw" or the "default web" Github URL from the others one
+# Usage: match_url_repository <url> <want: github_api|github_raw|github_web>
+match_url_repository() {
+
+	local url="$1"
+	local want="$2"
+
+
+	# Displayed the asked URL according to $want
+	get_url() {
+		local project="$1"
+
+		if [ "$want" = "github_api" ]; then
+			echo "https://api.github.com/repos/$project"
+		elif [ "$want" = "github_raw" ]; then
+			echo "https://raw.githubusercontent.com/$project"
+		elif [ "$want" = "github_web" ]; then
+			echo "https://github.com/$project"	
+		fi
+	}
+
+
+	# https://api.github.com/repos/maintainer/repository
+	if [ "$(echo $url | grep 'com' | grep 'github' | grep 'api')" ]; then
+		project="$(echo $url  | cut -d "/" -f 5-6)"
+		get_url "$project"
+
+	# https://raw.githubusercontent.com/maintainer/repository
+	elif [ "$(echo $url | grep 'com' | grep 'github' | grep 'raw')" ]; then
+		project="$(echo $url  | cut -d "/" -f 4-5)"
+		get_url "$project"
+
+	# https://github.com/maintainer/repository
+	elif [ "$(echo $url | grep 'com' | grep 'github')" ]; then
+		project="$(echo $url  | cut -d "/" -f 4-5)"
+		get_url "$project"
+
+	# Finally just echo the given URL because it probably means that it's hosted on a basic directory listing web server
+	else
+		echo $url
+	fi
+}
+
 
 # Helper functions - end
 # --- --- --- --- --- --- ---
@@ -610,121 +839,61 @@ fi
 
 
 
-export file_config="$dir_config/$NAME_LOWERCASE.conf"
-# Since 1.2.0 the main config file has been renamed from $NAME_LOWERCASE_config to $NAME_LOWERCASE.conf
-# The old file is not needed anymore and must be removed (here it's automatically renamed)
-if [ -f "$dir_config/"$NAME_LOWERCASE"_config" ]; then
-	mv "$dir_config/"$NAME_LOWERCASE"_config" "$file_config"
-fi
-
-
-
-
-# Depending on the chosen publication, the repository will be different:
-# - Main (= stable) releases:	https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE
-# - Unstable releases:			https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-unstable
-# - Dev releases:				https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-dev
-if [ -f "$file_config" ]; then
-	PUBLICATION="$(get_config_value "$file_config" "publication")"
-else
-	PUBLICATION="main"
-fi
-
-case "$PUBLICATION" in
-	unstable|dev)
-		URL_ARCH="$HOST_URL_ARCH/$NAME_LOWERCASE-$PUBLICATION"
-		URL_FILE="$HOST_URL_FILE/$NAME_LOWERCASE-$PUBLICATION"
-		;;
-	main)
-		URL_ARCH="$HOST_URL_ARCH/$NAME_LOWERCASE"
-		URL_FILE="$HOST_URL_FILE/$NAME_LOWERCASE"
-		;;
-	*)
-		display_info "publication '$PUBLICATION' not found, using default 'main'."
-		PUBLICATION="main"
-		echo "main" > $file_current_publication
-		URL_ARCH="$HOST_URL_ARCH/$NAME_LOWERCASE"
-		URL_FILE="$HOST_URL_FILE/$NAME_LOWERCASE"
-		;;
-esac
-
-
-
-
-if [ "$CURRENT_CLI" = "./$NAME_LOWERCASE.sh" ]; then
-	dir_commands="commands"
-else
-	dir_commands="$dir_src_cli/commands"
-fi
-
-file_COMMAND_UPDATE="$dir_commands/update.sh"
-file_COMMAND_MAN="$dir_commands/man.sh"
-file_COMMAND_FIREWALL="$dir_commands/firewall.sh"	
-file_COMMAND_INSTALL="$dir_commands/install.sh"	
-
-if [ "$(exists_command "systemctl")" = "exists" ]; then
-	COMMAND_UPDATE_SYSTEMD_STATUS="systemctl status $NAME_LOWERCASE-updates.timer"
-	
-	# if [ "$(exists_command "journalctl")" = "exists" ]; then
-	# 	COMMAND_UPDATE_SYSTEMD_LOGS="journalctl -e _SYSTEMD_INVOCATION_ID=`systemctl show -p InvocationID --value $NAME_LOWERCASE-updates.service`"
-	# fi
-fi
-
-
-
 # Delete the installed command from the system
 # Usages: 
-# - delete_cli
-# - delete_cli "exclude_main"
+#  delete_cli
+#  delete_cli "exclude_main"
 delete_cli() {
 	
-	# $exclude_main permit to not delete main command "$NAME_ALIAS" and "$NAME_LOWERCASE".
+	# $exclude_main permits to not delete main command "$NAME_ALIAS" and "$NAME_LOWERCASE".
 	#	(i) This is useful in case when the CLI tries to update itself, but the latest release is not accessible.
 	#	/!\ Unless it can happen that the CLI destroys itself, and then the user must reinstall it.
 	#	(i) Any new update will overwrite the "$NAME_ALIAS" and "$NAME_LOWERCASE" command, so it doesn't matter to not delete it during update.
 	#	(i) It's preferable to delete all others files since updates can remove files from olders releases 
-	local exclude_main="${1}"
+	local exclude_main="$1"
 
 	if [ "$(exists_command "$NAME_ALIAS")" != "exists" ]; then
-		display_error "$NAME is not installed on your system."
+		log_info "$NAME is not installed on your system."
 	else
 		detect_cli
 
 		if [ "$exclude_main" = "exclude_main" ]; then
 			# Delete everything except main files and directories
 			
-			# The "find" command below permit to delete everything in $dir_src_cli except:
+			# The "find" command below permits to delete everything in $dir_src_cli except:
 			# - main CLI file
 			# - "core" directory (because some functions needed for main CLI file are stored in it)
 			#
 			# Notes: 
-			# - "exec rm -rv {} +" is the part that permit to remove the files and directory
-			# - "mindepth 1" permit to avoid the $dir_src_cli directory to be itself deleted
+			# - "exec rm -rv {} +" is the part that permits to remove the files and directory
+			# - "mindepth 1" permits to avoid the $dir_src_cli directory to be itself deleted
 			#
 			# This command can be used to list concerned files and directories : 
 			# find $dir_src_cli -mindepth 1 -maxdepth 1 ! -name "$NAME_LOWERCASE.sh" -print
 			# find $dir_src_cli -mindepth 1 -maxdepth 1 ! -name "$NAME_LOWERCASE.sh" -exec rm -rv {} + 2&> /dev/null
-			find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -exec rm -rf {} +
+			find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -not -name "commands" -exec rm -rf {} +
+			# find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -exec rm -rf {} +
 
 		else
 			# Delete everything
-			rm -rf $dir_config
 			rm -rf $file_autocompletion_1
 			rm -rf $file_autocompletion_2
 			rm -rf $file_main_alias_1
 			rm -rf $file_main_alias_2
 			rm -rf $dir_src_cli
 			rm -rf $dir_log
+			rm -rf $dir_config
 		fi
 
 		if [ -f "$file_main" ]; then
 			if [ "$exclude_main" = "exclude_main" ]; then
-				display_success "all sources removed excepted $file_main."
+				log_info "all sources removed excepted $file_main."
 			else
-				display_error "$NAME $VERSION located at $(posix_which $NAME_ALIAS) has not been uninstalled." && exit
+				log_error "$NAME $VERSION located at $(posix_which $NAME_ALIAS) has not been uninstalled." && exit
 			fi
 		else
-			display_success "uninstallation completed."
+			# Simple echo here and not a display function, because there will no more logs files
+			echo "uninstallation completed."
 		fi
 	fi
 }
@@ -740,55 +909,47 @@ delete_systemd() {
 		# Stop, disable and delete all systemd units
 		for file in $(ls $dir_systemd/$NAME_LOWERCASE* | grep ".timer"); do
 			if [ -f $file ]; then
-				display_info "$file found."
+				log_info "$file found."
 
 				local unit="$(basename "$file")"
 
-				systemctl stop $unit
-				systemctl disable $unit
+				systemctl -q stop $unit
+				systemctl -q disable $unit
 				rm -f $file
 
 				if [ -f $file ]; then
-					display_error "$file has not been removed."
+					log_error "$file not removed."
 				else
-					display_success "$file has been removed."
+					log_info "$file removed."
 				fi
 			else
-				display_error "$file not found."
+				log_error "$file not found."
 			fi
 		done
 
-		systemctl daemon-reload
+		systemctl -q daemon-reload
 	fi
 }
 
 
 
 
-# Helper function to assemble all functions that delete something
-# Usages: 
-# - delete_all
-# - delete_all "exclude_main" (Please check the explaination of $exclude_main at the delete_cli() function declaration)
-delete_all() {
-	
-	local exclude_main=${1}
-
-	delete_systemd && delete_cli ${1}
-	# delete_cli ${1}
-}
-
-
-
-
 # Check if all the files and directories that compose the CLI exist 
-# Usage: verify_cli_files
-verify_cli_files() {
+# Usages:
+#  verify_files
+#  verify_files <file to test>
+verify_files() {
 
-	display_info  "checking if required files and directories are available on the system."
+	log_info  "checking if required files and directories are available on the system."
+
+	local file_to_test="$1"
+	if [ -z "$file_to_test" ]; then
+		file_to_test="$CURRENT_CLI"
+	fi
 
 	# local filters_example="text1\|text2\|text3\|text4" 
 	local filters_wanted="=" 
-	local filters_unwanted="local " # the space is important for "local " otherwise it can hide some /usr/local/ paths, but the goal is just to avoid local functions variables declarations
+	local filters_unwanted="local \|tmp/" # the space is important for "local " otherwise it can hide some /usr/local/ paths, but the goal is just to avoid local functions variables declarations
 
 	local found=0
 	local missing=0
@@ -797,95 +958,107 @@ verify_cli_files() {
 	# Just init variable to set it local
 	local previous_path
 
-	if [ "$(exists_command "eval")" = "exists" ]; then
 
-		# Automatically detect every files and directories used in the CLI (every paths that we want to test here must be used through variables from this file)
-		while read -r line; do
-			if [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "file_" | grep -v "\$file")" ] || [ -n "$(echo $line | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "dir_" | grep -v "\$dir")" ]; then
+	# Automatically detect every files and directories used in the CLI (every paths that we want to test here must be used through variables from this file)
+	while read -r line; do
+		if [ -n "$(echo $line | grep -v '^#' | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "file_" | grep -v "\$file")" ] || [ -n "$(echo $line | grep -v '^#' | grep "$filters_wanted" | grep -v "$filters_unwanted" | grep "dir_" | grep -v "\$dir")" ]; then
 
-				local path_variable="$(echo $line | cut -d "=" -f 1 | sed s/"export "//)"
+			local path_variable="$(echo $line | cut -d "=" -f 1 | sed s/"export "//)"
 
-				# Just init variable to set it local
-				local path_value
-				eval path_value=\$$path_variable
+			# Just init variable to set it local
+			local path_value
+			eval path_value=\$$path_variable
 
-				if [ -n "$path_value" ]; then
-					if [ "$previous_path" != "$path_variable" ]; then
+			if [ -n "$path_value" ]; then
+				if [ "$previous_path" != "$path_variable" ]; then
 
-						if [ -f "$path_value" ]; then
-							# display_success "found file -> $path_variable -> $path_value"
-							display_success "found file -> $path_value"
-							found=$((found+1))
-						elif [ -d "$path_value" ]; then
-							# display_success "found dir  -> $path_variable -> $path_value"
-							display_success "found dir. -> $path_value"
-							found=$((found+1))
-						else
-							# display_error "miss.      -> $path_variable -> $path_value"
-							display_error "miss.      -> $path_value"
-							missing=$((missing+1))
-						fi
-				
-						total=$((total+1))
+					if [ -f "$path_value" ]; then
+						# log_success "found file -> $path_variable -> $path_value"
+						echo "found file -> $path_value" | append_log
+						found=$((found+1))
+					elif [ -d "$path_value" ]; then
+						# log_success "found dir  -> $path_variable -> $path_value"
+						echo "found dir. -> $path_value" | append_log
+						found=$((found+1))
+					else
+						# log_error "miss.      -> $path_variable -> $path_value"
+						echo "miss.      -> $path_value" | append_log
+						missing=$((missing+1))
 					fi
+				
+					total=$((total+1))
 				fi
-
-				# Store current path as the next previous path to be able to avoid tests duplication
-				previous_path="$path_variable"
-
 			fi
-		done < "$CURRENT_CLI"
 
+			# Store current path as the next previous path to be able to avoid tests duplication
+			previous_path="$path_variable"
 
-		display_info "$found/$total paths found."
-
-		if [ "$missing" != "0" ]; then
-			display_error "at least one file or directory is missing."
 		fi
+	done < "$file_to_test"
+
+	log_info "$found/$total paths found."
+
+	if [ "$missing" != "0" ]; then
+		log_error "at least one file or directory is missing."
 	fi
 }
 
 
 
 
-
 # Check if all the required commands are available on the system
-# Usage: verify_cli_commands
-# Usage: verify_cli_commands "print-missing-required-command-only"
-verify_cli_commands() {
+# Usages: 
+#  verify_dependencies <file to test>
+#  verify_dependencies <file to test> "print-missing-required-command-only"
+verify_dependencies() {
 
-	local print_missing_required_command_only="${1}"
+	local file_to_test="$1"
+	if [ -z "$file_to_test" ]; then
+		file_to_test="$CURRENT_CLI"
+	fi	
+
+	local print_missing_required_command_only="$2"
 	if [ "$print_missing_required_command_only" = "print-missing-required-command-only" ]; then
 		print_missing_required_command_only="true"
 	else
-		display_info "checking if required commands are available on the system."
-	fi	
+		log_info "checking if required commands are available on the system."
+	fi
+
+	
+	# Must store the commands in a file to be able to use the counters
+	local file_tmp_all="$dir_tmp/$NAME_LOWERCASE-commands-all"
+	local file_tmp_required="$dir_tmp/$NAME_LOWERCASE-commands-required"
+	local file_tmp_external="$dir_tmp/$NAME_LOWERCASE-commands-external"
 
 	local found=0
 	local missing=0
 	local missing_required=0
 	local total=0
 
-	# Permit to find all the commands listed in a file (1 line = 1 command)
+
+	# Permits to find all the commands listed in a file (1 line = 1 command)
 	# Usage: find_command <file>
 	find_command() {
-		local file_tmp="${1}"
-		local type="${2}"		# "required" or "optional" command
+		local file_tmp="$1"
+		local type="$2"		# "required" or "external" command
 
 		while read -r command; do
 			if [ "$(exists_command "$command")" = "exists" ]; then
 
 				if [ "$print_missing_required_command_only" != "true" ]; then
-					display_success "found ($type) $command"
+					# log_info "found ($type) $command"
+					echo "found ($type) $command" | append_log
 				fi
 
 				found=$((found+1))
 			else 
 				if [ "$print_missing_required_command_only" != "true" ]; then
-					display_error "miss. ($type) $command"
+					# log_info "miss. ($type) $command"
+					echo "miss. ($type) $command" | append_log
 				fi
 
 				missing=$((missing+1))
+				
 
 				if [ "$type" = "required" ]; then
 					missing_required=$((missing_required+1))
@@ -897,105 +1070,189 @@ verify_cli_commands() {
 		done < "$file_tmp"
 	}
 
-	local commands_required=" \
-		tr
-		ls
-		ln
-		echo
-		printf
-		cat
-		cut
-		sed
-		awk
-		find
-		grep
-		tail
-		chmod
-		mkdir
-		mv
-		rm
-		cp
-		pwd
-		id
-		date
-		sleep
-		ps
-		sort
-		basename
-		tee
-		file
-		tar
-		command
-		exec
-		set
-		read
-		cd
-		eval
-		exec
-		exit
-		export
-		case
-		if
-		while
-		for
-		local
-		then
-		fi
-		esac
-		do
-		done
-		$SHELL \
-	"
 
-	local commands_optional=" \
-		less
-		pkg-config
-		curl
-		wget
-		journalctl
-		systemctl \
-	"
 
-	# Must store the commands in a file to be able to use the counters
-	local file_tmp_required="$dir_tmp/$NAME_LOWERCASE-commands-required"
-	local file_tmp_optional="$dir_tmp/$NAME_LOWERCASE-commands-optional"
+	# Automatically detect all commands 
+	# For each regex below:
+	# - Remove comments
+	# - Do regex specific use case
+	# - Get all words of the file line by line
+	# - Remove everything that is not a char contained in command name
+	# - Sort & remove duplications
 
+	# - Get most of "command" from this pattern: command text
+	# - Remove text from this pattern: "text"
+	# - Remove this pattern (to avoid unique words that starts a line and could be detected as a command):
+	#       echo " \
+	#         text
+	#         text
+	#         text
+	#       " | sed
+	local list1="$(cat $file_to_test \
+		| sed 's/#.*$//' \
+		| sed -n '/echo \" \\/, /\" \| sed /!p' \
+		| sed 's/\([a-z]\) .*/\1/' \
+		| sed 's/"[^*]*"//' \
+		| sort -ud)"
+
+	# Get "command" from this pattern: "text $(command text"
+	local list2="$(cat $file_to_test \
+		| sed 's/#.*$//' \
+		| sed 's/.*$(\([a-z_-]*\).*/\1/' \
+		| grep -v "_" \
+		| grep -v "^.$" \
+		| grep "^[a-z]" \
+		| grep -v "a-z" \
+		| grep -v "[=:;.,_)\"\$]" \
+		| sort -ud)"
+
+	# Get "command" from this pattern: text | command text
+	local list3="$(cat $file_to_test \
+		| sed 's/#.*$//' \
+		| grep '|[ ]' \
+		| tr '|' '\n' \
+		| awk '{print $1}' \
+		| grep -v "^.$" \
+		| grep "^[a-z]" \
+		| grep -v "a-z" \
+		| grep -v "[=:;.,_)\"\$]" \
+		| sort -ud)"
+
+	# Get "command" from this pattern: if command text
+	local list4="$(cat $file_to_test \
+		| sed 's/#.*$//' \
+		| grep 'if' \
+		| sed 's/[^ ]* *\([^ ]*\) .*/\1/' \
+		| sort -ud)"
+
+	# Get "command" from this pattern: while command text
+	local list5="$(cat $file_to_test \
+		| sed 's/#.*$//' \
+		| grep 'while' \
+		| sed 's/[a-z]* \([a-z]* \).*/\1/' \
+		| sort -ud)"
+
+	# Get "command" from this pattern: command -
+	local list6="$(cat $file_to_test \
+		| sed 's/#.*$//' \
+		| grep "[a-z] -" \
+		| sed 's/\([a-z]*\)[ -].*/\1/' \
+		| sort -ud)"
+
+	# Keep only the grepped text from this pattern: text grep text
+	local list7="$(cat $file_to_test \
+		| sed 's/#.*$//' \
+		| grep "grep" \
+		| sed 's/.*\(grep\).*/\1/' \
+		| sort -ud)"
+
+	local list="$(echo "$list1" \
+				&& echo "$list2" \
+				&& echo "$list3" \
+				&& echo "$list4" \
+				&& echo "$list5" \
+				&& echo "$list6" \
+				&& echo "$list7" \
+			)"
+
+	# - Remove functions names
+	# - Remove words of 1 char
+	# - Remove words that are not commands starting with special chars (careful to the - that can be contained in middle of command names)
+	# - Remove words that are not commands containing special chars
+	# - Remove words that are not commands ending with special chars
+	# - Sort & remove duplications
+	echo $list \
+		| sed -E 's/\s+/\n/g' \
+		| grep -v "^.$" \
+		| grep "^[a-z]" \
+		| grep -v "a-z" \
+		| grep -v "[=:;.,_)\"\$]" \
+		| sort -ud > $file_tmp_all
+
+
+	# Automatically detect all external commands
+	# Get "command" from this pattern: exists_command "command"
+	cat $file_to_test \
+		| sed 's/#.*$//' \
+		| grep 'exists_command "' \
+		| sed 's/.*exists_command "\([a-z-]*\)".*/\1/' \
+		| grep -v 'exists_command' \
+		| sort -ud > $file_tmp_external
+
+
+	# Get required commands
+	# local commands_required="$(diff --changed-group-format='%<' --unchanged-group-format='' $file_tmp_all $file_tmp_external | cut -d " " -f 2)"
+	local commands_required="$(comm -23 $file_tmp_all $file_tmp_external)"
 	echo "$commands_required" | sort -d > $file_tmp_required
-	echo "$commands_optional" | sort -d > $file_tmp_optional
+
+
 
 	find_command $file_tmp_required "required"
-	find_command $file_tmp_optional "optional"
+	find_command $file_tmp_external "external"
 
 
 	if [ "$print_missing_required_command_only" != "true" ]; then
 		
-		display_info "$found/$total commands found."	
+		log_info "$found/$total commands found."	
 
 		if [ "$missing_required" = "0" ] && [ "$missing" != "0" ]; then
-			display_error "at least one optional command is missing but will not prevent proper functioning."
+			log_error "at least one external command is missing but will not prevent proper functioning."
 		elif [ "$missing_required" != "0" ]; then
-			display_error "at least one required command is missing."
+			log_error "at least one required command is missing."
 		fi
 	else
 		echo $missing_required		
 	fi
 
 
+	rm $file_tmp_all
 	rm $file_tmp_required
-	rm $file_tmp_optional
+	rm $file_tmp_external
+}
 
+
+
+
+# Declare config file and default values
+# Usage: declare_config_file
+declare_config_file() {
+
+	local file="$1"
+
+	# Create temporary config file to be able to copy new options to the current config file
+	echo " \
+		# This is the main $NAME configuration file.
+		# Here are provided defaults options, and their values can be changed according to your needs.
+		# This file can meet several modifications within futures updates.
+		# Any value configured here will remain after updates.
+		# Any comment starting with '#' that are not part of the CLI will be removed.
+
+		# How to use ?
+		# A single space is necessary to match options with their values:
+		# <option> <value>
+
+		# [option] cli_url
+		# Declare remote repository of the CLI itself to get futures updates.
+		cli_url "https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE"
+
+		# [option] display_loglevel
+		# Display various debug information during CLI execution.
+		# Available values: error,success,info,debug
+		# All the values can be used at the same time. Don't set any whitespace.
+		display_loglevel error,success,info
+		" | sed 's/^[ \t]*//' > "$file"
 }
 
 
 
 
 # This function will install the new config file given within new versions, while keeping user configured values
-# Usage: install_new_config_file
-install_new_config_file() {
+# Usage: rotate_config_file
+rotate_config_file() {
 
 	local file_config_current="$file_config"
-	# local file_config_tmp="$archive_dir_tmp/config/$file_config"
-	local file_config_tmp="$archive_dir_tmp/config/$NAME_LOWERCASE.conf"
+	# local file_config_tmp="$archive_dir_tmp/config/$NAME_LOWERCASE.conf"
+	local file_config_tmp="$dir_tmp/$NAME_LOWERCASE.conf"
 
 	while read -r line; do
 		local first_char="$(echo $line | cut -c1-1)"
@@ -1007,8 +1264,8 @@ install_new_config_file() {
 			value=$(echo $line | cut -d " " -f 2)
 
 			# Replacing options values in temp config file with current configured values
-			# /^#/! is to avoid commented lines
-			sed -i "/^#/! s/$option.*/$line/g" $file_config_tmp
+			# sed here using "|" instead of "/" to be able to store URL in the values without getting a sed error
+			sed -i "s|^$option.*|$line|g" $file_config_tmp
 
 		fi	
 	done < "$file_config_current"
@@ -1020,7 +1277,354 @@ install_new_config_file() {
 
 
 
-# Update the installed command on the system
+# # Permits to set an option in the main config file to activate or not the automation of a sub command 
+# # Usage: command_config_activation <command> <description> <option>
+# command_config_activation() {
+
+# 	local command="$1"
+# 	local description="$2"
+# 	local option="$3"
+
+
+# 	echo "" >> $file_config
+# 	echo $description >> $file_config
+
+# 	set_config_value $file_config $command $option
+
+# 	echo "" >> $file_config
+# }
+
+
+
+
+# # Display all sources from sourceslist
+# # Usage: display_sourceslist <sourceslist file>
+# display_sourceslist() {
+
+# 	local file="$1"
+
+# 	grep '^http' $file
+# }
+
+
+
+
+# Install required directories and files related to subcommands
+# Usage: sourceslist_install_structure
+sourceslist_install_structure() {
+
+	# Ensure that sources directory exists
+	if [ ! -d "$dir_sourceslist" ]; then
+		log_info "$dir_sourceslist not found, creating it."
+		mkdir -p $dir_sourceslist
+	fi
+
+	# # Ensure that sources list exists for CLI
+	# if [ ! -f "$file_sourceslist_cli" ] || [ -z "$file_sourceslist_cli" ]; then
+	# 	log_info "$file_sourceslist_cli not found, creating it."
+	# 	echo "$URL_RAW" > $file_sourceslist_cli
+	# fi
+
+	# Ensure that sources list exists for subcommands
+	if [ ! -f "$file_sourceslist_subcommands" ] || [ -z "$file_sourceslist_subcommands" ]; then
+		log_info "$file_sourceslist_subcommands not found, creating it."
+		echo "$(match_url_repository "https://github.com/$NAME_LOWERCASE-project/commands" github_raw)/refs/heads/main/commands" > $file_sourceslist_subcommands
+	fi
+
+	# Ensure that registry exists for subcommands
+	if [ ! -f "$file_registry" ]; then
+		echo -n "" > $file_registry
+	fi
+}
+
+
+
+
+# List available commands from repository
+# Usage: subcommand_list
+subcommand_list() {
+
+	local list_tmp="$dir_tmp/$NAME_LOWERCASE-commands-list"
+	local list_installed_tmp="$dir_tmp/$NAME_LOWERCASE-commands-installed"
+
+	local installed="[installed]"
+
+	local url="$1"
+
+
+	sourceslist_install_structure
+
+
+	# Clean existing registry (it will be updated with fresh values)
+	# rm -f $file_registry
+	# touch $file_registry
+	echo -n "" > $file_registry
+
+
+	if [ -f "$file_sourceslist_subcommands" ] && [ -s "$file_sourceslist_subcommands" ]; then
+
+		for url in $(grep '^http' $file_sourceslist_subcommands); do
+			
+			# In case of commands repository is on Github, getting accurate URL
+			# (because api.github.com and raw.githubusercontent.com have themselves their usages, and we need to always have api.github.com for this usecase)
+			if [ "$(echo $url | grep '.com' | grep 'github' | grep 'raw.')" ]; then
+				project="$(echo $url  | cut -d "/" -f 4-5)"
+				end_of_url="$(echo $url  | cut -d "/" -f 9-99)"
+				url="https://api.github.com/repos/$project/contents/$end_of_url"
+			fi
+
+
+			loading_process "verify_repository_reachability $url"
+			if [ -f "$file_repository_reachable_tmp" ] && [ "$(cat $file_repository_reachable_tmp)" = "true" ]; then
+
+				if [ "$(exists_command "curl")" = "exists" ]; then
+					loading_process "curl -sLk $url" > $list_tmp
+				elif [ "$(exists_command "wget")" = "exists" ]; then			
+					loading_process "wget -q --no-check-certificate $url -O $list_tmp"
+				else
+					log_error "can't list remotes commands with curl or wget."
+				fi
+			fi
+			rm -f $file_repository_reachable_tmp
+
+
+			if [ -f "$list_tmp" ]; then
+				# If commands are from a Github repository...
+				# URL will always be "api.github.com" thanks to the hook just before
+				if [ "$(echo $url | grep '.com' | grep 'github' | grep 'api.')" ]; then
+					while read -r line; do
+						if [ "$(echo $line | grep 'download_url')" ]; then
+							# And get back the raw URL to be able to download the script from sourceslist + calculate checksum
+							local real_url="$(echo $line | grep 'download_url' | cut -d '"' -f 4)"
+							local checksum="$(file_checksum $real_url)"
+
+							echo $line \
+								| cut -d "\"" -f 4 \
+								| cut -d "/" -f 8 \
+								| grep -iw "\.$subcommands_allowed_extensions" \
+								| sed "s/\.[$subcommands_allowed_extensions]*//" \
+								| sed "s|$| $real_url $checksum|" \
+								| sort -u >> $file_registry
+						fi
+					done < $list_tmp
+				else
+					# ...Or from a basic web server with directory listing
+					while read -r line; do
+
+						local file_name="$(echo $line \
+							| grep -oP '(?<=href=")[^"]*' \
+							| sed '/\/.*/d' \
+							| sed '/^\(?.=\).*/d' \
+							| grep -iw "\.$subcommands_allowed_extensions")"
+
+						# Get the entire file URL to be able to calculate checksum
+						local real_url="$url/$file_name"
+						local checksum="$(file_checksum $real_url)"
+
+						echo $line \
+							| grep -oP '(?<=href=")[^"]*' \
+							| sed '/\/.*/d' \
+							| sed '/^\(?.=\).*/d' \
+							| grep -iw "\.$subcommands_allowed_extensions" \
+							| sed "s/\.[$subcommands_allowed_extensions]*//" \
+							| sed "s|$| $real_url $checksum|" \
+							| sort -u >> $file_registry
+					done < $list_tmp
+
+					# cat $list_tmp \
+					# 	| grep -oP '(?<=href=")[^"]*' \
+					# 	| sed '/\/.*/d' \
+					# 	| sed '/^\(?.=\).*/d' \
+					# 	| grep -iw "\.$subcommands_allowed_extensions" \
+					# 	| sed "s/\.[$subcommands_allowed_extensions]*//" \
+					# 	| sed "s|$| $url|" \
+					# 	| sort -u >> $file_registry
+				fi
+
+				rm -f $list_tmp
+			fi
+
+		done
+
+
+		# Detect remotes subcommands
+		if [ -f "$file_registry" ]; then
+			cat $file_registry | sed 's/ .*//' >> $list_installed_tmp
+		fi
+
+	else
+		log_error "'$file_sourceslist_subcommands' is empty."
+	fi
+
+
+	# Detect installed subcommands
+	if [ -d "$dir_commands" ] && [ ! -z "$(ls $dir_commands)" ]; then
+		ls $dir_commands >> $list_installed_tmp
+	fi
+
+
+	# Finally display all the subcommands and specify if already installed
+	if [ -f "$list_installed_tmp" ] && [ -s "$list_installed_tmp" ]; then
+
+		log_info "reading registry."
+		
+		while read -r command; do
+			if [ "$command" != "" ]; then
+
+				# Checking if the subcommand is already installed
+				if [ -f "$dir_commands/$command" ]; then
+					echo "$command $installed"
+				else
+					echo "$command"
+				fi
+			fi
+		done < $list_installed_tmp | sort -ud
+
+		rm -f $list_installed_tmp
+	else
+		log_error "no command installed."
+	fi
+
+}
+
+
+
+
+# Get a command from repository
+# Usage: subcommand_get <command>
+subcommand_get() {
+
+	local command="$1"
+	local file_command="$dir_commands/$command"
+	# local file_command_tmp="$dir_tmp/$NAME_LOWERCASE-$command"
+
+
+	# Creating command directory if not exists
+	if [ ! -d "$dir_commands" ]; then
+		mkdir $dir_commands
+
+		# Set commands files executable for users + root
+		chmod 554 -R $dir_commands
+	fi
+
+
+	if [ -z "$command" ]; then
+		log_info "please specify a command from the list below."
+		subcommand_list
+
+	elif [ -f "$file_command" ]; then
+		log_info "command '$command' is already installed."
+
+	else
+		
+		# Ensure that structure exists
+		sourceslist_install_structure
+
+		# # Ensure that registry is not empty to get the URL of the command
+		# if [ "$(cat $file_registry)" = "" ]; then
+		# 	subcommand_list
+		# fi
+
+		# Refresh list according to sources list (repositories might be commented or removed since last time) 
+		subcommand_list
+
+		local url="$(get_config_value $file_registry $command)"
+		download_file $url $file_command
+
+		if [ -f "$file_command" ]; then
+			chmod 554 $file_command
+			chown $OWNER:$OWNER $file_command
+
+			# Detect if the command needs to be initialised
+			if [ "$(cat $file_command | grep -v '#' | grep 'init_command()')" ]; then
+				$CURRENT_CLI $command init_command
+			fi
+
+			log_success "command '$command' has been installed."
+			log_info "'$NAME_ALIAS $command --help' to display help."
+		else
+			log_error "command '$command' has not been installed."
+		fi
+	fi
+}
+
+
+
+
+# Remove an installed command
+# Usage: subcommand_delete <command>
+subcommand_delete() {
+
+	local command="$1"
+	local file_command="$dir_commands/$command"
+
+	# Just init to set it local
+	local confirmation
+	
+
+	if [ -f "$file_command" ]; then
+
+		read -p "$question_continue" confirmation
+	
+		if [ "$(sanitize_confirmation $confirmation)" = "yes" ]; then
+			rm "$file_command"
+
+			# Remove the related sub command options from the main config file
+			sed -i '/\[command\] firewall/,/^\s*$/{d}' $file_config
+
+			if [ -f "$file_command" ]; then
+				log_error "command '$command' has not been removed."
+			else
+				log_success "command '$command' has been removed."
+			fi
+		else
+			log_info "uninstallation aborted."
+		fi
+	else
+		log_error "command '$command' not found."
+	fi
+
+}
+
+
+
+
+# Function to get the latest available version from the remote repository
+# Usage: get_latest_version
+get_latest_version() {
+
+	# local cli_url="$(get_config_value $file_config cli_url)"
+	local cli_url="$1"
+
+	# Check from Github if the repository is a Github URL
+	if [ "$(echo $cli_url | grep 'github' | grep 'com')" ]; then
+
+		local url_latest="$(match_url_repository $cli_url github_api)/releases/latest"
+
+		if [ "$(exists_command "curl")" = "exists" ]; then
+			# echo "$(curl -s "$url_latest" | grep tag_name | cut -d \" -f 4)"
+			local version_found="$(curl -s "$url_latest" | grep tag_name | cut -d \" -f 4)"
+
+		elif [ "$(exists_command "wget")" = "exists" ]; then
+			# echo "$(wget -q -O- "$url_latest" | grep tag_name | cut -d \" -f 4)"
+			local version_found="$(wget -q -O- "$url_latest" | grep tag_name | cut -d \" -f 4)"
+		fi
+	else
+		log_error "can't get version from $url_latest."
+	fi
+
+	# Get current $VERSION if can't reach the remote version in case of API reach limit to avoid having none data where this function is used
+	if [ -z "$version_found" ]; then
+		echo $VERSION
+	else
+		echo $version_found
+	fi
+}
+
+
+
+
+# Update the installed CLI on the system
 #
 # !!!!!!!!!!!!!!!!!!!!!!!!!
 # !!! CRITICAL FUNCTION !!!
@@ -1028,49 +1632,81 @@ install_new_config_file() {
 #
 # /!\	This function must work everytime a modification is made in the code. 
 # 		Unless, we risk to not being able to update it on the endpoints where it has been installed.
+# Usages:
+#  update_cli
+#  update_cli <force>
 update_cli() {
 
 	local downloaded_cli="$dir_tmp/$NAME_LOWERCASE.sh"
-	local remote_archive="$URL_ARCH/releases/latest"
-	local force="${1}"
-	local chosen_publication="${2}"
+	local cli_url="$(get_config_value $file_config cli_url)"
+	local force="$1"
 
+
+	# Ensure the $cli_url value is starting with HTTP, unless the rest of the function will not works due to automatic values calculations from URL format
+	if [ "$(echo $cli_url | grep -v '^http')" ]; then
+		cli_url="$(echo 'http://'$cli_url)"
+	fi
+	
+
+	# Function to update the CLI
+	# Usage: update_process
 	update_process() {
-		display_info "starting self update."
 
-		# Download only the main file (main by default, or the one of the chosen publication if specified)
-		if [ -z "$chosen_publication" ]; then
-			download_cli "$URL_FILE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
-		elif [ "$chosen_publication" = "main" ]; then
-			download_cli "$HOST_URL_FILE/$NAME_LOWERCASE/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
+		log_info "starting self update."
+
+
+		# Get the URL of the file to download
+		# If the remote repository is Github
+		if [ "$(echo $cli_url | grep 'github' | grep 'com')" ]; then
+			local url_file_to_download="$(match_url_repository $cli_url github_raw)/refs/tags/$(get_latest_version $cli_url)/$NAME_LOWERCASE.sh"
+
+		# If the remote repository is a basic directory listing web server
 		else
-			download_cli "$HOST_URL_FILE/$NAME_LOWERCASE-$chosen_publication/main/$NAME_LOWERCASE.sh" "$downloaded_cli"
+			local url_file_to_download="$cli_url"
 		fi
 
 
-		# Delete old files
-		delete_cli "exclude_main"
-		
-		# Execute the installation from the downloaded file 
-		chmod +x "$downloaded_cli"
-		"$downloaded_cli" -i
+		if [ ! -z "$url_file_to_download" ]; then
+	
+			# Download the file from the configured URL
+			download_file "$url_file_to_download" "$downloaded_cli"
 
-		display_info "end of self update or publication rotation."
+			if [ -f "$downloaded_cli" ]; then
+				# Delete old files
+				delete_cli "exclude_main"
+				
+				# Execute the installation from the downloaded file 
+				chmod +x "$downloaded_cli"
+				"$downloaded_cli" -i
+			else
+				log_error "file '$downloaded_cli' not found, aborting."
+			fi
+		fi
+
+		log_info "end of self update."
 	}
+
+
+	# # Get the URL of the file to download
+	# # If the remote repository is Github
+	# if [ "$(echo $cli_url | grep 'github' | grep 'com')" ]; then
+	# 	local url_file_to_download="$(match_url_repository $cli_url github_raw)/refs/tags/$(get_latest_version $cli_url)/$NAME_LOWERCASE.sh"
+
+	# # If the remote repository is a basic directory listing web server
+	# else
+	# 	local url_file_to_download="$cli_url"
+	# fi
 
 
 	# Option to force update (just bypass the version check)
 	# If the newest version already installed, it will just install it again
 	if [ "$force" = "force" ]; then
-		display_info "using force option."
+		log_info "using force option."
 		update_process
 	else
 		# Testing if a new version exists on the current publication to avoid reinstall if not.
-		if [ "$(exists_command "curl")" = "exists" ] && [ "$(curl -s "$remote_archive" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
-			display_info "latest version is already installed ($VERSION-$(detect_publication) detected with curl)."
-
-		elif [ "$(exists_command "wget")" = "exists" ] && [ "$(wget -q -O- "$remote_archive" | grep tag_name | cut -d \" -f 4)" = "$VERSION" ] && [ "$(detect_publication)" = "$(get_config_value "$file_config" "publication")" ]; then
-			display_info "latest version is already installed ($VERSION-$(detect_publication) detected with wget)."
+		if [ "$(get_latest_version $cli_url)" = "$VERSION" ]; then
+			log_info "latest version is already installed ($VERSION)."
 
 		else
 			update_process
@@ -1081,7 +1717,7 @@ update_cli() {
 
 
 
-# Install the command on the system
+# Install the CLI on the system
 #
 # !!!!!!!!!!!!!!!!!!!!!!!!!
 # !!! CRITICAL FUNCTION !!!
@@ -1091,168 +1727,182 @@ update_cli() {
 #		Because it's called by the update function.
 # Usages: 
 #  install_cli
-#  install_cli <chosen publication>
+#  install_cli <url of remote repository>
 install_cli() {
 
-	local chosen_publication="${1}"
+	# Overwrite the cli_url option from the config file
+	local url="$1"
 
 	# Test if all required commands are on the system before install anything
-	if [ "$(verify_cli_commands "print-missing-required-command-only")" = "0" ]; then
+	if [ "$(verify_dependencies "$CURRENT_CLI" "print-missing-required-command-only")" = "0" ]; then
 
-		display_info "starting self installation."
-		detect_cli
+		# Must store the log text in a variable because the display_loglevel option doesn't exist for now (because config file doesn't exist)
+		local future_log_start_install="starting self installation"
 
-		
+		# detect_cli
+
+
+
 		# Config directory installation
 		# Checking if the config directory exists and create it if doesn't exists
-		# This must be the first thing to do since $chosen_publication needs to be stored in this directory but it would not exists if it's the first time the CLI is installed
-		display_info "installing configuration."
 		if [ ! -d "$dir_config" ]; then
-			display_info "$dir_config not found, creating it."
-			mkdir $dir_config
+			# Must store the log text in a variable because the display_loglevel option doesn't exist for now (because config file doesn't exist)
+			local future_log_dir_config="$dir_config not found, creating it."
+
+			mkdir -p $dir_config
 		fi
 
 
-		# Just a log message
-		if [ -n "$chosen_publication" ]; then
-			display_info "publication '$chosen_publication' entered manually."
+		# Must testing if config file exists to avoid overwrite user customizations 
+		if [ ! -f "$file_config" ]; then
+			# Must store the log text in a variable because the display_loglevel option doesn't exist for now (because config file doesn't exist)
+			local future_log_file_config="$file_config not found, creating it. "
+
+			declare_config_file "$file_config"
 		else
-			display_info "using current '$($NAME_ALIAS --publication)' publication."
+			log_info "$file_config already exists, installing new file and inserting current configured options."
+
+			declare_config_file "$dir_tmp/$NAME_LOWERCASE.conf"
+			rotate_config_file
 		fi
 
 
-		# Check if a publication has been chosen, and allow to reinstall if the specified publication is the same as the current or is empty
-		if [ "$chosen_publication" = "" ] || [ "$chosen_publication" = "$($NAME_ALIAS --publication)" ]; then
+		# Test again if config file exists to be 100% sure to be able to use the display_loglevel 
+		if [ -f "$file_config" ]; then
+			if [ ! -z "$future_log_start_install" ]; then
+				log_info "$future_log_start_install"
+			fi
+			if [ ! -z "$future_log_dir_config" ]; then
+				log_info "$future_log_dir_config"
+			fi
+			if [ ! -z "$future_log_file_config" ]; then
+				log_info "$future_log_file_config"
+			fi
+		fi
 
-			# Download tarball archive with the default way
-			download_cli "$URL_ARCH/tarball/$VERSION" $archive_tmp $archive_dir_tmp
 
-			echo "$($NAME_ALIAS --publication)" > $file_current_publication
+		# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
+		# Remove them to allow installation of the CLI
+		if [ -f "$file_main_alias_1" ] || [ -f "$file_main_alias_2" ]; then
+			rm -f $file_main_alias_1
+			if [ ! -f "$file_main_alias_1" ]; then
+				log_info "file '$file_main_alias_1' removed."
+			fi
+
+			rm -f $file_main_alias_2
+			if [ ! -f "$file_main_alias_2" ]; then
+				log_info "file '$file_main_alias_2' removed."
+			fi
+		fi
+
+
+		# Sources files installation
+		if [ ! -d "$dir_src_cli" ]; then
+			log_info "$dir_src_cli not found, creating it."
+			mkdir -p $dir_src_cli
+		fi
+
+		# Download + install the CLI from another repository...
+		# ...from the given URL
+		if [ "$(echo $url | grep '^http')" ]; then		
+			set_config_value $file_config "cli_url" $url
+			update_cli "force"
+
+		# ...from an official but not "main" repository by using a shortcut
+		elif [ "$url" = "unstable" ] || [ "$url" = "dev" ]; then
+
+			local publication="$url"
+
+			# Get the URL that allows to get the last version number
+			local url="$(match_url_repository https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-$publication github_api)"
+			local latest_version_of_repository="$(get_latest_version $url)"
+
+			# Get the URL that allows to get the CLI file of the given version found before
+			local url="$(match_url_repository https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE-$publication github_raw)/refs/tags/$latest_version_of_repository/$NAME_LOWERCASE.sh"
+
+			set_config_value $file_config "cli_url" "$url"
+			update_cli "force"
+
+		# Or do the basic offline installation
 		else
-			# Force using chosen publication, unless it always will be installed under the main publication
-			set_config_value "$file_config" "publication" "$chosen_publication"
+			cp -f $CURRENT_CLI $file_main
+		fi
 
-			# # Download tarball archive from the given publication
-			# download_cli "$HOST_URL_ARCH/$NAME_LOWERCASE-$chosen_publication/tarball/$VERSION" $archive_tmp $archive_dir_tmp
-
-			# update_cli
-			update_cli -f "$chosen_publication"
-
-			echo "$chosen_publication" > $file_current_publication
+		if [ -f "$file_main" ]; then
+			log_info "file '$file_main' installed."
 		fi
 
 
-		
-		# Process to the installation
-		if [ -d "$archive_dir_tmp" ]; then
-		
-			# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
-			# Remove them to allow installation of the CLI
-			if [ -f "$file_main_alias_1" ] || [ -f "$file_main_alias_2" ]; then
-				display_info "removing old aliases."
-				rm -f $file_main_alias_1
-				rm -f $file_main_alias_2
-			fi
-
-			
-			# Sources files installation
-			display_info "installing sources."
-			cp -RT $archive_dir_tmp $dir_src_cli	# -T used to overwrite the source dir and not creating a new inside
-			chmod 555 -R $dir_src_cli				# Set everyting in read+exec by default
-			chmod 555 $file_main					# Set main file executable for everyone (autcompletion of the command itself requires it)
-			chmod 550 -R "$dir_src_cli/commands/"	# Set commands files executable for users + root
-			chmod 444 -R "$dir_src_cli/"*.md		# Set .md files read-only for everyone
-
-
-			# Create an alias so the listed package are clear on the system (-f to force overwrite existing)
-			display_info "installing aliases."
-			ln -sf $file_main $file_main_alias_1
-			ln -sf $file_main $file_main_alias_2
-
-
-			# Autocompletion installation
-			# Install autocompletion only if the directory has been found.
-			if [ -n "$dir_autocompletion" ]; then
-				display_info "installing autocompletion."
-				cp "$archive_dir_tmp/completion" $file_autocompletion_1
-				cp "$archive_dir_tmp/completion" $file_autocompletion_2
-			fi
-
-			
-			# Systemd services installation
-			# Checking if systemd is installed (and do nothing if not installed because it means the OS doesn't work with it)
-			if [ "$(exists_command "systemctl")" = "exists" ]; then
-			
-				display_info "installing systemd services."
-			
-				# Copy systemd services & timers to systemd directory
-				cp -R $archive_dir_tmp/systemd/* $dir_systemd
-				systemctl daemon-reload
-
-				# Start & enable systemd timers (don't need to start systemd services because timers are made for this)
-				for file in $(ls $dir_systemd/$NAME_LOWERCASE* | grep ".timer"); do
-					if [ -f $file ]; then
-						display_info "$file found."
-
-						local unit="$(basename "$file")"
-
-						display_info "starting & enabling $unit." 
-						
-						# Call "restart" and not "start" to be sure to run the unit provided in this current version (unless the old unit will be kept as the running one)
-						systemctl restart "$unit" 
-						systemctl enable "$unit"
-					else
-						display_error "$file not found."
-					fi
-				done
-			fi
-
-
-			# Must testing if config file exists to avoid overwrite user customizations 
-			if [ ! -f "$file_config" ]; then
-				display_info "$file_config not found, creating it. "
-				# cp "$archive_dir_tmp/config/$file_config" "$file_config"
-				cp "$archive_dir_tmp/config/$NAME_LOWERCASE.conf" "$file_config"
-
-			else
-				display_info "$file_config already exists, installing new file and inserting current configured options."
-				install_new_config_file
-			fi
-
-
-			# Allow users to edit the configuration
-			chmod +rw -R $dir_config
-
-
-			# Remove unwanted files from the installed sources (keep only main, sub commands and .md files)
-			find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -not -name "*.md" -not -name "commands" -exec rm -rf {} +
-
-
-			# Success message
-			if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
-				# display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) has been installed."
-				display_success "command '$NAME_ALIAS' has been installed."
-			else
-				# Remove config dir that might have been created just to store the publication name
-				rm -rf "$dir_config"
-
-				display_error "$NAME installation failed."
-			fi
-			
+		# Create aliases to use this script as a CLI
+		# (-f to force overwrite existing)
+		ln -sf $file_main $file_main_alias_1
+		ln -sf $file_main $file_main_alias_2
+		if [ -f "$file_main_alias_1" ]; then
+			log_info "file '$file_main_alias_1' installed."
 		fi
-		
+		if [ -f "$file_main_alias_2" ]; then
+			log_info "file '$file_main_alias_2' installed."
+		fi
+
+
+		# Creating License file
+		echo "$(cat $CURRENT_CLI | grep -A 21 "MIT License")" > "$dir_src_cli/LICENSE.md"
+
+
+		# # Autocompletion installation
+		# # Install autocompletion only if the directory has been found.
+		# if [ -n "$dir_autocompletion" ]; then
+		# 	log_info "installing autocompletion."
+		# 	cp "$archive_dir_tmp/completion" $file_autocompletion_1
+		# 	cp "$archive_dir_tmp/completion" $file_autocompletion_2
+		# fi
+
+
+		# Self update automation
+		log_info "installing self update automation."
+		# Since 3.0.0, self update systemd unit name has changed
+		if [ "$dir_systemd/$NAME_LOWERCASE-updates.service" ]; then
+			rm -f "$dir_systemd/$NAME_LOWERCASE-updates.service"
+		fi
+		if [ -f "$dir_systemd/$NAME_LOWERCASE-updates.timer" ]; then
+			rm -f "$dir_systemd/$NAME_LOWERCASE-updates.timer"
+		fi
+		create_automation "--self-update" "self-update" "automatically update $NAME CLI."
+
+
+		# Install sourceslist
+		sourceslist_install_structure
+
+
+		# Remove unwanted files from the installed sources (keep only main, sub commands and .md files)
+		find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -not -name "*.md" -not -name "commands" -exec rm -rf {} +
+
+
+		# Set the rights rights ;)
+		chmod 555 -R $dir_src_cli				# Set everyting in read+exec by default
+		chmod 555 $file_main					# Set main file executable for everyone (autcompletion of the command itself requires it)
+		chmod 444 -R "$dir_src_cli/"*.md		# Set .md files read-only for everyone
+		chmod +rw -R $dir_config				# Allow users to edit the configuration
+
+
+		# Success message
+		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
+			log_success "'$NAME_ALIAS' installed."
+		else
+			# Remove config dir that might have been created
+			rm -rf "$dir_config"
+			log_error "$NAME installation failed."
+		fi
+
 
 		# Clear temporary files & directories
 		rm -rf $dir_tmp/$NAME_LOWERCASE*
-		
 
-		display_info "end of self installation."
 
-		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
-			display_success "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) is ready."
-		fi
+		log_info "end of self installation."
+
 	else
-		verify_cli_commands
+		verify_dependencies
 	fi
 
 }
@@ -1262,91 +1912,72 @@ install_cli() {
 
 # The options (except --help) must be called with root
 case "$1" in
-	-i|--self-install)		loading "install_cli $2" ;;		# Critical option, see the comments at function declaration for more info	
+	-i|--self-install)				loading_process "install_cli $2" ;;		# Critical option, see the comments at function declaration for more info	
 	-u|--self-update)
 		if [ -z "$2" ]; then
-							loading "update_cli"			# Critical option, see the comments at function declaration for more info
+									loading_process "update_cli"			# Critical option, see the comments at function declaration for more info
 		else
 			case "$2" in
-				-f|--force)	loading "update_cli force" ;;	# Shortcut to quickly reinstall the CLI
+				-f|--force)			loading_process "update_cli force" ;;	# Shortcut to quickly reinstall the CLI
 			esac
 		fi ;;
-	--self-delete)				loading "delete_all" ;;
-	-p|--publication)			loading "detect_publication" ;;
-	--get-logs)					get_logs "$file_log_main" ;;
-	man)						loading "$file_COMMAND_MAN" ;;
+	--self-delete)					loading_process "delete_systemd" && loading_process "delete_cli" ;;
+	--logs)							get_logs "$file_log_main" ;;
+	-l|--list)						loading_process "subcommand_list" ;;
+	-g|--get)						loading_process "subcommand_get $2" ;;
+	-d|--delete)					loading_process "subcommand_delete $2" ;;
 	verify)
 		if [ -z "$2" ]; then
-			loading "verify_cli_commands";  loading "verify_cli_files"; loading "verify_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading "verify_repository_reachability "$URL_ARCH/tarball/$VERSION""
+									loading_process "verify_dependencies $3";  loading_process "verify_files"; loading_process "verify_repository_reachability $(match_url_repository $(get_config_value $file_config cli_url) github_raw)"
 		else
 			case "$2" in
-				-f|--files)						loading "verify_cli_files" ;;
-				-c|--commands)					loading "verify_cli_commands" ;;
-				-r|--repository-reachability)	loading "verify_repository_reachability "$URL_FILE/main/$NAME_LOWERCASE.sh""; loading "verify_repository_reachability "$URL_ARCH/tarball/$VERSION"" ;;
-				*)								display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
+				-f|--files)			loading_process "verify_files $3" ;;
+				-d|--dependencies)	loading_process "verify_dependencies $3" ;;
+				# -r|--repository)	loading_process "verify_repository_reachability "$URL_RAW/main/$NAME_LOWERCASE.sh""; loading_process "verify_repository_reachability "$URL_API/tarball/$VERSION"" ;;
+				-r|--repository)	loading_process "verify_repository_reachability $(match_url_repository $(get_config_value $file_config cli_url) github_raw)" ;;
+				*)					log_error "unknown option [$1] '$2'." && echo "$USAGE" && exit ;;
 			esac
 		fi ;;
-	firewall)
-		if [ -z "$2" ]; then
-			exec $file_COMMAND_FIREWALL
-		else
-			case "$2" in
-				-i|--install)	export function_to_launch="install" && exec $file_COMMAND_FIREWALL ;;
-				-d|--display)	export function_to_launch="display" && exec $file_COMMAND_FIREWALL ;;
-				-r|--restart)	export function_to_launch="restart" && exec $file_COMMAND_FIREWALL ;;
-				--disable)		export function_to_launch="disable" && exec $file_COMMAND_FIREWALL ;;
-				--restore)		export function_to_launch="restore" && exec $file_COMMAND_FIREWALL ;;
-				*)				display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
-			esac
-		fi ;;
-	update)
-		if [ -z "$2" ]; then
-			loading "exec $file_COMMAND_UPDATE"
-		else
-			case "$2" in
-				-y|--assume-yes)	export install_confirmation="yes" && loading "exec $file_COMMAND_UPDATE" ;;
-				--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && export install_confirmation && loading "exec $file_COMMAND_UPDATE" ;;
-				--when)				$COMMAND_UPDATE_SYSTEMD_STATUS | grep Trigger: | awk '$1=$1' ;;
-				--get-logs)			get_logs $file_log_update ;;
-				*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
-			esac
-		fi ;;
-	install)
-		if [ -z "$2" ]; then
-			display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit
-		else
-			# loading "exec $file_COMMAND_INSTALL $2"
-			exec $file_COMMAND_INSTALL "$2"
-			# case "$2" in
-			# 	-y|--assume-yes)	export install_confirmation="yes" && exec $file_COMMAND_INSTALL ;;
-			# 	--ask)				read -p "Do you want to automatically accept installations during the process? [y/N] " install_confirmation && exec $file_COMMAND_INSTALL ;;
-			# 	*)					display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
-			# esac
-		fi ;;
-	# Since "export -f" is not available in Shell, the helper command below permit to use commands from this file in sub scripts
+	# 'self' is a word used in many operations for the CLI, it's preferable to not allow it in subcommand name
+	self)							log_error "reserved operation." && exit ;;
+	# Since "export -f" is not available in Shell, the helper command below permits to use commands from this file in sub scripts
 	helper)
 		# The $allow_helper_functions variable must be exported as "true" in sub scripts that needs the helper functions
-		# This permit to avoid these commands to be used directly from the command line by the users
-		if [ "$allow_helper_functions" != "true" ];then
-			display_error "reserved operation."
+		# This permits to avoid these commands to be used directly from the command line by the users
+		if [ "$allow_helper_functions" != "true" ]; then
+			log_error "reserved operation."
 		else
 			if [ -z "$2" ]; then
-				display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit
+				log_error "unknown option [$1] '$2'." && echo "$USAGE" && exit
 			else
 				case "$2" in
-					loading)							loading "$3" ;;
-					display_success)					display_success "$3" "$4" ;;
-					display_error)						display_error "$3" "$4" ;;
-					display_info)						display_info "$3" "$4" ;;
-					append_log)							append_log "$3" ;;
-					exists_command)						exists_command "$3" ;;
-					sanitize_confirmation)				sanitize_confirmation "$3" ;;
-					get_config_value)					get_config_value "$3" "$4" ;;
-					*)									display_error "unknown option [$1] '$2'."'\n'"$USAGE" && exit ;;
+					append_log)						append_log "$3" ;;
+					create_automation)				create_automation "$3" ;;
+					log_error)						log_error "$3" "$4" ;;
+					log_info)						log_info "$3" "$4" ;;
+					log_success)					log_success "$3" "$4" ;;
+					download_file)					download_file "$3" "$4" "$5" ;;
+					exists_command)					exists_command "$3" ;;
+					file_checksum)					file_checksum "$3" ;;
+					get_config_value)				get_config_value "$3" "$4" ;;
+					get_logs)						get_logs "$3" ;;
+					loading_process)				loading_process "$3" ;;
+					match_url_repository)			match_url_repository "$3" "$4" ;;
+					sanitize_confirmation)			sanitize_confirmation "$3" ;;
+					set_config_value)				set_config_value "$3" "$4" "$5" ;;
+					*)								log_error "unknown option [$1] '$2'." && echo "$USAGE" && exit ;;
 				esac
 			fi
 		fi ;;
-	*) display_error "unknown option '$1'."'\n'"$USAGE" && exit ;;
+	*)
+		# Dynamically get availables commands or display error in case of not found
+		# if [ -d $dir_commands ] && [ "$1" = "$(find $dir_commands/ -name "$1*" -printf "%f\n")" ]; then
+		if [ -d $dir_commands ] && [ "$1" = "$(ls $dir_commands | grep -w $1)" ]; then
+			"$dir_commands/$1" "$@"
+		else
+			log_error "unknown command '$1'." && echo "$USAGE" && exit
+		fi
+		;;
 esac
 
 
