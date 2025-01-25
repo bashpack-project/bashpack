@@ -363,105 +363,21 @@ log_info() {
 append_log() {
 
 	local file_log="$1"
-	
-	# # Get process name to write it in log file
-	# local command="${0}"
-	# $command & local pid=$!
-	# local process_name="$(ps -o cmd -fp $pid | cut -d " " -f 1 -s)"
-	# log_info "launching: $command"
 
 
-	local output
-
-
-
-
-	# Set the log format on the command and append it to the selected file
-	# if [ -n "$file_log" ]; then
-	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log"
-	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" | dd status=none of="$file_log"
-	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" | cp /dev/stdin "$file_log"
-	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -ia "$file_log"
-	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" > $output
-	# 	# echo $output
-
-	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" >&$file_log
-	# 	# cat $file_log
-	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" <"/dev/stdin"
-	# 	sed "s/^/$now op.sys:   $(current_cli_info) /" 3>&- | tee /dev/fd/3
-
-	# else
-	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" | tee -a "$file_log_main"
-	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" | dd status=none of="$file_log_main"
-	# 	# sed "s/^/$now op.sys:   $(current_cli_info) /" | cp /dev/stdin "$file_log_main"
-	# 	sed "s/^/$now op.sys:   $(current_cli_info) /" 3>&- | tee /dev/fd/3
-	# fi
-
-	# tail -n 1 $file_log
-
-	# cat /dev/tty | tee -a $file_log
-	# cat /dev/tty >> $file_log
-
-	# cat /dev/pts/0 | tee -a $file_log
-	# $(dd if=/dev/pts/0 of="$file_log" status=none)&
-	# $(cat /dev/pts/0 1&>2 >> "$file_log")&
-
-	# tail -n 1 $file_log
-	
-	# shopt +s lastpipe
-	# /dev/tty | while read -r line; do
-	# 	echo $line
-	# done
-
-	# exec 3>&1
-
-
-	# local format="$now op.sys:     $(current_cli_info) "
-
-	# sed "s/^/$now op.sys:   $(current_cli_info) /"
-
-	# sed 's/\(*\)/\1/'
-
-
-
-
-	# The trick is just to call the text in a sed command that doesn't do anything to display it, and add another sed to format for the logs files
-	# local text="$(current_cli_info) $(sed 's/\(*\)/\1/')"
-	# local text="$(sed 's/\(*\)/\1/')"
-
-
-
+	# Format the message
 	local text="$(sed "s|^|$(current_cli_info) |")"
 	local format="$now op.sys:   "
 
-
-	# local text="$(sed "s|^|$(current_cli_info) |")"
-	# local format="$now info:     $text"
-
-
+	# Display the text
 	echo $text
-	# echo $text | sed "s/^/$(current_cli_info) /"
 
-	if [ -n "$2" ]; then
-		# echo $text
-		# echo $text | sed "s/^/$now op.sys:   $(current_cli_info) /" >> "$2"
-		echo $text | sed "s|^|$format|" >> "$2"
+	# Append the text to the logs
+	if [ -n "$file_log" ]; then
+		echo $text | sed "s|^|$format|" >> "$file_log"
 	else
-		# echo $text
-		# echo $text | sed "s/^/$now op.sys:   $(current_cli_info) /" >> "$file_log_main"
 		echo $text | sed "s|^|$format|" >> "$file_log_main"
 	fi
-
-
-	# if [ -n "$2" ]; then
-	# 	sed "s/^/$now op.sys:   $(current_cli_info) /" >> "$2"
-	# else
-	# 	sed "s/^/$now op.sys:   $(current_cli_info) /" >> "$file_log_main"
-	# fi
-
-
-
-	# exec 3>&-
 
 }
 
