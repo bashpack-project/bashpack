@@ -248,23 +248,64 @@ fi
 
 
 # Getting values stored in configuration files.
-# Usage: get_config_value "<file>" "<option>"
+# Usages:
+#  get_config_value "<file>" "<option>"
+#  get_config_value "<file>" "<option>" <position>
 get_config_value() {
+
 	local file="$1"
 	local option="$2"
+	local position="$3"
+
 
 	while read -r line; do
 		local first_char="$(echo $line | cut -c1-1)"
 
 		# Avoid reading comments and empty lines
 		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
-			if [ "$(echo $line | cut -d " " -f 1)" = "$option" ]; then
-				echo $line | cut -d " " -f 2
-				break
+			# Default is to get the "word2" of the line like in this example:
+			# word1 word2 word3 ... wordn 
+			if [ -z "$position" ]; then
+				if [ "$(echo $line | cut -d " " -f 1)" = "$option" ]; then
+					echo $line | cut -d " " -f 2
+					break
+				fi
+
+			# Unless, the $3 will give the position to read
+			# word1 word2 word3 ... wordn 
+			else
+				if [ "$(echo $line | cut -d " " -f 1)" = "$option" ]; then
+					echo $line | cut -d " " -f $position
+					break
+				fi
+
 			fi
+
 		fi	
 	done < "$file"
 }
+
+
+
+
+# # Getting values stored in configuration files.
+# # Usage: get_config_value "<file>" "<option>"
+# get_config_value() {
+# 	local file="$1"
+# 	local option="$2"
+
+# 	while read -r line; do
+# 		local first_char="$(echo $line | cut -c1-1)"
+
+# 		# Avoid reading comments and empty lines
+# 		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
+# 			if [ "$(echo $line | cut -d " " -f 1)" = "$option" ]; then
+# 				echo $line | cut -d " " -f 2
+# 				break
+# 			fi
+# 		fi	
+# 	done < "$file"
+# }
 
 
 
@@ -1341,7 +1382,9 @@ sourceslist_install_structure() {
 
 
 # List available commands from repository
-# Usage: subcommand_list
+# Usage:
+#  subcommand_list
+#  subcommand_list <local>
 subcommand_list() {
 
 	local list_tmp="$dir_tmp/$NAME_LOWERCASE-commands-list"
@@ -1349,118 +1392,128 @@ subcommand_list() {
 
 	local installed="[installed]"
 
-	local url="$1"
+	local local="$1"
 
-
-	sourceslist_install_structure
-
-
-	# Clean existing registry (it will be updated with fresh values)
-	# rm -f $file_registry
-	# touch $file_registry
-	echo -n "" > $file_registry
-
-
-	if [ -f "$file_sourceslist_subcommands" ] && [ -s "$file_sourceslist_subcommands" ]; then
-
-		for url in $(grep '^http' $file_sourceslist_subcommands); do
-			
-			# In case of commands repository is on Github, getting accurate URL
-			# (because api.github.com and raw.githubusercontent.com have themselves their usages, and we need to always have api.github.com for this usecase)
-			if [ "$(echo $url | grep '.com' | grep 'github' | grep 'raw.')" ]; then
-				project="$(echo $url  | cut -d "/" -f 4-5)"
-				end_of_url="$(echo $url  | cut -d "/" -f 9-99)"
-				url="https://api.github.com/repos/$project/contents/$end_of_url"
-			fi
-
-
-			loading_process "verify_repository_reachability $url"
-			if [ -f "$file_repository_reachable_tmp" ] && [ "$(cat $file_repository_reachable_tmp)" = "true" ]; then
-
-				if [ "$(exists_command "curl")" = "exists" ]; then
-					loading_process "curl -sLk $url" > $list_tmp
-				elif [ "$(exists_command "wget")" = "exists" ]; then			
-					loading_process "wget -q --no-check-certificate $url -O $list_tmp"
-				else
-					log_error "can't list remotes commands with curl or wget."
-				fi
-			fi
-			rm -f $file_repository_reachable_tmp
-
-
-			if [ -f "$list_tmp" ]; then
-				# If commands are from a Github repository...
-				# URL will always be "api.github.com" thanks to the hook just before
-				if [ "$(echo $url | grep '.com' | grep 'github' | grep 'api.')" ]; then
-					while read -r line; do
-						if [ "$(echo $line | grep 'download_url')" ]; then
-							# And get back the raw URL to be able to download the script from sourceslist + calculate checksum
-							local real_url="$(echo $line | grep 'download_url' | cut -d '"' -f 4)"
-							local checksum="$(file_checksum $real_url)"
-
-							echo $line \
-								| cut -d "\"" -f 4 \
-								| cut -d "/" -f 8 \
-								| grep -iw "\.$subcommands_allowed_extensions" \
-								| sed "s/\.[$subcommands_allowed_extensions]*//" \
-								| sed "s|$| $real_url $checksum|" \
-								| sort -u >> $file_registry
-						fi
-					done < $list_tmp
-				else
-					# ...Or from a basic web server with directory listing
-					while read -r line; do
-
-						local file_name="$(echo $line \
-							| grep -oP '(?<=href=")[^"]*' \
-							| sed '/\/.*/d' \
-							| sed '/^\(?.=\).*/d' \
-							| grep -iw "\.$subcommands_allowed_extensions")"
-
-						# Get the entire file URL to be able to calculate checksum
-						local real_url="$url/$file_name"
-						local checksum="$(file_checksum $real_url)"
-
-						echo $line \
-							| grep -oP '(?<=href=")[^"]*' \
-							| sed '/\/.*/d' \
-							| sed '/^\(?.=\).*/d' \
-							| grep -iw "\.$subcommands_allowed_extensions" \
-							| sed "s/\.[$subcommands_allowed_extensions]*//" \
-							| sed "s|$| $real_url $checksum|" \
-							| sort -u >> $file_registry
-					done < $list_tmp
-
-					# cat $list_tmp \
-					# 	| grep -oP '(?<=href=")[^"]*' \
-					# 	| sed '/\/.*/d' \
-					# 	| sed '/^\(?.=\).*/d' \
-					# 	| grep -iw "\.$subcommands_allowed_extensions" \
-					# 	| sed "s/\.[$subcommands_allowed_extensions]*//" \
-					# 	| sed "s|$| $url|" \
-					# 	| sort -u >> $file_registry
-				fi
-
-				rm -f $list_tmp
-			fi
-
-		done
-
-
-		# Detect remotes subcommands
-		if [ -f "$file_registry" ]; then
-			cat $file_registry | sed 's/ .*//' >> $list_installed_tmp
-		fi
-
-	else
-		log_error "'$file_sourceslist_subcommands' is empty."
-	fi
 
 
 	# Detect installed subcommands
 	if [ -d "$dir_commands" ] && [ ! -z "$(ls $dir_commands)" ]; then
 		ls $dir_commands >> $list_installed_tmp
 	fi
+
+
+	# If "local" is not precised in arguments, then it means that we want to list remotes command too
+	if [ "$local" != "local" ]; then
+
+		sourceslist_install_structure
+
+
+		# Clean existing registry (it will be updated with fresh values)
+		# rm -f $file_registry
+		# touch $file_registry
+		echo -n "" > $file_registry
+
+
+		if [ -f "$file_sourceslist_subcommands" ] && [ -s "$file_sourceslist_subcommands" ]; then
+
+			for url in $(grep '^http' $file_sourceslist_subcommands); do
+				
+				# In case of commands repository is on Github, getting accurate URL
+				# (because api.github.com and raw.githubusercontent.com have themselves their usages, and we need to always have api.github.com for this usecase)
+				if [ "$(echo $url | grep '.com' | grep 'github' | grep 'raw.')" ]; then
+					project="$(echo $url  | cut -d "/" -f 4-5)"
+					end_of_url="$(echo $url  | cut -d "/" -f 9-99)"
+					url="https://api.github.com/repos/$project/contents/$end_of_url"
+				fi
+
+
+				loading_process "verify_repository_reachability $url"
+				if [ -f "$file_repository_reachable_tmp" ] && [ "$(cat $file_repository_reachable_tmp)" = "true" ]; then
+
+					if [ "$(exists_command "curl")" = "exists" ]; then
+						loading_process "curl -sLk $url" > $list_tmp
+					elif [ "$(exists_command "wget")" = "exists" ]; then			
+						loading_process "wget -q --no-check-certificate $url -O $list_tmp"
+					else
+						log_error "can't list remotes commands with curl or wget."
+					fi
+				fi
+				rm -f $file_repository_reachable_tmp
+
+
+				if [ -f "$list_tmp" ]; then
+					# If commands are from a Github repository...
+					# URL will always be "api.github.com" thanks to the hook just before
+					if [ "$(echo $url | grep '.com' | grep 'github' | grep 'api.')" ]; then
+						while read -r line; do
+							if [ "$(echo $line | grep 'download_url')" ]; then
+								# And get back the raw URL to be able to download the script from sourceslist + calculate checksum
+								local real_url="$(echo $line | grep 'download_url' | cut -d '"' -f 4)"
+								local checksum="$(file_checksum $real_url)"
+
+								echo $line \
+									| cut -d "\"" -f 4 \
+									| cut -d "/" -f 8 \
+									| grep -iw "\.$subcommands_allowed_extensions" \
+									| sed "s/\.[$subcommands_allowed_extensions]*//" \
+									| sed "s|$| $real_url $checksum|" \
+									| sort -u >> $file_registry
+							fi
+						done < $list_tmp
+					else
+						# ...Or from a basic web server with directory listing
+						while read -r line; do
+
+							local file_name="$(echo $line \
+								| grep -oP '(?<=href=")[^"]*' \
+								| sed '/\/.*/d' \
+								| sed '/^\(?.=\).*/d' \
+								| grep -iw "\.$subcommands_allowed_extensions")"
+
+							# Get the entire file URL to be able to calculate checksum
+							local real_url="$url/$file_name"
+							local checksum="$(file_checksum $real_url)"
+
+							echo $line \
+								| grep -oP '(?<=href=")[^"]*' \
+								| sed '/\/.*/d' \
+								| sed '/^\(?.=\).*/d' \
+								| grep -iw "\.$subcommands_allowed_extensions" \
+								| sed "s/\.[$subcommands_allowed_extensions]*//" \
+								| sed "s|$| $real_url $checksum|" \
+								| sort -u >> $file_registry
+						done < $list_tmp
+
+						# cat $list_tmp \
+						# 	| grep -oP '(?<=href=")[^"]*' \
+						# 	| sed '/\/.*/d' \
+						# 	| sed '/^\(?.=\).*/d' \
+						# 	| grep -iw "\.$subcommands_allowed_extensions" \
+						# 	| sed "s/\.[$subcommands_allowed_extensions]*//" \
+						# 	| sed "s|$| $url|" \
+						# 	| sort -u >> $file_registry
+					fi
+
+					rm -f $list_tmp
+				fi
+
+			done
+
+
+			# Detect remotes subcommands
+			if [ -f "$file_registry" ]; then
+				cat $file_registry | sed 's/ .*//' >> $list_installed_tmp
+			fi
+
+		else
+			log_error "'$file_sourceslist_subcommands' is empty."
+		fi
+	fi
+
+	# # Detect installed subcommands
+	# if [ -d "$dir_commands" ] && [ ! -z "$(ls $dir_commands)" ]; then
+	# 	ls $dir_commands >> $list_installed_tmp
+	# fi
 
 
 	# Finally display all the subcommands and specify if already installed
@@ -1499,24 +1552,8 @@ subcommand_get() {
 	# local file_command_tmp="$dir_tmp/$NAME_LOWERCASE-$command"
 
 
-	# Creating command directory if not exists
-	if [ ! -d "$dir_commands" ]; then
-		mkdir $dir_commands
 
-		# Set commands files executable for users + root
-		chmod 554 -R $dir_commands
-	fi
-
-
-	if [ -z "$command" ]; then
-		log_info "please specify a command from the list below."
-		subcommand_list
-
-	elif [ -f "$file_command" ]; then
-		log_info "command '$command' is already installed."
-
-	else
-		
+	subcommand_install() {
 		# Ensure that structure exists
 		sourceslist_install_structure
 
@@ -1540,45 +1577,142 @@ subcommand_get() {
 				$CURRENT_CLI $command init_command
 			fi
 
-			log_success "command '$command' has been installed."
+			log_success "command '$command' installed."
 			log_info "'$NAME_ALIAS $command --help' to display help."
 		else
-			log_error "command '$command' has not been installed."
+			log_error "command '$command' not installed."
 		fi
+	}
+
+
+
+	# Creating command directory if not exists
+	if [ ! -d "$dir_commands" ]; then
+		mkdir $dir_commands
+
+		# Set commands files executable for users + root
+		chmod 554 -R $dir_commands
+	fi
+
+
+	if [ -z "$command" ]; then
+		echo "please specify a command from the list below." | append_log
+		subcommand_list
+
+	elif [ -f "$file_command" ]; then
+		# log_info "command '$command' is already installed."
+
+		local command_checksum_known="$(get_config_value $file_registry $command 3)"
+		local command_checksum_remote="$(file_checksum $(get_config_value $file_registry $command 2))"
+
+		echo $command_checksum_known
+		echo $command_checksum_remote
+
+
+		if [ "$command_checksum_known" != "$command_checksum_remote" ]; then
+			echo "'$command' new version detected." | append_log
+
+			subcommand_install
+		else
+			echo "'$command' already up to date." | append_log
+		fi
+
+	else
+
+		subcommand_install
+		
+		# # Ensure that structure exists
+		# sourceslist_install_structure
+
+		# # # Ensure that registry is not empty to get the URL of the command
+		# # if [ "$(cat $file_registry)" = "" ]; then
+		# # 	subcommand_list
+		# # fi
+
+		# # Refresh list according to sources list (repositories might be commented or removed since last time) 
+		# subcommand_list
+
+		# local url="$(get_config_value $file_registry $command)"
+		# download_file $url $file_command
+
+		# if [ -f "$file_command" ]; then
+		# 	chmod 554 $file_command
+		# 	chown $OWNER:$OWNER $file_command
+
+		# 	# Detect if the command needs to be initialised
+		# 	if [ "$(cat $file_command | grep -v '#' | grep 'init_command()')" ]; then
+		# 		$CURRENT_CLI $command init_command
+		# 	fi
+
+		# 	log_success "command '$command' has been installed."
+		# 	log_info "'$NAME_ALIAS $command --help' to display help."
+		# else
+		# 	log_error "command '$command' has not been installed."
+		# fi
 	fi
 }
 
 
 
 
+# # Update an installed command
+# # Usage: subcommand_update <command>
+# subcommand_update() {
+
+# 	local command="$1"
+
+
+# 	local command_checksum_known="$(get_config_value $file_registry $command 3)"
+# 	local command_checksum_remote="$(file_checksum $(get_config_value $file_registry $command 2))"
+
+
+# 	if [ "$command_checksum_known" != "$command_checksum_remote" ]; then
+# 		log_info "'$command' new version detected."
+
+# 		subcommand_get $command
+# 	else
+# 		log_info "'$command' already up to date."
+# 	fi
+
+# }
+
+
+
+
 # Remove an installed command
-# Usage: subcommand_delete <command>
+# Usages: 
+#  subcommand_delete <command>
+#  subcommand_delete <command> <-y>
 subcommand_delete() {
 
 	local command="$1"
 	local file_command="$dir_commands/$command"
 
-	# Just init to set it local
-	local confirmation
-	
+	local confirmation="$2"
+
 
 	if [ -f "$file_command" ]; then
 
-		read -p "$question_continue" confirmation
-	
-		if [ "$(sanitize_confirmation $confirmation)" = "yes" ]; then
-			rm "$file_command"
+		if [ "$confirmation" != "-y" ]; then
+			read -p "$question_continue" confirmation
+		else
+			confirmation="yes"
+		fi
 
-			# Remove the related sub command options from the main config file
-			sed -i '/\[command\] firewall/,/^\s*$/{d}' $file_config
+
+		if [ "$(sanitize_confirmation $confirmation)" = "yes" ]; then
+			rm -f "$file_command"
+
+			# # Remove the related sub command options from the main config file
+			# sed -i "/\[command\] $command/,/^\s*$/{d}" $file_config
 
 			if [ -f "$file_command" ]; then
-				log_error "command '$command' has not been removed."
+				log_error "command '$command' not removed."
 			else
-				log_success "command '$command' has been removed."
+				log_success "command '$command' removed."
 			fi
 		else
-			log_info "uninstallation aborted."
+			echo "uninstallation aborted." | append_log
 		fi
 	else
 		log_error "command '$command' not found."
@@ -1923,9 +2057,10 @@ case "$1" in
 		fi ;;
 	--self-delete)					loading_process "delete_systemd" && loading_process "delete_cli" ;;
 	--logs)							get_logs "$file_log_main" ;;
-	-l|--list)						loading_process "subcommand_list" ;;
+	-l|--list)						loading_process "subcommand_list $2" ;;
 	-g|--get)						loading_process "subcommand_get $2" ;;
-	-d|--delete)					loading_process "subcommand_delete $2" ;;
+	# -g|--get)						loading_process "subcommand_update $2" ;;
+	-d|--delete)					subcommand_delete $2 $3 ;;
 	verify)
 		if [ -z "$2" ]; then
 									loading_process "verify_dependencies $3";  loading_process "verify_files"; loading_process "verify_repository_reachability $(match_url_repository $(get_config_value $file_config cli_url) github_raw)"
