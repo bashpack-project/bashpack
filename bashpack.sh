@@ -1385,14 +1385,13 @@ sourceslist_install_structure() {
 # Usage:
 #  subcommand_list
 #  subcommand_list <local>
+#  subcommand_list <refresh-only>
 subcommand_list() {
 
 	local list_tmp="$dir_tmp/$NAME_LOWERCASE-commands-list"
 	local list_installed_tmp="$dir_tmp/$NAME_LOWERCASE-commands-installed"
 
 	local installed="[installed]"
-
-	local local="$1"
 
 
 
@@ -1403,7 +1402,7 @@ subcommand_list() {
 
 
 	# If "local" is not precised in arguments, then it means that we want to list remotes command too
-	if [ "$local" != "local" ]; then
+	if [ "$1" != "local" ]; then
 
 		sourceslist_install_structure
 
@@ -1516,26 +1515,30 @@ subcommand_list() {
 	# fi
 
 
-	# Finally display all the subcommands and specify if already installed
-	if [ -f "$list_installed_tmp" ] && [ -s "$list_installed_tmp" ]; then
+	# If "refresh-only" is precised in arguments, then it means that we onyl want to refresh the registry and not display the list
+	if [ "$1" != "refresh-only" ]; then
 
-		log_info "reading registry."
-		
-		while read -r command; do
-			if [ "$command" != "" ]; then
+		# Finally display all the subcommands and specify if already installed
+		if [ -f "$list_installed_tmp" ] && [ -s "$list_installed_tmp" ]; then
 
-				# Checking if the subcommand is already installed
-				if [ -f "$dir_commands/$command" ]; then
-					echo "$command $installed"
-				else
-					echo "$command"
+			log_info "reading registry."
+			
+			while read -r command; do
+				if [ "$command" != "" ]; then
+
+					# Checking if the subcommand is already installed
+					if [ -f "$dir_commands/$command" ]; then
+						echo "$command $installed"
+					else
+						echo "$command"
+					fi
 				fi
-			fi
-		done < $list_installed_tmp | sort -ud
+			done < $list_installed_tmp | sort -ud
 
-		rm -f $list_installed_tmp
-	else
-		log_error "no command installed."
+			rm -f $list_installed_tmp
+		else
+			log_error "no command installed."
+		fi
 	fi
 
 }
@@ -1563,7 +1566,7 @@ subcommand_get() {
 		# fi
 
 		# Refresh list according to sources list (repositories might be commented or removed since last time) 
-		subcommand_list
+		subcommand_list refresh-only
 
 		local url="$(get_config_value $file_registry $command)"
 		download_file $url $file_command
@@ -1600,13 +1603,16 @@ subcommand_get() {
 		subcommand_list
 
 	elif [ -f "$file_command" ]; then
-		# log_info "command '$command' is already installed."
 
-		local command_checksum_known="$(get_config_value $file_registry $command 3)"
+		subcommand_list refresh-only
+
+		# Checksum of the file direcly permit to benefit order of url from sources list in case of a command existing in differnts repositories...
+		local command_checksum_known="$(file_checksum $file_command)"
+
+		# ...While checksum stored in the registry permit to check if any update exist on the original source of the command
+		# local command_checksum_known="$(get_config_value $file_registry $command 3)"
+
 		local command_checksum_remote="$(file_checksum $(get_config_value $file_registry $command 2))"
-
-		echo $command_checksum_known
-		echo $command_checksum_remote
 
 
 		if [ "$command_checksum_known" != "$command_checksum_remote" ]; then
@@ -1620,61 +1626,8 @@ subcommand_get() {
 	else
 
 		subcommand_install
-		
-		# # Ensure that structure exists
-		# sourceslist_install_structure
-
-		# # # Ensure that registry is not empty to get the URL of the command
-		# # if [ "$(cat $file_registry)" = "" ]; then
-		# # 	subcommand_list
-		# # fi
-
-		# # Refresh list according to sources list (repositories might be commented or removed since last time) 
-		# subcommand_list
-
-		# local url="$(get_config_value $file_registry $command)"
-		# download_file $url $file_command
-
-		# if [ -f "$file_command" ]; then
-		# 	chmod 554 $file_command
-		# 	chown $OWNER:$OWNER $file_command
-
-		# 	# Detect if the command needs to be initialised
-		# 	if [ "$(cat $file_command | grep -v '#' | grep 'init_command()')" ]; then
-		# 		$CURRENT_CLI $command init_command
-		# 	fi
-
-		# 	log_success "command '$command' has been installed."
-		# 	log_info "'$NAME_ALIAS $command --help' to display help."
-		# else
-		# 	log_error "command '$command' has not been installed."
-		# fi
 	fi
 }
-
-
-
-
-# # Update an installed command
-# # Usage: subcommand_update <command>
-# subcommand_update() {
-
-# 	local command="$1"
-
-
-# 	local command_checksum_known="$(get_config_value $file_registry $command 3)"
-# 	local command_checksum_remote="$(file_checksum $(get_config_value $file_registry $command 2))"
-
-
-# 	if [ "$command_checksum_known" != "$command_checksum_remote" ]; then
-# 		log_info "'$command' new version detected."
-
-# 		subcommand_get $command
-# 	else
-# 		log_info "'$command' already up to date."
-# 	fi
-
-# }
 
 
 
