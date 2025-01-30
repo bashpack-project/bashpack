@@ -791,6 +791,15 @@ create_automation() {
 
 
 
+# Dynamically create completion files
+# Usage: create_completion
+create_completion() {
+
+}
+
+
+
+
 # Calculate checksum of a given file
 # Usages:
 #  file_checksum <file path>

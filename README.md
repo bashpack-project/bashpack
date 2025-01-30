@@ -1,6 +1,6 @@
 # Bashpack
 
-The Bashpack CLI is a versatile and user-friendly script manager. It is designed to use scripts as regular commands on any Linux distro. It simplifies script management, security, and automation, making your administrative tasks more efficient.
+Bashpack is a versatile and user-friendly command-line script manager. It is designed to use scripts as regular commands on any Linux distro. It simplifies script management, security, and automation, making your administrative tasks more efficient.
 
 Anyone can self-host its own subcommands repositories, and even its own CLI repository.
 
