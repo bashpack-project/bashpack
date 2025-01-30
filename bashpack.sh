@@ -792,9 +792,83 @@ create_automation() {
 
 
 # Dynamically create completion files
-# Usage: create_completion
+# Usage: create_completion <file_command>
 create_completion() {
 
+
+	local file_command="$1"
+	local command="$(echo $file_command sed 's/\..*//')"
+
+	# cat $file | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud
+	# cat $file | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed 's/$/ \\/'
+
+	local options="$(cat $file_command | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g')"
+
+
+	if [ "$(exists_command "pkg-config")" = "exists" ] && [ "$(exists_command "complete")" = "exists" ] && [ "$(exists_command "compgen")" = "exists" ]; then
+		# Install autocompletion only if the directory has been found.
+		if [ -d "$dir_autocompletion" ]; then
+
+			if [ "$file_command" = "$CURRENT_CLI" ]; then
+				echo " \
+					_$NAME_LOWERCASE() {
+					local cur=${COMP_WORDS[COMP_CWORD]}
+					local prev=${COMP_WORDS[COMP_CWORD-1]}
+					
+					case ${COMP_CWORD} in
+						1) COMPREPLY=($(compgen -W "$(echo $options)" -- ${cur})) ;;
+						2)
+						case ${prev} in
+							_commandtofill) COMPREPLY=($(compgen -W "_optionstofill" -- ${cur})) ;;
+						esac ;;
+						*) COMPREPLY=() ;;
+					esac
+					}
+
+					complete -F _$NAME_LOWERCASE $NAME_LOWERCASE
+					complete -F _$NAME_LOWERCASE $NAME_ALIAS
+
+					" | sed 's/^[ \t]*//' > $file_autocompletion_1
+
+					ln -sf $file_autocompletion_1 $file_autocompletion_2
+					# ln -sf $file_autocompletion_2 $file_autocompletion_1
+			else
+				# Duplicate the line and make it unique with the "new" word to find and replace it with automatics values
+				sed -i 's/\(.*\)/\1\n\1new/'
+				sed -i "s/_commandtofill/$command/" $file_command
+				sed -i "s/_optionstofill/$options/" $file_command
+			fi
+
+			if [ -f "$file_autocompletion" ]; then
+				log_info "autocompletion file ready."
+			fi
+			
+		else
+			log_error "autocompletion directory not found."
+		fi
+	fi
+
+
+
+
+	# _bashpack() {
+	# local cur=${COMP_WORDS[COMP_CWORD]}
+	# local prev=${COMP_WORDS[COMP_CWORD-1]}
+	
+	# case ${COMP_CWORD} in
+	# 	1) COMPREPLY=($(compgen -W "firewall verify update man --get-logs --publication --version --help --self-install --self-update --self-delete" -- ${cur})) ;;
+	# 	2)
+	# 	case ${prev} in
+	# 		update) COMPREPLY=($(compgen -W "--help --assume-yes --ask --when --get-logs" -- ${cur})) ;;
+	# 		verify) COMPREPLY=($(compgen -W "--help --files --commands --repository-reachability" -- ${cur})) ;;
+	# 		firewall) COMPREPLY=($(compgen -W "--help --install --display --restart --disable --restore" -- ${cur})) ;;
+	# 	esac ;;
+	# 	*) COMPREPLY=() ;;
+	# esac
+	# }
+
+	# complete -F _bashpack bp
+	# complete -F _bashpack bashpack
 }
 
 
@@ -1952,7 +2026,7 @@ install_cli() {
 		# 	cp "$archive_dir_tmp/completion" $file_autocompletion_1
 		# 	cp "$archive_dir_tmp/completion" $file_autocompletion_2
 		# fi
-
+		create_completion $CURRENT_CLI
 
 		# Self update automation
 		log_info "installing self update automation."
