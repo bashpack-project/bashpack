@@ -805,41 +805,39 @@ create_completion() {
 	local options="$(cat $file_command | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g')"
 
 
-	if [ "$(exists_command "pkg-config")" = "exists" ] && [ "$(exists_command "complete")" = "exists" ] && [ "$(exists_command "compgen")" = "exists" ]; then
+	if [ "$(exists_command "pkg-config")" = "exists" ]; then
 		# Install autocompletion only if the directory has been found.
 		if [ -d "$dir_autocompletion" ]; then
 
 			if [ "$file_command" = "$CURRENT_CLI" ]; then
-				echo " \
-					_$NAME_LOWERCASE() {
-					local cur=${COMP_WORDS[COMP_CWORD]}
-					local prev=${COMP_WORDS[COMP_CWORD-1]}
-					
-					case ${COMP_CWORD} in
-						1) COMPREPLY=($(compgen -W "$(echo $options)" -- ${cur})) ;;
-						2)
-						case ${prev} in
-							_commandtofill) COMPREPLY=($(compgen -W "_optionstofill" -- ${cur})) ;;
-						esac ;;
-						*) COMPREPLY=() ;;
-					esac
-					}
 
-					complete -F _$NAME_LOWERCASE $NAME_LOWERCASE
-					complete -F _$NAME_LOWERCASE $NAME_ALIAS
+				echo '_'$NAME_LOWERCASE'() {'																			> $file_autocompletion_1
+				echo '	local cur=${COMP_WORDS[COMP_CWORD]}'															>> $file_autocompletion_1
+				echo '	local prev=${COMP_WORDS[COMP_CWORD-1]}'															>> $file_autocompletion_1
+				echo ''																									>> $file_autocompletion_1
+				echo '	case ${COMP_CWORD} in'																			>> $file_autocompletion_1
+				echo '		1) COMPREPLY=($('$(echo compgen)' -W "'$(echo $options)'" -- ${cur})) ;;'					>> $file_autocompletion_1
+				echo '		2)'																							>> $file_autocompletion_1
+				echo '		case ${prev} in'																			>> $file_autocompletion_1
+				echo '			_commandtofill) COMPREPLY=($('$(echo compgen)' -W "_optionstofill" -- ${cur})) ;;'		>> $file_autocompletion_1
+				echo '		esac ;;'																					>> $file_autocompletion_1
+				echo '		*) COMPREPLY=() ;;'																			>> $file_autocompletion_1
+				echo '	esac'																							>> $file_autocompletion_1
+				echo '	}'																								>> $file_autocompletion_1
+				echo ''																									>> $file_autocompletion_1
+				echo 'complete -F _bashpack bp'																			>> $file_autocompletion_1
+				echo 'complete -F _bashpack bashpack'																	>> $file_autocompletion_1
 
-					" | sed 's/^[ \t]*//' > $file_autocompletion_1
+				ln -sf $file_autocompletion_1 $file_autocompletion_2
 
-					ln -sf $file_autocompletion_1 $file_autocompletion_2
-					# ln -sf $file_autocompletion_2 $file_autocompletion_1
 			else
 				# Duplicate the line and make it unique with the "new" word to find and replace it with automatics values
 				sed -i 's/\(.*\)/\1\n\1new/'
-				sed -i "s/_commandtofill/$command/" $file_command
-				sed -i "s/_optionstofill/$options/" $file_command
+				sed -i "s/_commandtofill/$command/" $file_autocompletion_1
+				sed -i "s/_optionstofill/$options/" $file_autocompletion_1
 			fi
 
-			if [ -f "$file_autocompletion" ]; then
+			if [ -f "$file_autocompletion_1" ]; then
 				log_info "autocompletion file ready."
 			fi
 			
