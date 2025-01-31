@@ -791,10 +791,25 @@ create_automation() {
 
 
 
-# Dynamically create completion files
-# Usage: create_completion <file_command>
-create_completion() {
+# bash-completion doc: https://github.com/scop/bash-completion/blob/main/README.md#faq
+# If pkg-config doesn't exist, then the system won't have autocompletion.
+if [ "$(exists_command "pkg-config")" = "exists" ]; then
 
+	# Test if completion dir exists to avoid interruption
+	if [ -n "$(pkg-config --variable=completionsdir bash-completion)" ]; then
+		dir_autocompletion="$(pkg-config --variable=completionsdir bash-completion)"
+		file_autocompletion_1="$dir_src_cli/autocompletion"
+		file_autocompletion_2="$dir_autocompletion/$NAME_LOWERCASE"
+		file_autocompletion_3="$dir_autocompletion/$NAME_ALIAS"
+	fi
+fi
+
+
+
+
+# Dynamically create completion files
+# Usage: create_autocompletion <file_command>
+create_autocompletion() {
 
 	local file_command="$1"
 	local command="$(echo $file_command sed 's/\..*//')"
@@ -825,6 +840,7 @@ create_completion() {
 				echo 'complete -F _bashpack bashpack'																	>> $file_autocompletion_1
 
 				ln -sf $file_autocompletion_1 $file_autocompletion_2
+				ln -sf $file_autocompletion_1 $file_autocompletion_3
 
 			else
 				# Duplicate the line and make it unique with the "new" word to find and replace it with automatics values
@@ -833,10 +849,10 @@ create_completion() {
 				sed -i "s/_optionstofill/$options/" $file_autocompletion_1
 			fi
 
-			if [ -f "$file_autocompletion_1" ]; then
-				log_info "autocompletion file ready."
+			if [ -f "$file_autocompletion_1" ] && [ -f "$file_autocompletion_2" ] && [ -f "$file_autocompletion_3" ]; then
+				log_info "autocompletion ready."
 			fi
-			
+
 		else
 			log_error "autocompletion directory not found."
 		fi
@@ -916,21 +932,6 @@ match_url_repository() {
 
 # Helper functions - end
 # --- --- --- --- --- --- ---
-
-
-
-
-# bash-completion doc: https://github.com/scop/bash-completion/blob/main/README.md#faq
-# If pkg-config doesn't exist, then the system won't have autocompletion.
-if [ "$(exists_command "pkg-config")" = "exists" ]; then
-
-	# Test if completion dir exists to avoid interruption
-	if [ -n "$(pkg-config --variable=completionsdir bash-completion)" ]; then
-		dir_autocompletion="$(pkg-config --variable=completionsdir bash-completion)"
-		file_autocompletion_1="$dir_autocompletion/$NAME_LOWERCASE"
-		file_autocompletion_2="$dir_autocompletion/$NAME_ALIAS"
-	fi
-fi
 
 
 
@@ -1998,7 +1999,7 @@ install_cli() {
 		# 	cp "$archive_dir_tmp/completion" $file_autocompletion_1
 		# 	cp "$archive_dir_tmp/completion" $file_autocompletion_2
 		# fi
-		create_completion $CURRENT_CLI
+		create_autocompletion $CURRENT_CLI
 
 		# Self update automation
 		log_info "installing self update automation."
@@ -2017,7 +2018,7 @@ install_cli() {
 
 
 		# Remove unwanted files from the installed sources (keep only main, sub commands and .md files)
-		find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -not -name "*.md" -not -name "commands" -exec rm -rf {} +
+		# find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -not -name "*.md" -not -name "commands" -exec rm -rf {} +
 
 
 		# Set the rights rights ;)
@@ -2054,6 +2055,8 @@ install_cli() {
 
 # The options (except --help) must be called with root
 case "$1" in
+	-k|--hahahaha)				echo "hihihihi" ;;
+	--ihihi)				echo "hihihihi" ;;
 	-i|--self-install)				loading_process "install_cli $2" ;;		# Critical option, see the comments at function declaration for more info	
 	-u|--self-update)
 		if [ -z "$2" ]; then
@@ -2096,6 +2099,7 @@ case "$1" in
 				case "$2" in
 					append_log)						append_log "$3" ;;
 					create_automation)				create_automation "$3" ;;
+					create_autocompletion)				create_autocompletion "$3" ;;
 					log_error)						log_error "$3" "$4" ;;
 					log_info)						log_info "$3" "$4" ;;
 					log_success)					log_success "$3" "$4" ;;
