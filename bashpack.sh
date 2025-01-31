@@ -798,10 +798,6 @@ create_completion() {
 
 	local file_command="$1"
 	local command="$(echo $file_command sed 's/\..*//')"
-
-	# cat $file | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud
-	# cat $file | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed 's/$/ \\/'
-
 	local options="$(cat $file_command | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g')"
 
 
@@ -845,28 +841,6 @@ create_completion() {
 			log_error "autocompletion directory not found."
 		fi
 	fi
-
-
-
-
-	# _bashpack() {
-	# local cur=${COMP_WORDS[COMP_CWORD]}
-	# local prev=${COMP_WORDS[COMP_CWORD-1]}
-	
-	# case ${COMP_CWORD} in
-	# 	1) COMPREPLY=($(compgen -W "firewall verify update man --get-logs --publication --version --help --self-install --self-update --self-delete" -- ${cur})) ;;
-	# 	2)
-	# 	case ${prev} in
-	# 		update) COMPREPLY=($(compgen -W "--help --assume-yes --ask --when --get-logs" -- ${cur})) ;;
-	# 		verify) COMPREPLY=($(compgen -W "--help --files --commands --repository-reachability" -- ${cur})) ;;
-	# 		firewall) COMPREPLY=($(compgen -W "--help --install --display --restart --disable --restore" -- ${cur})) ;;
-	# 	esac ;;
-	# 	*) COMPREPLY=() ;;
-	# esac
-	# }
-
-	# complete -F _bashpack bp
-	# complete -F _bashpack bashpack
 }
 
 
