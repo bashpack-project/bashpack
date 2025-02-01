@@ -886,7 +886,7 @@ file_checksum() {
 
 
 
-# Get "API", "raw" or the "default web" Github URL from the others one
+# Get "API", "raw" or the "default web" Github URL from the others one, or return the given URL because it could be a non Github repo
 # Usage: match_url_repository <url> <want: github_api|github_raw|github_web>
 match_url_repository() {
 
@@ -975,6 +975,7 @@ delete_cli() {
 			# Delete everything
 			rm -rf $file_autocompletion_1
 			rm -rf $file_autocompletion_2
+			rm -rf $file_autocompletion_3
 			rm -rf $file_main_alias_1
 			rm -rf $file_main_alias_2
 			rm -rf $dir_src_cli
@@ -1450,7 +1451,6 @@ subcommand_list() {
 	local installed="[installed]"
 
 
-
 	# Detect installed subcommands
 	if [ -d "$dir_commands" ] && [ ! -z "$(ls $dir_commands)" ]; then
 		ls $dir_commands >> $list_installed_tmp
@@ -1464,8 +1464,6 @@ subcommand_list() {
 
 
 		# Clean existing registry (it will be updated with fresh values)
-		# rm -f $file_registry
-		# touch $file_registry
 		echo -n "" > $file_registry
 
 
@@ -1608,7 +1606,6 @@ subcommand_get() {
 
 	local command="$1"
 	local file_command="$dir_commands/$command"
-	# local file_command_tmp="$dir_tmp/$NAME_LOWERCASE-$command"
 
 
 
@@ -1632,7 +1629,7 @@ subcommand_get() {
 			chown $OWNER:$OWNER $file_command
 
 			# Detect if the command needs to be initialised
-			if [ "$(cat $file_command | grep -v '#' | grep 'init_command()')" ]; then
+			if [ "$(cat $file_command | grep -v '^#' | grep 'init_command()')" ]; then
 				$CURRENT_CLI $command init_command
 			fi
 
@@ -1662,14 +1659,11 @@ subcommand_get() {
 
 		subcommand_list refresh-only
 
-		# Checksum of the file direcly permit to benefit order of url from sources list in case of a command existing in differnts repositories...
+		
+		# Detect if another version of the subcommand is available
+		# This also allow to detect if a different file is available on a different repository (and it's impacted by the order of URL in the sources list, the first URL have the priority)
 		local command_checksum_known="$(file_checksum $file_command)"
-
-		# ...While checksum stored in the registry permit to check if any update exist on the original source of the command
-		# local command_checksum_known="$(get_config_value $file_registry $command 3)"
-
 		local command_checksum_remote="$(file_checksum $(get_config_value $file_registry $command 2))"
-
 
 		if [ "$command_checksum_known" != "$command_checksum_remote" ]; then
 			echo "'$command' new version detected." | append_log
@@ -1993,13 +1987,8 @@ install_cli() {
 
 
 		# # Autocompletion installation
-		# # Install autocompletion only if the directory has been found.
-		# if [ -n "$dir_autocompletion" ]; then
-		# 	log_info "installing autocompletion."
-		# 	cp "$archive_dir_tmp/completion" $file_autocompletion_1
-		# 	cp "$archive_dir_tmp/completion" $file_autocompletion_2
-		# fi
 		create_autocompletion $CURRENT_CLI
+
 
 		# Self update automation
 		log_info "installing self update automation."
@@ -2055,8 +2044,6 @@ install_cli() {
 
 # The options (except --help) must be called with root
 case "$1" in
-	-k|--hahahaha)				echo "hihihihi" ;;
-	--ihihi)				echo "hihihihi" ;;
 	-i|--self-install)				loading_process "install_cli $2" ;;		# Critical option, see the comments at function declaration for more info	
 	-u|--self-update)
 		if [ -z "$2" ]; then
