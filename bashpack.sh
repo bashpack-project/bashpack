@@ -776,7 +776,7 @@ create_automation() {
 		create_systemd
 
 		# Log message
-		if [ -f "$name.service" ] && [ -f "$name.timer" ]; then
+		if [ -f "$dir_systemd/$name.service" ] && [ -f "$dir_systemd/$name.timer" ]; then
 			log_success "automation $name ready."
 		else
 			log_error "automation $name not ready."
@@ -1996,20 +1996,14 @@ install_cli() {
 
 		# Delete all automations because some of them might have changed
 		# if [ "$(ls $dir_systemd/$NAME_LOWERCASE*)" ]; then
-		if [ -f "$dir_systemd/$NAME_LOWERCASE*" ]; then
+		if [ "$(ls $dir_systemd/$NAME_LOWERCASE*)" ]; then
 			rm -f $dir_systemd/$NAME_LOWERCASE*
 		fi
-# export allow_helper_functions="true"
 
 		# Reinstall all automations of the subcommands
 		for command in "$(ls $dir_commands)"; do
 			for automation in "$(cat $dir_commands/$command | grep create_automation | sed 's/^.*$HELPER //' | sed 's/$1/'$command'/')"; do
-			# for automation in "$(cat $dir_commands/$command | grep create_automation | sed 's/$1/'$command'/')"; do
-				echo $automation
-				# sudo ls -al /lib/systemd/system/ | grep bashpack
-				# $($CURRENT_CLI helper $automation)
-				#  $automation
-				
+				$automation
 			done
 		done
 
