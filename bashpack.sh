@@ -769,15 +769,18 @@ create_automation() {
 
 		systemctl -q daemon-reload
 		systemctl -q enable $name.timer
-		# systemctl enable $name.timer
 	}
 
 
 	if [ "$(exists_command "systemctl")" = "exists" ]; then
-		# Reinstall automation only if 'self' detected (reserved word for CLI itself, and not subcommands)
-		# if [ -z "$(ls $dir_systemd | grep $name | grep 'self')" ]; then
-			create_systemd
-		# fi
+		create_systemd
+
+		# Log message
+		if [ -f "$name.service" ] && [ -f "$name.timer" ]; then
+			log_success "automation $name ready."
+		else
+			log_error "automation $name not ready."
+		fi
 
 	elif [ "$(exists_command "cron")" = "exists" ]; then
 		log_error "cron has not been implemented yet."
@@ -1648,6 +1651,7 @@ subcommand_get() {
 
 		# Set commands files executable for users + root
 		chmod 554 -R $dir_commands
+		chown $OWNER:$OWNER $dir_commands
 	fi
 
 
@@ -1990,15 +1994,26 @@ install_cli() {
 		create_autocompletion $CURRENT_CLI
 
 
+		# Delete all automations because some of them might have changed
+		# if [ "$(ls $dir_systemd/$NAME_LOWERCASE*)" ]; then
+		if [ -f "$dir_systemd/$NAME_LOWERCASE*" ]; then
+			rm -f $dir_systemd/$NAME_LOWERCASE*
+		fi
+# export allow_helper_functions="true"
+
+		# Reinstall all automations of the subcommands
+		for command in "$(ls $dir_commands)"; do
+			for automation in "$(cat $dir_commands/$command | grep create_automation | sed 's/^.*$HELPER //' | sed 's/$1/'$command'/')"; do
+			# for automation in "$(cat $dir_commands/$command | grep create_automation | sed 's/$1/'$command'/')"; do
+				echo $automation
+				# sudo ls -al /lib/systemd/system/ | grep bashpack
+				# $($CURRENT_CLI helper $automation)
+				#  $automation
+				
+			done
+		done
+
 		# Self update automation
-		log_info "installing self update automation."
-		# Since 3.0.0, self update systemd unit name has changed
-		if [ "$dir_systemd/$NAME_LOWERCASE-updates.service" ]; then
-			rm -f "$dir_systemd/$NAME_LOWERCASE-updates.service"
-		fi
-		if [ -f "$dir_systemd/$NAME_LOWERCASE-updates.timer" ]; then
-			rm -f "$dir_systemd/$NAME_LOWERCASE-updates.timer"
-		fi
 		create_automation "--self-update" "self-update" "automatically update $NAME CLI."
 
 
@@ -2086,7 +2101,7 @@ case "$1" in
 				case "$2" in
 					append_log)						append_log "$3" ;;
 					create_automation)				create_automation "$3" ;;
-					create_autocompletion)				create_autocompletion "$3" ;;
+					create_autocompletion)			create_autocompletion "$3" ;;
 					log_error)						log_error "$3" "$4" ;;
 					log_info)						log_info "$3" "$4" ;;
 					log_success)					log_success "$3" "$4" ;;

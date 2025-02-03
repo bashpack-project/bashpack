@@ -2,6 +2,8 @@
 
 Bashpack is a versatile and user-friendly command-line script manager. It is designed to use scripts as regular commands on any Linux distro. It simplifies script management, security, and automation, making your administrative tasks more efficient.
 
+It can be compared to [PyPI](https://pypi.org/) for Python, [PowerShell Gallery](https://www.powershellgallery.com/) for PowerShell, [Docker Hub](https://hub.docker.com/) for Docker, [Go Packages](https://pkg.go.dev/) for Go etc...., but for Shell scripts made to be compatible with any Unix based OS.
+
 Anyone can self-host its own subcommands repositories, and even its own CLI repository.
 
 
