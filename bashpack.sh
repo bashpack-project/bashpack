@@ -777,7 +777,7 @@ create_automation() {
 
 		# Log message
 		if [ -f "$dir_systemd/$name.service" ] && [ -f "$dir_systemd/$name.timer" ]; then
-			log_success "automation $name ready."
+			log_info "automation $name ready."
 		else
 			log_error "automation $name not ready."
 		fi
