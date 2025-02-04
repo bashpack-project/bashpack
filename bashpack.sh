@@ -236,7 +236,7 @@ fi
 # Ask for root
 set -e
 if [ "$(id -u)" != "0" ]; then
-	echo "$now error:   must be runned as root."
+	echo "must be runned as root."
 	exit
 fi
 
@@ -603,7 +603,7 @@ detect_cli() {
 	if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
 		if [ -n "$($NAME_ALIAS --version)" ]; then
 			# log_info "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) detected at $(posix_which $NAME_LOWERCASE)"
-			log_info "'$NAME_ALIAS' detected $($NAME_ALIAS --version)."
+			log_info "'$NAME_ALIAS' $($NAME_ALIAS --version) detected."
 		fi
 	fi
 }
@@ -801,9 +801,9 @@ if [ "$(exists_command "pkg-config")" = "exists" ]; then
 	# Test if completion dir exists to avoid interruption
 	if [ -n "$(pkg-config --variable=completionsdir bash-completion)" ]; then
 		dir_autocompletion="$(pkg-config --variable=completionsdir bash-completion)"
-		file_autocompletion_1="$dir_src_cli/autocompletion"
-		file_autocompletion_2="$dir_autocompletion/$NAME_LOWERCASE"
-		file_autocompletion_3="$dir_autocompletion/$NAME_ALIAS"
+		file_autocompletion="$dir_src_cli/autocompletion"
+		file_autocompletion_alias_1="$dir_autocompletion/$NAME_LOWERCASE"
+		file_autocompletion_alias_2="$dir_autocompletion/$NAME_ALIAS"
 	fi
 fi
 
@@ -823,36 +823,49 @@ create_autocompletion() {
 		# Install autocompletion only if the directory has been found.
 		if [ -d "$dir_autocompletion" ]; then
 
+			# if [ -f "$file_autocompletion" ]; then
+			# 	rm -f $file_autocompletion
+			# fi
+
+			# if [ -f "$file_autocompletion_alias_1" ]; then
+			# 	rm -f $file_autocompletion_alias_1
+			# fi
+
+			# if [ -f "$file_autocompletion_alias_2" ]; then
+			# 	rm -f $file_autocompletion_alias_2
+			# fi
+
 			if [ "$file_command" = "$CURRENT_CLI" ]; then
 
-				echo '_'$NAME_LOWERCASE'() {'																			> $file_autocompletion_1
-				echo '	local cur=${COMP_WORDS[COMP_CWORD]}'															>> $file_autocompletion_1
-				echo '	local prev=${COMP_WORDS[COMP_CWORD-1]}'															>> $file_autocompletion_1
-				echo ''																									>> $file_autocompletion_1
-				echo '	case ${COMP_CWORD} in'																			>> $file_autocompletion_1
-				echo '		1) COMPREPLY=($('$(echo compgen)' -W "'$(echo $options)'" -- ${cur})) ;;'					>> $file_autocompletion_1
-				echo '		2)'																							>> $file_autocompletion_1
-				echo '		case ${prev} in'																			>> $file_autocompletion_1
-				echo '			_commandtofill) COMPREPLY=($('$(echo compgen)' -W "_optionstofill" -- ${cur})) ;;'		>> $file_autocompletion_1
-				echo '		esac ;;'																					>> $file_autocompletion_1
-				echo '		*) COMPREPLY=() ;;'																			>> $file_autocompletion_1
-				echo '	esac'																							>> $file_autocompletion_1
-				echo '	}'																								>> $file_autocompletion_1
-				echo ''																									>> $file_autocompletion_1
-				echo "complete -F _$NAME_LOWERCASE $NAME_ALIAS"															>> $file_autocompletion_1
-				echo "complete -F _$NAME_LOWERCAS $NAME_LOWERCAS"														>> $file_autocompletion_1
+				echo '_'$NAME_LOWERCASE'() {'																			> $file_autocompletion
+				echo '	local cur=${COMP_WORDS[COMP_CWORD]}'															>> $file_autocompletion
+				echo '	local prev=${COMP_WORDS[COMP_CWORD-1]}'															>> $file_autocompletion
+				echo ''																									>> $file_autocompletion
+				echo '	case ${COMP_CWORD} in'																			>> $file_autocompletion
+				echo '		1) COMPREPLY=($('$(echo compgen)' -W "'$(echo $options)'" -- ${cur})) ;;'					>> $file_autocompletion
+				echo '		2)'																							>> $file_autocompletion
+				echo '		case ${prev} in'																			>> $file_autocompletion
+				echo '			_commandtofill) COMPREPLY=($('$(echo compgen)' -W "_optionstofill" -- ${cur})) ;;'		>> $file_autocompletion
+				echo '		esac ;;'																					>> $file_autocompletion
+				echo '		*) COMPREPLY=() ;;'																			>> $file_autocompletion
+				echo '	esac'																							>> $file_autocompletion
+				echo '	}'																								>> $file_autocompletion
+				echo ''																									>> $file_autocompletion
+				echo "complete -F _$NAME_LOWERCASE $NAME_ALIAS"															>> $file_autocompletion
+				echo "complete -F _$NAME_LOWERCASE $NAME_LOWERCASE"														>> $file_autocompletion
 
-				ln -sf $file_autocompletion_1 $file_autocompletion_2
-				ln -sf $file_autocompletion_1 $file_autocompletion_3
+				ln -sf $file_autocompletion $file_autocompletion_alias_1
+				ln -sf $file_autocompletion $file_autocompletion_alias_2
 
-			else
+			# else
+			elif [ "$(ls $dir_commands/$file_command)" ]; then
 				# Duplicate the line and make it unique with the "new" word to find and replace it with automatics values
-				sed -i 's/\(.*\)/\1\n\1new/'
-				sed -i "s/_commandtofill/$command/" $file_autocompletion_1
-				sed -i "s/_optionstofill/$options/" $file_autocompletion_1
+				cat $file_autocompletion | grep _commandtofill | sed -i 's/\(.*\)/\1\n\1new/'
+				cat $file_autocompletion | grep new | sed -i "s/_commandtofill/$command/"
+				cat $file_autocompletion | grep new | sed -i "s/_optionstofill/$options/"
 			fi
 
-			if [ -f "$file_autocompletion_1" ] && [ -f "$file_autocompletion_2" ] && [ -f "$file_autocompletion_3" ]; then
+			if [ -f "$file_autocompletion" ] && [ -f "$file_autocompletion_alias_1" ] && [ -f "$file_autocompletion_alias_2" ]; then
 				log_info "autocompletion ready."
 			fi
 
@@ -976,9 +989,9 @@ delete_cli() {
 
 		else
 			# Delete everything
-			rm -rf $file_autocompletion_1
-			rm -rf $file_autocompletion_2
-			rm -rf $file_autocompletion_3
+			rm -rf $file_autocompletion
+			rm -rf $file_autocompletion_alias_1
+			rm -rf $file_autocompletion_alias_2
 			rm -rf $file_main_alias_1
 			rm -rf $file_main_alias_2
 			rm -rf $dir_src_cli
@@ -1990,7 +2003,7 @@ install_cli() {
 		echo "$(cat $CURRENT_CLI | grep -A 21 "MIT License")" > "$dir_src_cli/LICENSE.md"
 
 
-		# # Autocompletion installation
+		# Autocompletion installation
 		create_autocompletion $CURRENT_CLI
 
 
@@ -2000,12 +2013,20 @@ install_cli() {
 			rm -f $dir_systemd/$NAME_LOWERCASE*
 		fi
 
-		# Reinstall all automations of the subcommands
-		for command in "$(ls $dir_commands)"; do
-			for automation in "$(cat $dir_commands/$command | grep create_automation | sed 's/^.*$HELPER //' | sed 's/$1/'$command'/')"; do
-				$automation
-			done
-		done
+		# Reinstall all automations and autocompletion of the subcommands
+		if [ -d "$dir_commands" ]; then
+			if [ "$(ls $dir_commands)" ]; then
+				for command in "$(ls $dir_commands)"; do
+					for automation in "$(cat $dir_commands/$command | grep create_automation | sed 's/^.*$HELPER //' | sed 's/$1/'$command'/')"; do
+						$automation
+					done
+					
+					for autocompletion in "$(cat $dir_commands/$command | grep create_autocompletion | sed 's/^.*$HELPER //' | sed 's/$1/'$command'/')"; do
+						echo $autocompletion
+					done
+				done
+			fi
+		fi
 
 		# Self update automation
 		create_automation "--self-update" "self-update" "automatically update $NAME CLI."
@@ -2028,7 +2049,7 @@ install_cli() {
 
 		# Success message
 		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
-			log_success "'$NAME_ALIAS' installed $($NAME_ALIAS --version)."
+			log_success "'$NAME_ALIAS' $($NAME_ALIAS --version) installed."
 		else
 			# Remove config dir that might have been created
 			rm -rf "$dir_config"
