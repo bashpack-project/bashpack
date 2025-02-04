@@ -600,10 +600,10 @@ get_logs() {
 
 # Detect if the command has been installed on the system
 detect_cli() {
-	if [ "$(exists_command "$NAME_LOWERCASE")" = "exists" ]; then
-		if [ -n "$($NAME_LOWERCASE --version)" ]; then
+	if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
+		if [ -n "$($NAME_ALIAS --version)" ]; then
 			# log_info "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) detected at $(posix_which $NAME_LOWERCASE)"
-			log_info "$NAME $($NAME_ALIAS --version) detected at $(posix_which $NAME_LOWERCASE)"
+			log_info "'$NAME_ALIAS' detected $($NAME_ALIAS --version)."
 		fi
 	fi
 }
@@ -2028,7 +2028,7 @@ install_cli() {
 
 		# Success message
 		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
-			log_success "'$NAME_ALIAS' installed."
+			log_success "'$NAME_ALIAS' installed $($NAME_ALIAS --version)."
 		else
 			# Remove config dir that might have been created
 			rm -rf "$dir_config"
