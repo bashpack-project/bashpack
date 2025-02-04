@@ -839,8 +839,8 @@ create_autocompletion() {
 				echo '	esac'																							>> $file_autocompletion_1
 				echo '	}'																								>> $file_autocompletion_1
 				echo ''																									>> $file_autocompletion_1
-				echo 'complete -F _bashpack bp'																			>> $file_autocompletion_1
-				echo 'complete -F _bashpack bashpack'																	>> $file_autocompletion_1
+				echo "complete -F _$NAME_LOWERCASE $NAME_ALIAS"															>> $file_autocompletion_1
+				echo "complete -F _$NAME_LOWERCAS $NAME_LOWERCAS"														>> $file_autocompletion_1
 
 				ln -sf $file_autocompletion_1 $file_autocompletion_2
 				ln -sf $file_autocompletion_1 $file_autocompletion_3
