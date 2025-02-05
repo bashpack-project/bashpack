@@ -143,9 +143,9 @@ fi
 
 
 if [ "$CURRENT_CLI" = "./$NAME_LOWERCASE.sh" ]; then
-	dir_commands="commands"
+	export dir_commands="commands"
 else
-	dir_commands="$dir_src_cli/commands"
+	export dir_commands="$dir_src_cli/commands"
 fi
 
 
@@ -795,15 +795,15 @@ create_automation() {
 
 
 # bash-completion doc: https://github.com/scop/bash-completion/blob/main/README.md#faq
-# If pkg-config doesn't exist, then the system won't have autocompletion.
+# If pkg-config doesn't exist, then the system won't have completion.
 if [ "$(exists_command "pkg-config")" = "exists" ]; then
 
 	# Test if completion dir exists to avoid interruption
 	if [ -n "$(pkg-config --variable=completionsdir bash-completion)" ]; then
-		dir_autocompletion="$(pkg-config --variable=completionsdir bash-completion)"
-		file_autocompletion="$dir_src_cli/autocompletion"
-		file_autocompletion_alias_1="$dir_autocompletion/$NAME_LOWERCASE"
-		file_autocompletion_alias_2="$dir_autocompletion/$NAME_ALIAS"
+		dir_completion="$(pkg-config --variable=completionsdir bash-completion)"
+		file_completion="$dir_src_cli/completion"
+		file_completion_alias_1="$dir_completion/$NAME_LOWERCASE"
+		file_completion_alias_2="$dir_completion/$NAME_ALIAS"
 	fi
 fi
 
@@ -811,66 +811,74 @@ fi
 
 
 # Dynamically create completion files
-# Usage: create_autocompletion <file_command>
-create_autocompletion() {
+# Usage: create_completion <file_command>
+create_completion() {
 
 	local file_command="$1"
 	local command="$(echo $file_command sed 's/\..*//')"
-	local options="$(cat $file_command | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g')"
+	# local options="$(cat $file_command | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g')"
+	local options="blabla"
 
 
 	if [ "$(exists_command "pkg-config")" = "exists" ]; then
-		# Install autocompletion only if the directory has been found.
-		if [ -d "$dir_autocompletion" ]; then
+		# Install completion only if the directory has been found.
+		if [ -d "$dir_completion" ]; then
 
-			# if [ -f "$file_autocompletion" ]; then
-			# 	rm -f $file_autocompletion
+			# if [ -f "$file_completion" ]; then
+			# 	rm -f $file_completion
 			# fi
 
-			# if [ -f "$file_autocompletion_alias_1" ]; then
-			# 	rm -f $file_autocompletion_alias_1
+			# if [ -f "$file_completion_alias_1" ]; then
+			# 	rm -f $file_completion_alias_1
 			# fi
 
-			# if [ -f "$file_autocompletion_alias_2" ]; then
-			# 	rm -f $file_autocompletion_alias_2
+			# if [ -f "$file_completion_alias_2" ]; then
+			# 	rm -f $file_completion_alias_2
 			# fi
 
 			if [ "$file_command" = "$CURRENT_CLI" ]; then
 
-				echo '_'$NAME_LOWERCASE'() {'																			> $file_autocompletion
-				echo '	local cur=${COMP_WORDS[COMP_CWORD]}'															>> $file_autocompletion
-				echo '	local prev=${COMP_WORDS[COMP_CWORD-1]}'															>> $file_autocompletion
-				echo ''																									>> $file_autocompletion
-				echo '	case ${COMP_CWORD} in'																			>> $file_autocompletion
-				echo '		1) COMPREPLY=($('$(echo compgen)' -W "'$(echo $options)'" -- ${cur})) ;;'					>> $file_autocompletion
-				echo '		2)'																							>> $file_autocompletion
-				echo '		case ${prev} in'																			>> $file_autocompletion
-				echo '			_commandtofill) COMPREPLY=($('$(echo compgen)' -W "_optionstofill" -- ${cur})) ;;'		>> $file_autocompletion
-				echo '		esac ;;'																					>> $file_autocompletion
-				echo '		*) COMPREPLY=() ;;'																			>> $file_autocompletion
-				echo '	esac'																							>> $file_autocompletion
-				echo '	}'																								>> $file_autocompletion
-				echo ''																									>> $file_autocompletion
-				echo "complete -F _$NAME_LOWERCASE $NAME_ALIAS"															>> $file_autocompletion
-				echo "complete -F _$NAME_LOWERCASE $NAME_LOWERCASE"														>> $file_autocompletion
+				echo '_'$NAME_LOWERCASE'() {'																			> $file_completion
+				echo '	local cur=${COMP_WORDS[COMP_CWORD]}'															>> $file_completion
+				echo '	local prev=${COMP_WORDS[COMP_CWORD-1]}'															>> $file_completion
+				echo ''																									>> $file_completion
+				echo '	case ${COMP_CWORD} in'																			>> $file_completion
+				echo '		1) COMPREPLY=($('$(echo compgen)' -W "'$(echo $options)'" -- ${cur})) ;;'					>> $file_completion
+				echo '		2)'																							>> $file_completion
+				echo '		case ${prev} in'																			>> $file_completion
+				echo '			_commandtofill) COMPREPLY=($('$(echo compgen)' -W "_optionstofill" -- ${cur})) ;;'		>> $file_completion
+				echo '		esac ;;'																					>> $file_completion
+				echo '		*) COMPREPLY=() ;;'																			>> $file_completion
+				echo '	esac'																							>> $file_completion
+				echo '	}'																								>> $file_completion
+				echo ''																									>> $file_completion
+				echo "complete -F _$NAME_LOWERCASE $NAME_ALIAS"															>> $file_completion
+				echo "complete -F _$NAME_LOWERCASE $NAME_LOWERCASE"														>> $file_completion
 
-				ln -sf $file_autocompletion $file_autocompletion_alias_1
-				ln -sf $file_autocompletion $file_autocompletion_alias_2
+				ln -sf $file_completion $file_completion_alias_1
+				ln -sf $file_completion $file_completion_alias_2
 
 			# else
-			elif [ "$(ls $dir_commands/$file_command)" ]; then
+			elif [ "$(ls $dir_commands/$file_command)" ] && [ -f "$file_completion" ]; then
 				# Duplicate the line and make it unique with the "new" word to find and replace it with automatics values
-				cat $file_autocompletion | grep _commandtofill | sed -i 's/\(.*\)/\1\n\1new/'
-				cat $file_autocompletion | grep new | sed -i "s/_commandtofill/$command/"
-				cat $file_autocompletion | grep new | sed -i "s/_optionstofill/$options/"
+				# cat $file_completion | grep _commandtofill | sed -i 's/\(.*\)/\1\n\1new/'
+				# cat $file_completion | grep new | sed -i "s/_commandtofill/$command/"
+				# cat $file_completion | grep new | sed -i "s/_optionstofill/$options/"
+
+				# line="$(cat $file_completion | grep _commandtofill | sed -i 's/\(.*\)/\1\n\1new/')"
+				sed -i 's/\(_commandtofill.*\)/\1\n\1new/' $file_completion
+				sed -i "s/_commandtofill\(.*\)new/$command\1/" $file_completion
+				sed -i "s/_optionstofill\(.*\)new/$options\1/" $file_completion
 			fi
 
-			if [ -f "$file_autocompletion" ] && [ -f "$file_autocompletion_alias_1" ] && [ -f "$file_autocompletion_alias_2" ]; then
-				log_info "autocompletion ready."
+			if [ -f "$file_completion" ] && [ -f "$file_completion_alias_1" ] && [ -f "$file_completion_alias_2" ]; then
+				log_info "completion ready."
+			else
+				log_error "completion not ready."
 			fi
 
 		else
-			log_error "autocompletion directory not found."
+			log_error "completion directory not found."
 		fi
 	fi
 }
@@ -989,9 +997,9 @@ delete_cli() {
 
 		else
 			# Delete everything
-			rm -rf $file_autocompletion
-			rm -rf $file_autocompletion_alias_1
-			rm -rf $file_autocompletion_alias_2
+			rm -rf $file_completion
+			rm -rf $file_completion_alias_1
+			rm -rf $file_completion_alias_2
 			rm -rf $file_main_alias_1
 			rm -rf $file_main_alias_2
 			rm -rf $dir_src_cli
@@ -2004,7 +2012,7 @@ install_cli() {
 
 
 		# Autocompletion installation
-		create_autocompletion $CURRENT_CLI
+		create_completion $CURRENT_CLI
 
 
 		# Delete all automations because some of them might have changed
@@ -2013,16 +2021,16 @@ install_cli() {
 			rm -f $dir_systemd/$NAME_LOWERCASE*
 		fi
 
-		# Reinstall all automations and autocompletion of the subcommands
+		# Reinstall all automations and completion of the subcommands
 		if [ -d "$dir_commands" ]; then
 			if [ "$(ls $dir_commands)" ]; then
 				for command in "$(ls $dir_commands)"; do
-					for automation in "$(cat $dir_commands/$command | grep create_automation | sed 's/^.*$HELPER //' | sed 's/$1/'$command'/')"; do
+					for automation in "$(cat $dir_commands/$command | grep create_automation | grep -v '^#' | sed 's/^.*$HELPER //' | sed 's/$1/'$command'/')"; do
 						$automation
 					done
 					
-					for autocompletion in "$(cat $dir_commands/$command | grep create_autocompletion | sed 's/^.*$HELPER //' | sed 's/$1/'$command'/')"; do
-						echo $autocompletion
+					for completion in "$(cat $dir_commands/$command | grep create_completion | grep -v '^#' | sed 's/^.*$HELPER //' | sed 's/$1/'$command'/')"; do
+						$completion
 					done
 				done
 			fi
@@ -2116,7 +2124,7 @@ case "$1" in
 				case "$2" in
 					append_log)						append_log "$3" ;;
 					create_automation)				create_automation "$3" ;;
-					create_autocompletion)			create_autocompletion "$3" ;;
+					create_completion)				create_completion "$3" ;;
 					log_error)						log_error "$3" "$4" ;;
 					log_info)						log_info "$3" "$4" ;;
 					log_success)					log_success "$3" "$4" ;;
