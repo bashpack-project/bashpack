@@ -815,12 +815,15 @@ fi
 create_completion() {
 
 	local file_command="$1"
-	local command="$(echo $file_command sed 's/\..*//')"
-	# local options="$(cat $file_command | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g')"
-	local options="blabla"
+	local command="$(echo $file_command | sed 's/\..*//')"
+	local options="$(cat $file_command | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g')"
 
 
 	if [ "$(exists_command "pkg-config")" = "exists" ]; then
+	
+		# local command="$(echo $file_command | sed 's/\..*//')"
+		# local options="$(cat $file_command | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g')"
+
 		# Install completion only if the directory has been found.
 		if [ -d "$dir_completion" ]; then
 
@@ -860,15 +863,16 @@ create_completion() {
 
 			# else
 			elif [ "$(ls $dir_commands/$file_command)" ] && [ -f "$file_completion" ]; then
-				# Duplicate the line and make it unique with the "new" word to find and replace it with automatics values
-				# cat $file_completion | grep _commandtofill | sed -i 's/\(.*\)/\1\n\1new/'
-				# cat $file_completion | grep new | sed -i "s/_commandtofill/$command/"
-				# cat $file_completion | grep new | sed -i "s/_optionstofill/$options/"
 
-				# line="$(cat $file_completion | grep _commandtofill | sed -i 's/\(.*\)/\1\n\1new/')"
-				sed -i 's/\(_commandtofill.*\)/\1\n\1new/' $file_completion
-				sed -i "s/_commandtofill\(.*\)new/$command\1/" $file_completion
-				sed -i "s/_optionstofill\(.*\)new/$options\1/" $file_completion
+				# Explicit call $dir_commands in variables
+				# local command="$(echo $dir_commands/$file_command | sed 's/\..*//')"
+				# local options="$(cat $dir_commands/$file_command | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g')"
+
+				# Duplicate the line and make it unique with the "new" word to find and replace it with automatics values
+				sed -i 's|\(_commandtofill.*\)|\1\n\1new|' $file_completion
+				# sed -i "s|_commandtofill\(.*\)new|$command\1|" $file_completion
+				sed -i "s|_commandtofill\(.*\)|$command\1|" $file_completion
+				sed -i "s|_optionstofill\(.*\)new|$options\1|" $file_completion
 			fi
 
 			if [ -f "$file_completion" ] && [ -f "$file_completion_alias_1" ] && [ -f "$file_completion_alias_2" ]; then
