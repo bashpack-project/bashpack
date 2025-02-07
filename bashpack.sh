@@ -816,7 +816,15 @@ create_completion() {
 
 	local file_command="$1"
 	local command="$(echo $file_command | sed 's/\..*//')"
-	local options="$(cat $file_command | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g')"
+	# local options="$(cat $file_command | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g')"
+
+
+	# List all options of any file that is a CLI
+	# Usage: get_options <file path>
+	get_options() {
+		cat $1 | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g'
+	}
+
 
 
 	if [ "$(exists_command "pkg-config")" = "exists" ]; then
@@ -841,22 +849,22 @@ create_completion() {
 
 			if [ "$file_command" = "$CURRENT_CLI" ]; then
 
-				echo '_'$NAME_LOWERCASE'() {'																			> $file_completion
-				echo '	local cur=${COMP_WORDS[COMP_CWORD]}'															>> $file_completion
-				echo '	local prev=${COMP_WORDS[COMP_CWORD-1]}'															>> $file_completion
-				echo ''																									>> $file_completion
-				echo '	case ${COMP_CWORD} in'																			>> $file_completion
-				echo '		1) COMPREPLY=($('$(echo compgen)' -W "'$(echo $options)'" -- ${cur})) ;;'					>> $file_completion
-				echo '		2)'																							>> $file_completion
-				echo '		case ${prev} in'																			>> $file_completion
-				echo '			_commandtofill) COMPREPLY=($('$(echo compgen)' -W "_optionstofill" -- ${cur})) ;;'		>> $file_completion
-				echo '		esac ;;'																					>> $file_completion
-				echo '		*) COMPREPLY=() ;;'																			>> $file_completion
-				echo '	esac'																							>> $file_completion
-				echo '	}'																								>> $file_completion
-				echo ''																									>> $file_completion
-				echo "complete -F _$NAME_LOWERCASE $NAME_ALIAS"															>> $file_completion
-				echo "complete -F _$NAME_LOWERCASE $NAME_LOWERCASE"														>> $file_completion
+				echo '_'$NAME_LOWERCASE'() {'																				> $file_completion
+				echo '	local cur=${COMP_WORDS[COMP_CWORD]}'																>> $file_completion
+				echo '	local prev=${COMP_WORDS[COMP_CWORD-1]}'																>> $file_completion
+				echo ''																										>> $file_completion
+				echo '	case ${COMP_CWORD} in'																				>> $file_completion
+				echo '		1) COMPREPLY=($('$(echo compgen)' -W "'$(echo $(get_options $CURRENT_CLI))'" -- ${cur})) ;;'	>> $file_completion
+				echo '		2)'																								>> $file_completion
+				echo '		case ${prev} in'																				>> $file_completion
+				echo '			_commandtofill) COMPREPLY=($('$(echo compgen)' -W "_optionstofill" -- ${cur})) ;;'			>> $file_completion
+				echo '		esac ;;'																						>> $file_completion
+				echo '		*) COMPREPLY=() ;;'																				>> $file_completion
+				echo '	esac'																								>> $file_completion
+				echo '	}'																									>> $file_completion
+				echo ''																										>> $file_completion
+				echo "complete -F _$NAME_LOWERCASE $NAME_ALIAS"																>> $file_completion
+				echo "complete -F _$NAME_LOWERCASE $NAME_LOWERCASE"															>> $file_completion
 
 				ln -sf $file_completion $file_completion_alias_1
 				ln -sf $file_completion $file_completion_alias_2
@@ -871,8 +879,8 @@ create_completion() {
 				# Duplicate the line and make it unique with the "new" word to find and replace it with automatics values
 				sed -i 's|\(_commandtofill.*\)|\1\n\1new|' $file_completion
 				# sed -i "s|_commandtofill\(.*\)new|$command\1|" $file_completion
-				sed -i "s|_commandtofill\(.*\)|$command\1|" $file_completion
-				sed -i "s|_optionstofill\(.*\)new|$options\1|" $file_completion
+				sed -i "s|_commandtofill\(.*new\).*|$command\1|" $file_completion
+				sed -i "s|_optionstofill\(.*\)new|$(get_options $dir_commands/$file_command)\1|" $file_completion
 			fi
 
 			if [ -f "$file_completion" ] && [ -f "$file_completion_alias_1" ] && [ -f "$file_completion_alias_2" ]; then
