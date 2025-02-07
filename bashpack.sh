@@ -810,7 +810,7 @@ fi
 
 
 
-# Dynamically create completion files
+# Dynamically create completion for CLI & subcommands with options
 # Usage: create_completion <file_command>
 create_completion() {
 
@@ -825,25 +825,24 @@ create_completion() {
 	}
 
 
-
 	if [ "$(exists_command "pkg-config")" = "exists" ]; then
 	
 		# Install completion only if the directory has been found.
 		if [ -d "$dir_completion" ]; then
 
-			# if [ -f "$file_completion" ]; then
-			# 	rm -f $file_completion
-			# fi
+				if [ "$file_command" = "$CURRENT_CLI" ]; then
 
-			# if [ -f "$file_completion_alias_1" ]; then
-			# 	rm -f $file_completion_alias_1
-			# fi
+				if [ -f "$file_completion" ]; then
+					rm -f $file_completion
+				fi
 
-			# if [ -f "$file_completion_alias_2" ]; then
-			# 	rm -f $file_completion_alias_2
-			# fi
+				if [ -f "$file_completion_alias_1" ]; then
+					rm -f $file_completion_alias_1
+				fi
 
-			if [ "$file_command" = "$CURRENT_CLI" ]; then
+				if [ -f "$file_completion_alias_2" ]; then
+					rm -f $file_completion_alias_2
+				fi
 
 				echo '_'$NAME_LOWERCASE'() {'																				> $file_completion
 				echo '	local cur=${COMP_WORDS[COMP_CWORD]}'																>> $file_completion
@@ -866,10 +865,10 @@ create_completion() {
 				ln -sf $file_completion $file_completion_alias_2
 
 			# else
-			elif [ "$(ls $dir_commands/$file_command)" ] && [ -f "$file_completion" ] && [ ! "$(cat $file_completion | grep '$command)')" ]; then
+			elif [ "$(ls $dir_commands/$file_command)" ] && [ -f "$file_completion" ] && [ -z "$(cat $file_completion | grep "$command)")" ]; then
 				# Duplicate the line and make it unique with the "new" word to find and replace it with automatics values
 				sed -i 's|\(_commandtofill.*\)|\1\n\1new|' $file_completion
-				sed -i "s|_commandtofill\(.*new\).*|$command\1|" $file_completion
+				sed -i "s|_commandtofill\(.*new\).*|\t\t\t$command\1|" $file_completion
 				sed -i "s|_optionstofill\(.*\)new|$(get_options $dir_commands/$file_command)\1|" $file_completion
 			fi
 
@@ -882,6 +881,25 @@ create_completion() {
 		else
 			log_error "completion directory not found."
 		fi
+	fi
+}
+
+
+
+# Dynamically delete completion of subcommands
+# Usage: delete_completion <file_command>
+delete_completion() {
+
+	local file_command="$1"
+	local command="$(echo $file_command | sed 's/\..*//')"
+
+
+	if [ -f "$file_completion" ]; then
+		if [ -f "$file_completion" ]; then
+			sed -i "|$command||d" $file_completion
+		fi
+	else
+		log_error "unknown '$file_command'."
 	fi
 }
 
@@ -1733,8 +1751,12 @@ subcommand_delete() {
 		if [ "$(sanitize_confirmation $confirmation)" = "yes" ]; then
 			rm -f "$file_command"
 
-			# # Remove the related sub command options from the main config file
+			# # Delete the related sub command options from the main config file
 			# sed -i "/\[command\] $command/,/^\s*$/{d}" $file_config
+
+
+			# Delete completion configuration of the subcommand
+			delete_completion $file_command
 
 			if [ -f "$file_command" ]; then
 				log_error "command '$command' not removed."
