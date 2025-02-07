@@ -870,6 +870,9 @@ create_completion() {
 				sed -i 's|\(_commandtofill.*\)|\1\n\1new|' $file_completion
 				sed -i "s|_commandtofill\(.*new\).*|\t\t\t$command\1|" $file_completion
 				sed -i "s|_optionstofill\(.*\)new|$(get_options $dir_commands/$file_command)\1|" $file_completion
+
+				# Add the subcommand itself to the completion
+				sed -i "s|\(1) COMPREPLY.*\)\"|\1 $command\"|" $file_completion
 			fi
 
 			if [ -f "$file_completion" ] && [ -f "$file_completion_alias_1" ] && [ -f "$file_completion_alias_2" ]; then
@@ -897,7 +900,11 @@ delete_completion() {
 
 	# if [ -f "$file_command" ]; then
 		if [ -f "$file_completion" ]; then
-			sed -i "/$command/d" $file_completion
+			# Delete the option of the subcommand
+			sed -i "/$command)/d" $file_completion
+
+			# Delete the subcommand itself from the main options
+			sed -i "s| $command||" $file_completion
 		fi
 	# else
 	# 	log_error "unknown '$file_command'."
