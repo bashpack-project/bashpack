@@ -834,14 +834,14 @@ create_completion() {
 
 				if [ -f "$file_completion" ]; then
 					rm -f $file_completion
-				fi
 
-				if [ -f "$file_completion_alias_1" ]; then
-					rm -f $file_completion_alias_1
-				fi
+					if [ -f "$file_completion_alias_1" ]; then
+						rm -f $file_completion_alias_1
+					fi
 
-				if [ -f "$file_completion_alias_2" ]; then
-					rm -f $file_completion_alias_2
+					if [ -f "$file_completion_alias_2" ]; then
+						rm -f $file_completion_alias_2
+					fi
 				fi
 
 				echo '_'$NAME_LOWERCASE'() {'																				> $file_completion
@@ -883,6 +883,7 @@ create_completion() {
 		fi
 	fi
 }
+
 
 
 
