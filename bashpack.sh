@@ -815,7 +815,7 @@ fi
 create_completion() {
 
 	local file_command="$1"
-	local command="$(echo $file_command | sed 's/\..*//')"
+	local command="$(echo $(basename $file_command))"
 
 
 	# List all options of any file that is a CLI
@@ -891,16 +891,16 @@ create_completion() {
 delete_completion() {
 
 	local file_command="$1"
-	local command="$(echo $file_command | sed 's/\..*//')"
+	local command="$(echo $(basename $file_command))"
 
 
-	if [ -f "$file_completion" ]; then
+	# if [ -f "$file_command" ]; then
 		if [ -f "$file_completion" ]; then
-			sed -i "|$command||d" $file_completion
+			sed -i "/$command/d" $file_completion
 		fi
-	else
-		log_error "unknown '$file_command'."
-	fi
+	# else
+	# 	log_error "unknown '$file_command'."
+	# fi
 }
 
 
