@@ -816,7 +816,6 @@ create_completion() {
 
 	local file_command="$1"
 	local command="$(echo $file_command | sed 's/\..*//')"
-	# local options="$(cat $file_command | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g')"
 
 
 	# List all options of any file that is a CLI
@@ -829,9 +828,6 @@ create_completion() {
 
 	if [ "$(exists_command "pkg-config")" = "exists" ]; then
 	
-		# local command="$(echo $file_command | sed 's/\..*//')"
-		# local options="$(cat $file_command | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g')"
-
 		# Install completion only if the directory has been found.
 		if [ -d "$dir_completion" ]; then
 
@@ -870,15 +866,9 @@ create_completion() {
 				ln -sf $file_completion $file_completion_alias_2
 
 			# else
-			elif [ "$(ls $dir_commands/$file_command)" ] && [ -f "$file_completion" ]; then
-
-				# Explicit call $dir_commands in variables
-				# local command="$(echo $dir_commands/$file_command | sed 's/\..*//')"
-				# local options="$(cat $dir_commands/$file_command | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g')"
-
+			elif [ "$(ls $dir_commands/$file_command)" ] && [ -f "$file_completion" ] && [ ! "$(cat $file_completion | grep '$command)')" ]; then
 				# Duplicate the line and make it unique with the "new" word to find and replace it with automatics values
 				sed -i 's|\(_commandtofill.*\)|\1\n\1new|' $file_completion
-				# sed -i "s|_commandtofill\(.*\)new|$command\1|" $file_completion
 				sed -i "s|_commandtofill\(.*new\).*|$command\1|" $file_completion
 				sed -i "s|_optionstofill\(.*\)new|$(get_options $dir_commands/$file_command)\1|" $file_completion
 			fi
