@@ -220,6 +220,7 @@ else
 		&&		echo " -v, --version        display version." \
 		&&		echo " -l, --list           list available subcommands (local and remote). " \
 		&&		echo " -g, --get <name>     install a subcommand." \
+		&&		echo " -n, --new <name>		get a template to create a subcommand." \
 		&&		echo " -d, --delete <name>  uninstall a subcommand." \
 		&&		echo "" \
 		&&		echo "Commands (<command> --help to display usages):" \
@@ -1783,6 +1784,87 @@ subcommand_delete() {
 
 
 
+# Get the template to write a new subcommand
+# Usage: subcommand_new <name> <author>
+subcommand_new() {
+
+	local file_subcommand="$dir_commands/$1.sh"
+
+
+	if [ -f "$file_subcommand" ]; then
+		echo "$file_subcommand already exists." | append_log
+	else
+		echo " \
+			#!/bin/sh
+
+
+			export allow_helper_functions="true"
+			command_name=\$(echo \$(basename \$1))
+
+
+
+
+			# Display help
+			# Usage: display_help
+			display_help() {
+				echo \" \\
+					to fill
+					to fill
+					to fill
+				\" | sed 's/^[ \t]*//'
+
+			}
+
+
+
+
+			# Install requirements of the subcommand
+			# This function is intended to be used from \$CURRENT_CLI with this syntax: \$CURRENT_CLI \$command init_command
+			# (it will only work if init_command is available as an argument with the others options)
+			# Usage: \$CURRENT_CLI \$subcommand init_command
+			init_command() {
+				echo 'to fill or to remove: create file, automation or anything that needs to be in place during the install of the subcommand'
+				# echo "tmp text" > \$dir_tmp/\$file_tmp
+				# \$HELPER create_automation \$command_name
+				# \$HELPER create_completion \$command_name
+			}
+
+
+
+
+			echo 'the work goes here'
+
+
+
+
+			if [ ! -z "\$2" ]; then
+				case "\$2" in
+					init_command)	init_command ;;
+					--help)		display_help ;;
+					*)		\$HELPER display_error "unknown option '$2' from '$1' command."'\\\n'"\$USAGE" && exit ;;
+				esac
+			else
+				display_help
+			fi
+
+
+
+
+			# Properly exit
+			exit
+
+			#EOF" | sed 's/\t\t\t//' > "$file_subcommand"
+
+
+			chown $OWNER:$OWNER $file_subcommand
+			chmod +x $file_subcommand
+		fi
+
+}
+
+
+
+
 # Function to get the latest available version from the remote repository
 # Usage: get_latest_version
 get_latest_version() {
@@ -2040,7 +2122,7 @@ install_cli() {
 
 
 		# Creating License file
-		echo "$(cat $CURRENT_CLI | grep -A 21 "MIT License")" > "$dir_src_cli/LICENSE.md"
+		echo "$(cat $CURRENT_CLI | grep -A 21 "MIT License" | head -n 21)" > "$dir_src_cli/LICENSE.md"
 
 
 		# Autocompletion installation
@@ -2129,6 +2211,7 @@ case "$1" in
 	-g|--get)						loading_process "subcommand_get $2" ;;
 	# -g|--get)						loading_process "subcommand_update $2" ;;
 	-d|--delete)					subcommand_delete $2 $3 ;;
+	-n|--new)						subcommand_new $2 $3 ;;
 	verify)
 		if [ -z "$2" ]; then
 									loading_process "verify_dependencies $3";  loading_process "verify_files"; loading_process "verify_repository_reachability $(match_url_repository $(get_config_value $file_config cli_url) github_raw)"
