@@ -1811,7 +1811,7 @@ subcommand_new() {
 					to fill
 					to fill
 					to fill
-				\" | sed 's/^[ \t]*//'
+				\" | sed 's/^[ \\\t]*//'
 
 			}
 
