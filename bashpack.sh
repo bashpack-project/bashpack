@@ -163,7 +163,7 @@ file_sourceslist_subcommands="$dir_sourceslist/subcommands.list"
 file_registry="$dir_sourceslist/.subcommands.registry"
 
 
-subcommands_allowed_extensions="\|sh\|py"
+subcommands_allowed_extensions="\|sh\|"
 
 
 file_repository_reachable_tmp="$dir_tmp/$NAME_LOWERCASE-last-repository-tested-is-reachable"
@@ -1502,6 +1502,7 @@ subcommand_list() {
 	local list_installed_tmp="$dir_tmp/$NAME_LOWERCASE-commands-installed"
 
 	local installed="[installed]"
+	local updatable="[update available]"
 
 
 	# Detect installed subcommands
@@ -1635,10 +1636,20 @@ subcommand_list() {
 
 					# Checking if the subcommand is already installed
 					if [ -f "$dir_commands/$command" ]; then
-						echo "$command $installed"
+
+						local command_checksum_known="$(file_checksum "$dir_commands/$command")"
+						local command_checksum_remote="$(file_checksum $(get_config_value $file_registry $command 2))"
+
+						if [ "$command_checksum_known" = "$command_checksum_remote" ]; then
+							echo "$command $installed"
+						else
+							echo "$command $installed $updatable"
+						fi
 					else
 						echo "$command"
 					fi
+
+					
 				fi
 			done < $list_installed_tmp | sort -ud
 
