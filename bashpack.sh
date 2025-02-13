@@ -163,8 +163,7 @@ file_sourceslist_subcommands="$dir_sourceslist/subcommands.list"
 file_registry="$dir_sourceslist/.subcommands.registry"
 
 
-# subcommands_allowed_extensions="\|sh\|py"
-subcommands_allowed_extensions="\|sh\|"
+subcommands_allowed_extensions="\|sh\|py"
 
 
 file_repository_reachable_tmp="$dir_tmp/$NAME_LOWERCASE-last-repository-tested-is-reachable"
@@ -221,6 +220,7 @@ else
 		&&		echo " -v, --version        display version." \
 		&&		echo " -l, --list           list available subcommands (local and remote). " \
 		&&		echo " -g, --get <name>     install a subcommand." \
+		&&		echo " -n, --new <name>		get a template to create a subcommand." \
 		&&		echo " -d, --delete <name>  uninstall a subcommand." \
 		&&		echo "" \
 		&&		echo "Commands (<command> --help to display usages):" \
@@ -811,69 +811,69 @@ fi
 
 
 
-# Dynamically create completion files
+# Dynamically create completion for CLI & subcommands with options
 # Usage: create_completion <file_command>
 create_completion() {
 
 	local file_command="$1"
-	local command="$(echo $file_command | sed 's/\..*//')"
-	local options="$(cat $file_command | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g')"
+	local command="$(echo $(basename $file_command))"
+
+
+	# List all options of any file that is a CLI
+	# Usage: get_options <file path>
+	get_options() {
+		cat $1 | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g'
+	}
 
 
 	if [ "$(exists_command "pkg-config")" = "exists" ]; then
 	
-		# local command="$(echo $file_command | sed 's/\..*//')"
-		# local options="$(cat $file_command | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g')"
-
 		# Install completion only if the directory has been found.
 		if [ -d "$dir_completion" ]; then
 
-			# if [ -f "$file_completion" ]; then
-			# 	rm -f $file_completion
-			# fi
+				if [ "$file_command" = "$CURRENT_CLI" ]; then
 
-			# if [ -f "$file_completion_alias_1" ]; then
-			# 	rm -f $file_completion_alias_1
-			# fi
+				if [ -f "$file_completion" ]; then
+					rm -f $file_completion
 
-			# if [ -f "$file_completion_alias_2" ]; then
-			# 	rm -f $file_completion_alias_2
-			# fi
+					if [ -f "$file_completion_alias_1" ]; then
+						rm -f $file_completion_alias_1
+					fi
 
-			if [ "$file_command" = "$CURRENT_CLI" ]; then
+					if [ -f "$file_completion_alias_2" ]; then
+						rm -f $file_completion_alias_2
+					fi
+				fi
 
-				echo '_'$NAME_LOWERCASE'() {'																			> $file_completion
-				echo '	local cur=${COMP_WORDS[COMP_CWORD]}'															>> $file_completion
-				echo '	local prev=${COMP_WORDS[COMP_CWORD-1]}'															>> $file_completion
-				echo ''																									>> $file_completion
-				echo '	case ${COMP_CWORD} in'																			>> $file_completion
-				echo '		1) COMPREPLY=($('$(echo compgen)' -W "'$(echo $options)'" -- ${cur})) ;;'					>> $file_completion
-				echo '		2)'																							>> $file_completion
-				echo '		case ${prev} in'																			>> $file_completion
-				echo '			_commandtofill) COMPREPLY=($('$(echo compgen)' -W "_optionstofill" -- ${cur})) ;;'		>> $file_completion
-				echo '		esac ;;'																					>> $file_completion
-				echo '		*) COMPREPLY=() ;;'																			>> $file_completion
-				echo '	esac'																							>> $file_completion
-				echo '	}'																								>> $file_completion
-				echo ''																									>> $file_completion
-				echo "complete -F _$NAME_LOWERCASE $NAME_ALIAS"															>> $file_completion
-				echo "complete -F _$NAME_LOWERCASE $NAME_LOWERCASE"														>> $file_completion
+				echo '_'$NAME_LOWERCASE'() {'																				> $file_completion
+				echo '	local cur=${COMP_WORDS[COMP_CWORD]}'																>> $file_completion
+				echo '	local prev=${COMP_WORDS[COMP_CWORD-1]}'																>> $file_completion
+				echo ''																										>> $file_completion
+				echo '	case ${COMP_CWORD} in'																				>> $file_completion
+				echo '		1) COMPREPLY=($('$(echo compgen)' -W "'$(echo $(get_options $CURRENT_CLI))'" -- ${cur})) ;;'	>> $file_completion
+				echo '		2)'																								>> $file_completion
+				echo '		case ${prev} in'																				>> $file_completion
+				echo '			_commandtofill) COMPREPLY=($('$(echo compgen)' -W "_optionstofill" -- ${cur})) ;;'			>> $file_completion
+				echo '		esac ;;'																						>> $file_completion
+				echo '		*) COMPREPLY=() ;;'																				>> $file_completion
+				echo '	esac'																								>> $file_completion
+				echo '	}'																									>> $file_completion
+				echo ''																										>> $file_completion
+				echo "complete -F _$NAME_LOWERCASE $NAME_ALIAS"																>> $file_completion
+				echo "complete -F _$NAME_LOWERCASE $NAME_LOWERCASE"															>> $file_completion
 
 				ln -sf $file_completion $file_completion_alias_1
 				ln -sf $file_completion $file_completion_alias_2
 
 			# else
-			elif [ "$(ls $dir_commands/$file_command)" ] && [ -f "$file_completion" ]; then
-
-				# Explicit call $dir_commands in variables
-				# local command="$(echo $dir_commands/$file_command | sed 's/\..*//')"
-				# local options="$(cat $dir_commands/$file_command | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g')"
-
+			elif [ "$(ls $dir_commands/$file_command)" ] && [ -f "$file_completion" ] && [ -z "$(cat $file_completion | grep "$command)")" ]; then
 				# Duplicate the line and make it unique with the "new" word to find and replace it with automatics values
 				sed -i 's|\(_commandtofill.*\)|\1\n\1new|' $file_completion
-				# sed -i "s|_commandtofill\(.*\)new|$command\1|" $file_completion
-				sed -i "s|_commandtofill\(.*\)|$command\1|" $file_completion
-				sed -i "s|_optionstofill\(.*\)new|$options\1|" $file_completion
+				sed -i "s|_commandtofill\(.*new\).*|\t\t\t$command\1|" $file_completion
+				sed -i "s|_optionstofill\(.*\)new|$(get_options $dir_commands/$file_command)\1|" $file_completion
+
+				# Add the subcommand itself to the completion
+				sed -i "s|\(1) COMPREPLY.*\)\"|\1 $command\"|" $file_completion
 			fi
 
 			if [ -f "$file_completion" ] && [ -f "$file_completion_alias_1" ] && [ -f "$file_completion_alias_2" ]; then
@@ -886,6 +886,30 @@ create_completion() {
 			log_error "completion directory not found."
 		fi
 	fi
+}
+
+
+
+
+# Dynamically delete completion of subcommands
+# Usage: delete_completion <file_command>
+delete_completion() {
+
+	local file_command="$1"
+	local command="$(echo $(basename $file_command))"
+
+
+	# if [ -f "$file_command" ]; then
+		if [ -f "$file_completion" ]; then
+			# Delete the option of the subcommand
+			sed -i "/$command)/d" $file_completion
+
+			# Delete the subcommand itself from the main options
+			sed -i "s| $command||" $file_completion
+		fi
+	# else
+	# 	log_error "unknown '$file_command'."
+	# fi
 }
 
 
@@ -1478,7 +1502,6 @@ subcommand_list() {
 	local list_installed_tmp="$dir_tmp/$NAME_LOWERCASE-commands-installed"
 
 	local installed="[installed]"
-	local updatable="[update available]"
 
 
 	# Detect installed subcommands
@@ -1612,15 +1635,7 @@ subcommand_list() {
 
 					# Checking if the subcommand is already installed
 					if [ -f "$dir_commands/$command" ]; then
-
-						local command_checksum_known="$(file_checksum "$dir_commands/$command")"
-						local command_checksum_remote="$(file_checksum $(get_config_value $file_registry $command 2))"
-
-						if [ "$command_checksum_known" = "$command_checksum_remote" ]; then
-							echo "$command $installed"
-						else
-							echo "$command $installed $updatable"
-						fi
+						echo "$command $installed"
 					else
 						echo "$command"
 					fi
@@ -1745,8 +1760,12 @@ subcommand_delete() {
 		if [ "$(sanitize_confirmation $confirmation)" = "yes" ]; then
 			rm -f "$file_command"
 
-			# # Remove the related sub command options from the main config file
+			# # Delete the related sub command options from the main config file
 			# sed -i "/\[command\] $command/,/^\s*$/{d}" $file_config
+
+
+			# Delete completion configuration of the subcommand
+			delete_completion $file_command
 
 			if [ -f "$file_command" ]; then
 				log_error "command '$command' not removed."
@@ -1759,6 +1778,87 @@ subcommand_delete() {
 	else
 		log_error "command '$command' not found."
 	fi
+
+}
+
+
+
+
+# Get the template to write a new subcommand
+# Usage: subcommand_new <name> <author>
+subcommand_new() {
+
+	local file_subcommand="$dir_commands/$1.sh"
+
+
+	if [ -f "$file_subcommand" ]; then
+		echo "$file_subcommand already exists." | append_log
+	else
+		echo " \
+			#!/bin/sh
+
+
+			export allow_helper_functions="true"
+			command_name=\$(echo \$(basename \$1))
+
+
+
+
+			# Display help
+			# Usage: display_help
+			display_help() {
+				echo \" \\
+					to fill
+					to fill
+					to fill
+				\" | sed 's/^[ \\\t]*//'
+
+			}
+
+
+
+
+			# Install requirements of the subcommand
+			# This function is intended to be used from \$CURRENT_CLI with this syntax: \$CURRENT_CLI \$command init_command
+			# (it will only work if init_command is available as an argument with the others options)
+			# Usage: \$CURRENT_CLI \$subcommand init_command
+			init_command() {
+				echo 'to fill or to remove: create file, automation or anything that needs to be in place during the install of the subcommand'
+				# echo "tmp text" > \$dir_tmp/\$file_tmp
+				# \$HELPER create_automation \$command_name
+				# \$HELPER create_completion \$command_name
+			}
+
+
+
+
+			echo 'the work goes here'
+
+
+
+
+			if [ ! -z "\$2" ]; then
+				case "\$2" in
+					init_command)	init_command ;;
+					--help)		display_help ;;
+					*)		\$HELPER display_error "unknown option '$2' from '$1' command."'\\\n'"\$USAGE" && exit ;;
+				esac
+			else
+				display_help
+			fi
+
+
+
+
+			# Properly exit
+			exit
+
+			#EOF" | sed 's/\t\t\t//' > "$file_subcommand"
+
+
+			chown $OWNER:$OWNER $file_subcommand
+			chmod +x $file_subcommand
+		fi
 
 }
 
@@ -2022,7 +2122,7 @@ install_cli() {
 
 
 		# Creating License file
-		echo "$(cat $CURRENT_CLI | grep -A 21 "MIT License")" > "$dir_src_cli/LICENSE.md"
+		echo "$(cat $CURRENT_CLI | grep -A 21 "MIT License" | head -n 21)" > "$dir_src_cli/LICENSE.md"
 
 
 		# Autocompletion installation
@@ -2111,6 +2211,7 @@ case "$1" in
 	-g|--get)						loading_process "subcommand_get $2" ;;
 	# -g|--get)						loading_process "subcommand_update $2" ;;
 	-d|--delete)					subcommand_delete $2 $3 ;;
+	-n|--new)						subcommand_new $2 $3 ;;
 	verify)
 		if [ -z "$2" ]; then
 									loading_process "verify_dependencies $3";  loading_process "verify_files"; loading_process "verify_repository_reachability $(match_url_repository $(get_config_value $file_config cli_url) github_raw)"
