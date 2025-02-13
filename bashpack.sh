@@ -1821,9 +1821,9 @@ subcommand_new() {
 			# Usage: display_help
 			display_help() {
 				echo \" \\
-					to fill
-					to fill
-					to fill
+					# to fill
+					# to fill
+					# to fill
 				\" | sed 's/^[ \\\t]*//'
 
 			}
