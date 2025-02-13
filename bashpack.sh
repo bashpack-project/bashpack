@@ -163,7 +163,7 @@ file_sourceslist_subcommands="$dir_sourceslist/subcommands.list"
 file_registry="$dir_sourceslist/.subcommands.registry"
 
 
-subcommands_allowed_extensions="\|sh\|"
+subcommands_allowed_extensions="\|sh\|bash"
 
 
 file_repository_reachable_tmp="$dir_tmp/$NAME_LOWERCASE-last-repository-tested-is-reachable"
@@ -1669,7 +1669,8 @@ subcommand_list() {
 subcommand_get() {
 
 	local command="$1"
-	local file_command="$dir_commands/$command"
+	local file_command="$dir_commands/$command.sh"
+	# local file_command="$dir_commands/$command.$subcommands_allowed_extensions"
 
 
 
@@ -1682,7 +1683,7 @@ subcommand_get() {
 		# 	subcommand_list
 		# fi
 
-		# Refresh list according to sources list (repositories might be commented or removed since last time) 
+		# Refresh list according to sources list (repositories might be commented or removed since last time)
 		subcommand_list refresh-only
 
 		local url="$(get_config_value $file_registry $command)"
@@ -1754,7 +1755,8 @@ subcommand_get() {
 subcommand_delete() {
 
 	local command="$1"
-	local file_command="$dir_commands/$command"
+	local file_command="$dir_commands/$command.sh"
+	# local file_command="$dir_commands/$command.$subcommands_allowed_extensions"
 
 	local confirmation="$2"
 
@@ -2270,8 +2272,10 @@ case "$1" in
 	*)
 		# Dynamically get availables commands or display error in case of not found
 		# if [ -d $dir_commands ] && [ "$1" = "$(find $dir_commands/ -name "$1*" -printf "%f\n")" ]; then
-		if [ -d $dir_commands ] && [ "$1" = "$(ls $dir_commands | grep -w $1)" ]; then
-			"$dir_commands/$1" "$@"
+		# if [ -d $dir_commands ] && [ "$1" = "$(find $dir_commands/ -name "$1*" -printf "%f\n" | sed "s|.sh||")" ]; then
+		# if [ -d $dir_commands ] && [ "$1" = "$(ls $dir_commands | grep "$1")" ]; then
+		if [ -d $dir_commands ] && [ "$1" = "$(ls $dir_commands | grep "$1" | sed "s|.sh||")" ]; then
+			"$dir_commands/$1.sh" "$@"
 		else
 			log_error "unknown command '$1'." && echo "$USAGE" && exit
 		fi
