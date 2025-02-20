@@ -1562,7 +1562,6 @@ subcommand_list() {
 									| cut -d "\"" -f 4 \
 									| cut -d "/" -f 8 \
 									| grep -iw "\.$subcommands_allowed_extensions" \
-									| sed "s/\.[$subcommands_allowed_extensions]*//" \
 									| sed "s|$| $real_url $checksum|" \
 									| sort -u >> $file_registry
 							fi
@@ -1623,7 +1622,7 @@ subcommand_list() {
 	# fi
 
 
-	# If "refresh-only" is precised in arguments, then it means that we onyl want to refresh the registry and not display the list
+	# If "refresh-only" is precised in arguments, then it means that we only want to refresh the registry and not display the list
 	if [ "$1" != "refresh-only" ]; then
 
 		# Finally display all the subcommands and specify if already installed
@@ -1634,6 +1633,8 @@ subcommand_list() {
 			while read -r command; do
 				if [ "$command" != "" ]; then
 
+					local command_formatted="$(echo $command | sed 's/\.\(.*\)/ [\1]/')"
+
 					# Checking if the subcommand is already installed
 					if [ -f "$dir_commands/$command" ]; then
 
@@ -1641,19 +1642,19 @@ subcommand_list() {
 						local command_checksum_remote="$(file_checksum $(get_config_value $file_registry $command 2))"
 
 						if [ "$command_checksum_known" = "$command_checksum_remote" ]; then
-							echo "$command $installed"
+							echo "$command_formatted $installed"
 						else
-							echo "$command $installed $updatable"
+							echo "$command_formatted $installed $updatable"
 						fi
 					else
-						echo "$command"
+						echo "$command_formatted"
 					fi
 
 					
 				fi
 			done < $list_installed_tmp | sort -ud
 
-			rm -f $list_installed_tmp
+			# rm -f $list_installed_tmp
 		else
 			log_error "no command installed."
 		fi
@@ -1699,7 +1700,11 @@ subcommand_get() {
 			fi
 
 			log_success "command '$command' installed."
-			log_info "'$NAME_ALIAS $command --help' to display help."
+
+			# Detect if the command have a help command
+			if [ "$(cat $file_command | grep -v '^#' | grep 'display_help()')" ]; then
+				log_info "'$NAME_ALIAS $command --help' to display usage."
+			fi
 		else
 			log_error "command '$command' not installed."
 		fi
@@ -2151,14 +2156,26 @@ install_cli() {
 		# Reinstall all automations and completion of the subcommands
 		if [ -d "$dir_commands" ]; then
 			if [ "$(ls $dir_commands)" ]; then
-				for command in "$(ls $dir_commands)"; do
-					for automation in "$(cat $dir_commands/$command | grep create_automation | grep -v '^#' | sed 's/^.*$HELPER //' | sed 's/$1/'$command'/')"; do
-						$automation
-					done
-					
-					for completion in "$(cat $dir_commands/$command | grep create_completion | grep -v '^#' | sed 's/^.*$HELPER //' | sed 's/$1/'$command'/')"; do
-						$completion
-					done
+				for command in $dir_commands/*; do
+
+					# echo $command
+					# echo $dir_commands/$command
+
+					local command_name="$(echo $command | sed 's|^.*/\(.*\)\..*|\1|')"
+
+					# Ensure the command needs to be initialized
+					if [ "$(cat $command | grep 'init_command()')" ]; then
+
+						# Create automations
+						for automation in "$(cat $command | grep create_automation | grep -v '^#' | sed 's|^.*$HELPER ||' | sed 's|$command_name|'$command_name'|')"; do
+							$automation
+						done
+						
+						# Create completion
+						for completion in "$(cat $command | grep create_completion | grep -v '^#' | sed 's|^.*$HELPER ||' | sed 's|$command_name|'$command_name'|')"; do
+							$completion
+						done
+					fi
 				done
 			fi
 		fi
