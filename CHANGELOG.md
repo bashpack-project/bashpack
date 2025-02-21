@@ -3,7 +3,7 @@
 The released versions changelogs below are only about the main repository.
 
 ### 3.0.0
-*Incoming release date*
+*2025/02/21*
 
 ##### Added
 - The CLI can now be installed offline by itself
