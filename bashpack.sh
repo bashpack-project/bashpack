@@ -1638,13 +1638,13 @@ subcommand_list() {
 					# local command_formatted="$(echo $line | sed 's| .*||' | sed 's|\(.*\)\.\(.*\)|[\2] \1|')"
 					# local command_formatted=$command
 
-					local command_file="$(echo $line | sed 's| .*||')"
+					local file_command="$(echo $line | sed 's| .*||')"
 
 					# Checking if the subcommand is already installed
-					if [ -f "$dir_commands/$command_file" ]; then
+					if [ -f "$dir_commands/$file_command" ]; then
 
-						local command_checksum_known="$(file_checksum "$dir_commands/$command_file")"
-						local command_checksum_remote="$(file_checksum $(get_config_value $file_registry $command_file 2))"
+						local command_checksum_known="$(file_checksum "$dir_commands/$file_command")"
+						local command_checksum_remote="$(file_checksum $(get_config_value $file_registry $file_command 2))"
 
 						if [ "$command_checksum_known" = "$command_checksum_remote" ]; then
 							echo "$command_formatted $installed"
@@ -1728,7 +1728,7 @@ subcommand_get() {
 		# Refresh list according to sources list (repositories might be commented or removed since last time)
 		subcommand_list refresh-only
 
-		local url="$(get_config_value $file_registry $command)"
+		local url="$(get_config_value $file_registry $command.sh)"
 		download_file $url $file_command
 
 		if [ -f "$file_command" ]; then
