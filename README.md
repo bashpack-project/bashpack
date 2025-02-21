@@ -1,6 +1,8 @@
 # Bashpack
 
-The Bashpack CLI is a versatile and user-friendly script manager designed to manage scripts on any Linux distro and use them as regular commands. It simplifies script management, security, and automation, making your administrative tasks more efficient.
+Bashpack is a versatile and user-friendly command-line script manager. It is designed to use scripts as regular commands on any Linux distro. It simplifies script management, security, and automation, making your administrative tasks more efficient.
+
+It can be compared to [PyPI](https://pypi.org/) for Python, [PowerShell Gallery](https://www.powershellgallery.com/) for PowerShell, [Registry](https://hub.docker.com/_/registry) for Docker, [Go Packages](https://pkg.go.dev/) for Go etc..., but for Shell scripts made to be compatible with any Unix based OS.
 
 Anyone can self-host its own subcommands repositories, and even its own CLI repository.
 
@@ -63,11 +65,11 @@ sudo bp --list
 
 ## Configuration
 
-Bashpack uses a configuration file located at `/etc/bashpack/bashpack.conf`. It is created and maintained automatically, but you can customize it according to your needs.
+A configuration file is located at `/etc/bashpack/bashpack.conf`. It is created and maintained automatically, and you can customize it according to your needs.
 
 ## Logs
 
-Bashpack maintains logs in `/var/log/bashpack`. You can view the logs using the following command:
+Logs are maintained in `/var/log/bashpack`. You can quickly view the logs using the following command:
 
 ```sh
 sudo bp --logs

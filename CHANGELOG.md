@@ -1,18 +1,23 @@
-# Bashpack changes
+# Changes
 
 The released versions changelogs below are only about the main repository.
 
 ### 3.0.0
 *Incoming release date*
-##### Modified
-- The CLI has been redesigned has a "script manager", to download/install/run/remove scripts as subcommands
+
+##### Added
 - The CLI can now be installed offline by itself
 - Anyone can now host a repository for its own subcommands (edit sourceslist option from the configuration directory) 
 - Anyone can now host a repository for its own CLI (edit cli_url option from the configuration file)
 - Repositories are compatibles with Github, but can also be simple directories listing web servers
-- The CLI helper can now easily create an automation from a simple function to be able to automatically run a subcommand on the system (systemd only for now)
+- Documentation website at https://bashpack-project.github.io
+- Subcommand template is available with the option "-n'
+
+##### Modified
+- The CLI has been redesigned has a "script manager", to download/install/run/remove scripts as subcommands
+- The CLI helper can now easily create an automation from a simple function that allow to automatically run a subcommand on the system (systemd only for now)
 - When creating subcommands, the function "init_command()" can be used to run any requirements on the system (create automation, file etc... or anything else)
-- Subcommands provided from this project has moved to the [commands repository](https://github.com/bashpack-project/commands)
+- Subcommands provided from this repository has moved to the [commands repository](https://github.com/bashpack-project/commands)
 - Subcommands "update" and "install" are now merged in the "package" subcommand
 - Subcommand "verify" option "-c/--commands" replaced by "-d/--dependencies"
 - Publication system has been removed and replaced by the configuration option "cli_url"

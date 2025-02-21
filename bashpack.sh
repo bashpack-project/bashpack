@@ -143,9 +143,9 @@ fi
 
 
 if [ "$CURRENT_CLI" = "./$NAME_LOWERCASE.sh" ]; then
-	dir_commands="commands"
+	export dir_commands="commands"
 else
-	dir_commands="$dir_src_cli/commands"
+	export dir_commands="$dir_src_cli/commands"
 fi
 
 
@@ -163,7 +163,7 @@ file_sourceslist_subcommands="$dir_sourceslist/subcommands.list"
 file_registry="$dir_sourceslist/.subcommands.registry"
 
 
-subcommands_allowed_extensions="\|sh\|py"
+subcommands_allowed_extensions="\|sh\|bash"
 
 
 file_repository_reachable_tmp="$dir_tmp/$NAME_LOWERCASE-last-repository-tested-is-reachable"
@@ -220,6 +220,7 @@ else
 		&&		echo " -v, --version        display version." \
 		&&		echo " -l, --list           list available subcommands (local and remote). " \
 		&&		echo " -g, --get <name>     install a subcommand." \
+		&&		echo " -n, --new <name>		get a template to create a subcommand." \
 		&&		echo " -d, --delete <name>  uninstall a subcommand." \
 		&&		echo "" \
 		&&		echo "Commands (<command> --help to display usages):" \
@@ -236,7 +237,7 @@ fi
 # Ask for root
 set -e
 if [ "$(id -u)" != "0" ]; then
-	echo "$now error:   must be runned as root."
+	echo "must be runned as root."
 	exit
 fi
 
@@ -248,23 +249,64 @@ fi
 
 
 # Getting values stored in configuration files.
-# Usage: get_config_value "<file>" "<option>"
+# Usages:
+#  get_config_value "<file>" "<option>"
+#  get_config_value "<file>" "<option>" <position>
 get_config_value() {
+
 	local file="$1"
 	local option="$2"
+	local position="$3"
+
 
 	while read -r line; do
 		local first_char="$(echo $line | cut -c1-1)"
 
 		# Avoid reading comments and empty lines
 		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
-			if [ "$(echo $line | cut -d " " -f 1)" = "$option" ]; then
-				echo $line | cut -d " " -f 2
-				break
+			# Default is to get the "word2" of the line like in this example:
+			# word1 word2 word3 ... wordn 
+			if [ -z "$position" ]; then
+				if [ "$(echo $line | cut -d " " -f 1)" = "$option" ]; then
+					echo $line | cut -d " " -f 2
+					break
+				fi
+
+			# Unless, the $3 will give the position to read
+			# word1 word2 word3 ... wordn 
+			else
+				if [ "$(echo $line | cut -d " " -f 1)" = "$option" ]; then
+					echo $line | cut -d " " -f $position
+					break
+				fi
+
 			fi
+
 		fi	
 	done < "$file"
 }
+
+
+
+
+# # Getting values stored in configuration files.
+# # Usage: get_config_value "<file>" "<option>"
+# get_config_value() {
+# 	local file="$1"
+# 	local option="$2"
+
+# 	while read -r line; do
+# 		local first_char="$(echo $line | cut -c1-1)"
+
+# 		# Avoid reading comments and empty lines
+# 		if [ "$first_char" != "#" ] && [ "$first_char" != "" ]; then
+# 			if [ "$(echo $line | cut -d " " -f 1)" = "$option" ]; then
+# 				echo $line | cut -d " " -f 2
+# 				break
+# 			fi
+# 		fi	
+# 	done < "$file"
+# }
 
 
 
@@ -559,10 +601,10 @@ get_logs() {
 
 # Detect if the command has been installed on the system
 detect_cli() {
-	if [ "$(exists_command "$NAME_LOWERCASE")" = "exists" ]; then
-		if [ -n "$($NAME_LOWERCASE --version)" ]; then
+	if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
+		if [ -n "$($NAME_ALIAS --version)" ]; then
 			# log_info "$NAME $($NAME_ALIAS --version) ($($NAME_ALIAS --publication)) detected at $(posix_which $NAME_LOWERCASE)"
-			log_info "$NAME $($NAME_ALIAS --version) detected at $(posix_which $NAME_LOWERCASE)"
+			log_info "'$NAME_ALIAS' $($NAME_ALIAS --version) detected."
 		fi
 	fi
 }
@@ -728,15 +770,18 @@ create_automation() {
 
 		systemctl -q daemon-reload
 		systemctl -q enable $name.timer
-		# systemctl enable $name.timer
 	}
 
 
 	if [ "$(exists_command "systemctl")" = "exists" ]; then
-		# Reinstall automation only if 'self' detected (reserved word for CLI itself, and not subcommands)
-		# if [ -z "$(ls $dir_systemd | grep $name | grep 'self')" ]; then
-			create_systemd
-		# fi
+		create_systemd
+
+		# Log message
+		if [ -f "$dir_systemd/$name.service" ] && [ -f "$dir_systemd/$name.timer" ]; then
+			log_info "automation $name ready."
+		else
+			log_error "automation $name not ready."
+		fi
 
 	elif [ "$(exists_command "cron")" = "exists" ]; then
 		log_error "cron has not been implemented yet."
@@ -745,6 +790,126 @@ create_automation() {
 		log_error "no automation tool available."
 
 	fi
+}
+
+
+
+
+# bash-completion doc: https://github.com/scop/bash-completion/blob/main/README.md#faq
+# If pkg-config doesn't exist, then the system won't have completion.
+if [ "$(exists_command "pkg-config")" = "exists" ]; then
+
+	# Test if completion dir exists to avoid interruption
+	if [ -n "$(pkg-config --variable=completionsdir bash-completion)" ]; then
+		dir_completion="$(pkg-config --variable=completionsdir bash-completion)"
+		file_completion="$dir_src_cli/completion"
+		file_completion_alias_1="$dir_completion/$NAME_LOWERCASE"
+		file_completion_alias_2="$dir_completion/$NAME_ALIAS"
+	fi
+fi
+
+
+
+
+# Dynamically create completion for CLI & subcommands with options
+# Usage: create_completion <file_command>
+create_completion() {
+
+	local file_command="$1"
+	local command="$(echo $(basename $file_command))"
+
+
+	# List all options of any file that is a CLI
+	# Usage: get_options <file path>
+	get_options() {
+		cat $1 | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g'
+	}
+
+
+	if [ "$(exists_command "pkg-config")" = "exists" ]; then
+	
+		# Install completion only if the directory has been found.
+		if [ -d "$dir_completion" ]; then
+
+				if [ "$file_command" = "$CURRENT_CLI" ]; then
+
+				if [ -f "$file_completion" ]; then
+					rm -f $file_completion
+
+					if [ -f "$file_completion_alias_1" ]; then
+						rm -f $file_completion_alias_1
+					fi
+
+					if [ -f "$file_completion_alias_2" ]; then
+						rm -f $file_completion_alias_2
+					fi
+				fi
+
+				echo '_'$NAME_LOWERCASE'() {'																				> $file_completion
+				echo '	local cur=${COMP_WORDS[COMP_CWORD]}'																>> $file_completion
+				echo '	local prev=${COMP_WORDS[COMP_CWORD-1]}'																>> $file_completion
+				echo ''																										>> $file_completion
+				echo '	case ${COMP_CWORD} in'																				>> $file_completion
+				echo '		1) COMPREPLY=($('$(echo compgen)' -W "'$(echo $(get_options $CURRENT_CLI))'" -- ${cur})) ;;'	>> $file_completion
+				echo '		2)'																								>> $file_completion
+				echo '		case ${prev} in'																				>> $file_completion
+				echo '			_commandtofill) COMPREPLY=($('$(echo compgen)' -W "_optionstofill" -- ${cur})) ;;'			>> $file_completion
+				echo '		esac ;;'																						>> $file_completion
+				echo '		*) COMPREPLY=() ;;'																				>> $file_completion
+				echo '	esac'																								>> $file_completion
+				echo '	}'																									>> $file_completion
+				echo ''																										>> $file_completion
+				echo "complete -F _$NAME_LOWERCASE $NAME_ALIAS"																>> $file_completion
+				echo "complete -F _$NAME_LOWERCASE $NAME_LOWERCASE"															>> $file_completion
+
+				ln -sf $file_completion $file_completion_alias_1
+				ln -sf $file_completion $file_completion_alias_2
+
+			# else
+			elif [ "$(ls $dir_commands/$file_command)" ] && [ -f "$file_completion" ] && [ -z "$(cat $file_completion | grep "$command)")" ]; then
+				# Duplicate the line and make it unique with the "new" word to find and replace it with automatics values
+				sed -i 's|\(_commandtofill.*\)|\1\n\1new|' $file_completion
+				sed -i "s|_commandtofill\(.*new\).*|\t\t\t$command\1|" $file_completion
+				sed -i "s|_optionstofill\(.*\)new|$(get_options $dir_commands/$file_command)\1|" $file_completion
+
+				# Add the subcommand itself to the completion
+				sed -i "s|\(1) COMPREPLY.*\)\"|\1 $command\"|" $file_completion
+			fi
+
+			if [ -f "$file_completion" ] && [ -f "$file_completion_alias_1" ] && [ -f "$file_completion_alias_2" ]; then
+				log_info "completion ready."
+			else
+				log_error "completion not ready."
+			fi
+
+		else
+			log_error "completion directory not found."
+		fi
+	fi
+}
+
+
+
+
+# Dynamically delete completion of subcommands
+# Usage: delete_completion <file_command>
+delete_completion() {
+
+	local file_command="$1"
+	local command="$(echo $(basename $file_command))"
+
+
+	# if [ -f "$file_command" ]; then
+		if [ -f "$file_completion" ]; then
+			# Delete the option of the subcommand
+			sed -i "/$command)/d" $file_completion
+
+			# Delete the subcommand itself from the main options
+			sed -i "s| $command||" $file_completion
+		fi
+	# else
+	# 	log_error "unknown '$file_command'."
+	# fi
 }
 
 
@@ -774,7 +939,7 @@ file_checksum() {
 
 
 
-# Get "API", "raw" or the "default web" Github URL from the others one
+# Get "API", "raw" or the "default web" Github URL from the others one, or return the given URL because it could be a non Github repo
 # Usage: match_url_repository <url> <want: github_api|github_raw|github_web>
 match_url_repository() {
 
@@ -824,21 +989,6 @@ match_url_repository() {
 
 
 
-# bash-completion doc: https://github.com/scop/bash-completion/blob/main/README.md#faq
-# If pkg-config doesn't exist, then the system won't have autocompletion.
-if [ "$(exists_command "pkg-config")" = "exists" ]; then
-
-	# Test if completion dir exists to avoid interruption
-	if [ -n "$(pkg-config --variable=completionsdir bash-completion)" ]; then
-		dir_autocompletion="$(pkg-config --variable=completionsdir bash-completion)"
-		file_autocompletion_1="$dir_autocompletion/$NAME_LOWERCASE"
-		file_autocompletion_2="$dir_autocompletion/$NAME_ALIAS"
-	fi
-fi
-
-
-
-
 # Delete the installed command from the system
 # Usages: 
 #  delete_cli
@@ -876,8 +1026,9 @@ delete_cli() {
 
 		else
 			# Delete everything
-			rm -rf $file_autocompletion_1
-			rm -rf $file_autocompletion_2
+			rm -rf $file_completion
+			rm -rf $file_completion_alias_1
+			rm -rf $file_completion_alias_2
 			rm -rf $file_main_alias_1
 			rm -rf $file_main_alias_2
 			rm -rf $dir_src_cli
@@ -1236,7 +1387,7 @@ declare_config_file() {
 		cli_url "https://github.com/$NAME_LOWERCASE-project/$NAME_LOWERCASE"
 
 		# [option] display_loglevel
-		# Display various debug information during CLI execution.
+		# Display various information during CLI execution.
 		# Available values: error,success,info,debug
 		# All the values can be used at the same time. Don't set any whitespace.
 		display_loglevel error,success,info
@@ -1341,148 +1492,213 @@ sourceslist_install_structure() {
 
 
 # List available commands from repository
-# Usage: subcommand_list
+# Usage:
+#  subcommand_list
+#  subcommand_list <local>
+#  subcommand_list <refresh-only>
 subcommand_list() {
 
 	local list_tmp="$dir_tmp/$NAME_LOWERCASE-commands-list"
-	local list_installed_tmp="$dir_tmp/$NAME_LOWERCASE-commands-installed"
+	# local list_installed_tmp="$dir_tmp/$NAME_LOWERCASE-commands-installed"
 
 	local installed="[installed]"
-
-	local url="$1"
-
-
-	sourceslist_install_structure
+	local updatable="[update available]"
 
 
-	# Clean existing registry (it will be updated with fresh values)
-	# rm -f $file_registry
-	# touch $file_registry
-	echo -n "" > $file_registry
+	# # Detect installed subcommands
+	# if [ -d "$dir_commands" ] && [ ! -z "$(ls $dir_commands)" ]; then
+	# 	ls $dir_commands > $list_installed_tmp
+	# fi
 
 
-	if [ -f "$file_sourceslist_subcommands" ] && [ -s "$file_sourceslist_subcommands" ]; then
+	# If "local" is not precised in arguments, then it means that we want to list remotes command too
+	if [ "$1" != "local" ]; then
 
-		for url in $(grep '^http' $file_sourceslist_subcommands); do
-			
-			# In case of commands repository is on Github, getting accurate URL
-			# (because api.github.com and raw.githubusercontent.com have themselves their usages, and we need to always have api.github.com for this usecase)
-			if [ "$(echo $url | grep '.com' | grep 'github' | grep 'raw.')" ]; then
-				project="$(echo $url  | cut -d "/" -f 4-5)"
-				end_of_url="$(echo $url  | cut -d "/" -f 9-99)"
-				url="https://api.github.com/repos/$project/contents/$end_of_url"
-			fi
+		sourceslist_install_structure
 
 
-			loading_process "verify_repository_reachability $url"
-			if [ -f "$file_repository_reachable_tmp" ] && [ "$(cat $file_repository_reachable_tmp)" = "true" ]; then
+		# Clean existing registry (it will be updated with fresh values)
+		echo -n "" > $file_registry
 
-				if [ "$(exists_command "curl")" = "exists" ]; then
-					loading_process "curl -sLk $url" > $list_tmp
-				elif [ "$(exists_command "wget")" = "exists" ]; then			
-					loading_process "wget -q --no-check-certificate $url -O $list_tmp"
-				else
-					log_error "can't list remotes commands with curl or wget."
+
+		if [ -f "$file_sourceslist_subcommands" ] && [ -s "$file_sourceslist_subcommands" ]; then
+
+			for url in $(grep '^http' $file_sourceslist_subcommands); do
+				
+				# In case of commands repository is on Github, getting accurate URL
+				# (because api.github.com and raw.githubusercontent.com have themselves their usages, and we need to always have api.github.com for this usecase)
+				if [ "$(echo $url | grep '.com' | grep 'github' | grep 'raw.')" ]; then
+					project="$(echo $url  | cut -d "/" -f 4-5)"
+					end_of_url="$(echo $url  | cut -d "/" -f 9-99)"
+					url="https://api.github.com/repos/$project/contents/$end_of_url"
 				fi
-			fi
-			rm -f $file_repository_reachable_tmp
 
 
-			if [ -f "$list_tmp" ]; then
-				# If commands are from a Github repository...
-				# URL will always be "api.github.com" thanks to the hook just before
-				if [ "$(echo $url | grep '.com' | grep 'github' | grep 'api.')" ]; then
-					while read -r line; do
-						if [ "$(echo $line | grep 'download_url')" ]; then
-							# And get back the raw URL to be able to download the script from sourceslist + calculate checksum
-							local real_url="$(echo $line | grep 'download_url' | cut -d '"' -f 4)"
+				loading_process "verify_repository_reachability $url"
+				if [ -f "$file_repository_reachable_tmp" ] && [ "$(cat $file_repository_reachable_tmp)" = "true" ]; then
+
+					if [ "$(exists_command "curl")" = "exists" ]; then
+						loading_process "curl -sLk $url" > $list_tmp
+					elif [ "$(exists_command "wget")" = "exists" ]; then			
+						loading_process "wget -q --no-check-certificate $url -O $list_tmp"
+					else
+						log_error "can't list remotes commands with curl or wget."
+					fi
+				fi
+				rm -f $file_repository_reachable_tmp
+
+
+				if [ -f "$list_tmp" ]; then
+					# If commands are from a Github repository...
+					# URL will always be "api.github.com" thanks to the hook just before
+					if [ "$(echo $url | grep '.com' | grep 'github' | grep 'api.')" ]; then
+						while read -r line; do
+							if [ "$(echo $line | grep 'download_url')" ]; then
+								# And get back the raw URL to be able to download the script from sourceslist + calculate checksum
+								local real_url="$(echo $line | grep 'download_url' | cut -d '"' -f 4)"
+								local checksum="$(file_checksum $real_url)"
+
+								echo $line \
+									| cut -d "\"" -f 4 \
+									| cut -d "/" -f 8 \
+									| grep -iw "\.$subcommands_allowed_extensions" \
+									| sed "s|$| $real_url $checksum|" \
+									| sort -u >> $file_registry
+							fi
+						done < $list_tmp
+					else
+						# ...Or from a basic web server with directory listing
+						while read -r line; do
+
+							local file_name="$(echo $line \
+								| grep -oP '(?<=href=")[^"]*' \
+								| sed '/\/.*/d' \
+								| sed '/^\(?.=\).*/d' \
+								| grep -iw "\.$subcommands_allowed_extensions")"
+
+							# Get the entire file URL to be able to calculate checksum
+							local real_url="$url/$file_name"
 							local checksum="$(file_checksum $real_url)"
 
 							echo $line \
-								| cut -d "\"" -f 4 \
-								| cut -d "/" -f 8 \
+								| grep -oP '(?<=href=")[^"]*' \
+								| sed '/\/.*/d' \
+								| sed '/^\(?.=\).*/d' \
 								| grep -iw "\.$subcommands_allowed_extensions" \
-								| sed "s/\.[$subcommands_allowed_extensions]*//" \
 								| sed "s|$| $real_url $checksum|" \
 								| sort -u >> $file_registry
-						fi
-					done < $list_tmp
-				else
-					# ...Or from a basic web server with directory listing
-					while read -r line; do
+						done < $list_tmp
 
-						local file_name="$(echo $line \
-							| grep -oP '(?<=href=")[^"]*' \
-							| sed '/\/.*/d' \
-							| sed '/^\(?.=\).*/d' \
-							| grep -iw "\.$subcommands_allowed_extensions")"
+						# cat $list_tmp \
+						# 	| grep -oP '(?<=href=")[^"]*' \
+						# 	| sed '/\/.*/d' \
+						# 	| sed '/^\(?.=\).*/d' \
+						# 	| grep -iw "\.$subcommands_allowed_extensions" \
+						# 	| sed "s/\.[$subcommands_allowed_extensions]*//" \
+						# 	| sed "s|$| $url|" \
+						# 	| sort -u >> $file_registry
+					fi
 
-						# Get the entire file URL to be able to calculate checksum
-						local real_url="$url/$file_name"
-						local checksum="$(file_checksum $real_url)"
-
-						echo $line \
-							| grep -oP '(?<=href=")[^"]*' \
-							| sed '/\/.*/d' \
-							| sed '/^\(?.=\).*/d' \
-							| grep -iw "\.$subcommands_allowed_extensions" \
-							| sed "s/\.[$subcommands_allowed_extensions]*//" \
-							| sed "s|$| $real_url $checksum|" \
-							| sort -u >> $file_registry
-					done < $list_tmp
-
-					# cat $list_tmp \
-					# 	| grep -oP '(?<=href=")[^"]*' \
-					# 	| sed '/\/.*/d' \
-					# 	| sed '/^\(?.=\).*/d' \
-					# 	| grep -iw "\.$subcommands_allowed_extensions" \
-					# 	| sed "s/\.[$subcommands_allowed_extensions]*//" \
-					# 	| sed "s|$| $url|" \
-					# 	| sort -u >> $file_registry
+					rm -f $list_tmp
 				fi
 
-				rm -f $list_tmp
-			fi
-
-		done
+			done
 
 
-		# Detect remotes subcommands
-		if [ -f "$file_registry" ]; then
-			cat $file_registry | sed 's/ .*//' >> $list_installed_tmp
+			# # Detect remotes subcommands
+			# if [ -f "$file_registry" ]; then
+			# 	cat $file_registry | sed 's/ .*//' >> $list_installed_tmp
+			# fi
+
+		else
+			log_error "'$file_sourceslist_subcommands' is empty."
+		fi
+	fi
+
+	# # Detect installed subcommands
+	# if [ -d "$dir_commands" ] && [ ! -z "$(ls $dir_commands)" ]; then
+	# 	ls $dir_commands >> $list_installed_tmp
+	# fi
+
+
+	# If "refresh-only" is precised in arguments, then it means that we only want to refresh the registry and not display the list
+	if [ "$1" != "refresh-only" ]; then
+
+
+		# Finally display all the subcommands and specify if already installed
+		if [ -f "$file_registry" ] && [ -s "$file_registry" ]; then
+
+			log_info "reading registry."
+			
+			while read -r line; do
+				if [ "$line" != "" ]; then
+
+					# local command_formatted="$(echo $line | sed 's/\.\(.*\)/ [\1]/')"
+					local command_formatted="$(echo $line | sed 's|\.\(.*\) http.*| [\1]|')"
+					# local command_formatted="$(echo $line | sed 's| .*||' | sed 's|\(.*\)\.\(.*\)|[\2] \1|')"
+					# local command_formatted=$command
+
+					local command_file="$(echo $line | sed 's| .*||')"
+
+					# Checking if the subcommand is already installed
+					if [ -f "$dir_commands/$command_file" ]; then
+
+						local command_checksum_known="$(file_checksum "$dir_commands/$command_file")"
+						local command_checksum_remote="$(file_checksum $(get_config_value $file_registry $command_file 2))"
+
+						if [ "$command_checksum_known" = "$command_checksum_remote" ]; then
+							echo "$command_formatted $installed"
+						else
+							echo "$command_formatted $installed $updatable"
+						fi
+
+					else
+						echo "$command_formatted"
+					fi
+
+					
+				fi
+			done < $file_registry | sort -ud
+
+			# rm -f $list_installed_tmp
+		else
+			log_error "no command found."
 		fi
 
-	else
-		log_error "'$file_sourceslist_subcommands' is empty."
-	fi
 
+		# # Finally display all the subcommands and specify if already installed
+		# if [ -f "$list_installed_tmp" ] && [ -s "$list_installed_tmp" ]; then
 
-	# Detect installed subcommands
-	if [ -d "$dir_commands" ] && [ ! -z "$(ls $dir_commands)" ]; then
-		ls $dir_commands >> $list_installed_tmp
-	fi
+		# 	log_info "reading registry."
+			
+		# 	while read -r command; do
+		# 		if [ "$command" != "" ]; then
 
+		# 			local command_formatted="$(echo $command | sed 's/\.\(.*\)/ [\1]/')"
 
-	# Finally display all the subcommands and specify if already installed
-	if [ -f "$list_installed_tmp" ] && [ -s "$list_installed_tmp" ]; then
+		# 			# Checking if the subcommand is already installed
+		# 			if [ -f "$dir_commands/$command" ]; then
 
-		log_info "reading registry."
-		
-		while read -r command; do
-			if [ "$command" != "" ]; then
+		# 				local command_checksum_known="$(file_checksum "$dir_commands/$command")"
+		# 				local command_checksum_remote="$(file_checksum $(get_config_value $file_registry $command 2))"
 
-				# Checking if the subcommand is already installed
-				if [ -f "$dir_commands/$command" ]; then
-					echo "$command $installed"
-				else
-					echo "$command"
-				fi
-			fi
-		done < $list_installed_tmp | sort -ud
+		# 				if [ "$command_checksum_known" = "$command_checksum_remote" ]; then
+		# 					echo "$command_formatted $installed"
+		# 				else
+		# 					echo "$command_formatted $installed $updatable"
+		# 				fi
+		# 			else
+		# 				echo "$command_formatted"
+		# 			fi
 
-		rm -f $list_installed_tmp
-	else
-		log_error "no command installed."
+					
+		# 		fi
+		# 	done < $list_installed_tmp | sort -d
+
+		# 	# rm -f $list_installed_tmp
+		# else
+		# 	log_error "no command installed."
+		# fi
 	fi
 
 }
@@ -1495,28 +1711,12 @@ subcommand_list() {
 subcommand_get() {
 
 	local command="$1"
-	local file_command="$dir_commands/$command"
-	# local file_command_tmp="$dir_tmp/$NAME_LOWERCASE-$command"
+	local file_command="$dir_commands/$command.sh"
+	# local file_command="$dir_commands/$command.$subcommands_allowed_extensions"
 
 
-	# Creating command directory if not exists
-	if [ ! -d "$dir_commands" ]; then
-		mkdir $dir_commands
 
-		# Set commands files executable for users + root
-		chmod 554 -R $dir_commands
-	fi
-
-
-	if [ -z "$command" ]; then
-		log_info "please specify a command from the list below."
-		subcommand_list
-
-	elif [ -f "$file_command" ]; then
-		log_info "command '$command' is already installed."
-
-	else
-		
+	subcommand_install() {
 		# Ensure that structure exists
 		sourceslist_install_structure
 
@@ -1525,8 +1725,8 @@ subcommand_get() {
 		# 	subcommand_list
 		# fi
 
-		# Refresh list according to sources list (repositories might be commented or removed since last time) 
-		subcommand_list
+		# Refresh list according to sources list (repositories might be commented or removed since last time)
+		subcommand_list refresh-only
 
 		local url="$(get_config_value $file_registry $command)"
 		download_file $url $file_command
@@ -1536,15 +1736,58 @@ subcommand_get() {
 			chown $OWNER:$OWNER $file_command
 
 			# Detect if the command needs to be initialised
-			if [ "$(cat $file_command | grep -v '#' | grep 'init_command()')" ]; then
+			if [ "$(cat $file_command | grep -v '^#' | grep 'init_command()')" ]; then
 				$CURRENT_CLI $command init_command
 			fi
 
-			log_success "command '$command' has been installed."
-			log_info "'$NAME_ALIAS $command --help' to display help."
+			log_success "command '$command' installed."
+
+			# Detect if the command have a help command
+			if [ "$(cat $file_command | grep -v '^#' | grep 'display_help()')" ]; then
+				log_info "'$NAME_ALIAS $command --help' to display usage."
+			fi
 		else
-			log_error "command '$command' has not been installed."
+			log_error "command '$command' not installed."
 		fi
+	}
+
+
+
+	# Creating command directory if not exists
+	if [ ! -d "$dir_commands" ]; then
+		mkdir $dir_commands
+
+		# Set commands files executable for users + root
+		chmod 554 -R $dir_commands
+		chown $OWNER:$OWNER $dir_commands
+	fi
+
+
+	if [ -z "$command" ]; then
+		echo "please specify a command from the list below." | append_log
+		subcommand_list
+
+	elif [ -f "$file_command" ]; then
+
+		subcommand_list refresh-only
+
+		
+		# Detect if another version of the subcommand is available
+		# This also allow to detect if a different file is available on a different repository (and it's impacted by the order of URL in the sources list, the first URL have the priority)
+		local command_checksum_known="$(file_checksum $file_command)"
+		local command_checksum_remote="$(file_checksum $(get_config_value $file_registry $command 2))"
+
+		if [ "$command_checksum_known" != "$command_checksum_remote" ]; then
+			echo "'$command' new version detected." | append_log
+
+			subcommand_install
+		else
+			echo "'$command' already up to date." | append_log
+		fi
+
+	else
+
+		subcommand_install
 	fi
 }
 
@@ -1552,37 +1795,129 @@ subcommand_get() {
 
 
 # Remove an installed command
-# Usage: subcommand_delete <command>
+# Usages: 
+#  subcommand_delete <command>
+#  subcommand_delete <command> <-y>
 subcommand_delete() {
 
 	local command="$1"
-	local file_command="$dir_commands/$command"
+	local file_command="$dir_commands/$command.sh"
+	# local file_command="$dir_commands/$command.$subcommands_allowed_extensions"
 
-	# Just init to set it local
-	local confirmation
-	
+	local confirmation="$2"
+
 
 	if [ -f "$file_command" ]; then
 
-		read -p "$question_continue" confirmation
-	
-		if [ "$(sanitize_confirmation $confirmation)" = "yes" ]; then
-			rm "$file_command"
+		if [ "$confirmation" != "-y" ]; then
+			read -p "$question_continue" confirmation
+		else
+			confirmation="yes"
+		fi
 
-			# Remove the related sub command options from the main config file
-			sed -i '/\[command\] firewall/,/^\s*$/{d}' $file_config
+
+		if [ "$(sanitize_confirmation $confirmation)" = "yes" ]; then
+			rm -f "$file_command"
+
+			# # Delete the related sub command options from the main config file
+			# sed -i "/\[command\] $command/,/^\s*$/{d}" $file_config
+
+
+			# Delete completion configuration of the subcommand
+			delete_completion $file_command
 
 			if [ -f "$file_command" ]; then
-				log_error "command '$command' has not been removed."
+				log_error "command '$command' not removed."
 			else
-				log_success "command '$command' has been removed."
+				log_success "command '$command' removed."
 			fi
 		else
-			log_info "uninstallation aborted."
+			echo "uninstallation aborted." | append_log
 		fi
 	else
 		log_error "command '$command' not found."
 	fi
+
+}
+
+
+
+
+# Get the template to write a new subcommand
+# Usage: subcommand_new <name> <author>
+subcommand_new() {
+
+	local file_subcommand="$dir_commands/$1.sh"
+
+
+	if [ -f "$file_subcommand" ]; then
+		echo "$file_subcommand already exists." | append_log
+	else
+		echo " \
+			#!/bin/sh
+
+
+			export allow_helper_functions="true"
+			command_name=\$(echo \$(basename \$1))
+
+
+
+
+			# Display help
+			# Usage: display_help
+			display_help() {
+				echo \" \\
+					# to fill
+					# to fill
+					# to fill
+				\" | sed 's/^[ \\\t]*//'
+
+			}
+
+
+
+
+			# Install requirements of the subcommand
+			# This function is intended to be used from \$CURRENT_CLI with this syntax: \$CURRENT_CLI \$command init_command
+			# (it will only work if init_command is available as an argument with the others options)
+			# Usage: \$CURRENT_CLI \$subcommand init_command
+			init_command() {
+				echo 'to fill or to remove: create file, automation or anything that needs to be in place during the install of the subcommand'
+				# echo "tmp text" > \$dir_tmp/\$file_tmp
+				# \$HELPER create_automation \$command_name
+				# \$HELPER create_completion \$command_name
+			}
+
+
+
+
+			echo 'the work goes here'
+
+
+
+
+			if [ ! -z "\$2" ]; then
+				case "\$2" in
+					init_command)	init_command ;;
+					--help)		display_help ;;
+					*)		\$HELPER display_error "unknown option '$2' from '$1' command."'\\\n'"\$USAGE" && exit ;;
+				esac
+			else
+				display_help
+			fi
+
+
+
+
+			# Properly exit
+			exit
+
+			#EOF" | sed 's/\t\t\t//' > "$file_subcommand"
+
+
+			chown $OWNER:$OWNER $file_subcommand
+			chmod +x $file_subcommand
+		fi
 
 }
 
@@ -1706,7 +2041,7 @@ update_cli() {
 	else
 		# Testing if a new version exists on the current publication to avoid reinstall if not.
 		if [ "$(get_latest_version $cli_url)" = "$VERSION" ]; then
-			log_info "latest version is already installed ($VERSION)."
+			log_error "latest version is already installed ($VERSION)."
 
 		else
 			update_process
@@ -1846,27 +2181,47 @@ install_cli() {
 
 
 		# Creating License file
-		echo "$(cat $CURRENT_CLI | grep -A 21 "MIT License")" > "$dir_src_cli/LICENSE.md"
+		echo "$(cat $CURRENT_CLI | grep -A 21 "MIT License" | head -n 21)" > "$dir_src_cli/LICENSE.md"
 
 
-		# # Autocompletion installation
-		# # Install autocompletion only if the directory has been found.
-		# if [ -n "$dir_autocompletion" ]; then
-		# 	log_info "installing autocompletion."
-		# 	cp "$archive_dir_tmp/completion" $file_autocompletion_1
-		# 	cp "$archive_dir_tmp/completion" $file_autocompletion_2
-		# fi
+		# Autocompletion installation
+		create_completion $CURRENT_CLI
 
+
+		# Delete all automations because some of them might have changed
+		# if [ "$(ls $dir_systemd/$NAME_LOWERCASE*)" ]; then
+		if [ "$(ls $dir_systemd/$NAME_LOWERCASE*)" ]; then
+			rm -f $dir_systemd/$NAME_LOWERCASE*
+		fi
+
+		# Reinstall all automations and completion of the subcommands
+		if [ -d "$dir_commands" ]; then
+			if [ "$(ls $dir_commands)" ]; then
+				for command in $dir_commands/*; do
+
+					# echo $command
+					# echo $dir_commands/$command
+
+					local command_name="$(echo $command | sed 's|^.*/\(.*\)\..*|\1|')"
+
+					# Ensure the command needs to be initialized
+					if [ "$(cat $command | grep 'init_command()')" ]; then
+
+						# Create automations
+						for automation in "$(cat $command | grep create_automation | grep -v '^#' | sed 's|^.*$HELPER ||' | sed 's|$command_name|'$command_name'|')"; do
+							$automation
+						done
+						
+						# Create completion
+						for completion in "$(cat $command | grep create_completion | grep -v '^#' | sed 's|^.*$HELPER ||' | sed 's|$command_name|'$command_name'|')"; do
+							$completion
+						done
+					fi
+				done
+			fi
+		fi
 
 		# Self update automation
-		log_info "installing self update automation."
-		# Since 3.0.0, self update systemd unit name has changed
-		if [ "$dir_systemd/$NAME_LOWERCASE-updates.service" ]; then
-			rm -f "$dir_systemd/$NAME_LOWERCASE-updates.service"
-		fi
-		if [ -f "$dir_systemd/$NAME_LOWERCASE-updates.timer" ]; then
-			rm -f "$dir_systemd/$NAME_LOWERCASE-updates.timer"
-		fi
 		create_automation "--self-update" "self-update" "automatically update $NAME CLI."
 
 
@@ -1875,7 +2230,7 @@ install_cli() {
 
 
 		# Remove unwanted files from the installed sources (keep only main, sub commands and .md files)
-		find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -not -name "*.md" -not -name "commands" -exec rm -rf {} +
+		# find $dir_src_cli -mindepth 1 -maxdepth 1 -not -name "$NAME_LOWERCASE.sh" -not -name "*.md" -not -name "commands" -exec rm -rf {} +
 
 
 		# Set the rights rights ;)
@@ -1887,7 +2242,7 @@ install_cli() {
 
 		# Success message
 		if [ "$(exists_command "$NAME_ALIAS")" = "exists" ]; then
-			log_success "'$NAME_ALIAS' installed."
+			log_success "'$NAME_ALIAS' $($NAME_ALIAS --version) installed."
 		else
 			# Remove config dir that might have been created
 			rm -rf "$dir_config"
@@ -1923,9 +2278,11 @@ case "$1" in
 		fi ;;
 	--self-delete)					loading_process "delete_systemd" && loading_process "delete_cli" ;;
 	--logs)							get_logs "$file_log_main" ;;
-	-l|--list)						loading_process "subcommand_list" ;;
+	-l|--list)						loading_process "subcommand_list $2" ;;
 	-g|--get)						loading_process "subcommand_get $2" ;;
-	-d|--delete)					loading_process "subcommand_delete $2" ;;
+	# -g|--get)						loading_process "subcommand_update $2" ;;
+	-d|--delete)					subcommand_delete $2 $3 ;;
+	-n|--new)						subcommand_new $2 $3 ;;
 	verify)
 		if [ -z "$2" ]; then
 									loading_process "verify_dependencies $3";  loading_process "verify_files"; loading_process "verify_repository_reachability $(match_url_repository $(get_config_value $file_config cli_url) github_raw)"
@@ -1953,6 +2310,7 @@ case "$1" in
 				case "$2" in
 					append_log)						append_log "$3" ;;
 					create_automation)				create_automation "$3" ;;
+					create_completion)				create_completion "$3" ;;
 					log_error)						log_error "$3" "$4" ;;
 					log_info)						log_info "$3" "$4" ;;
 					log_success)					log_success "$3" "$4" ;;
@@ -1972,8 +2330,10 @@ case "$1" in
 	*)
 		# Dynamically get availables commands or display error in case of not found
 		# if [ -d $dir_commands ] && [ "$1" = "$(find $dir_commands/ -name "$1*" -printf "%f\n")" ]; then
-		if [ -d $dir_commands ] && [ "$1" = "$(ls $dir_commands | grep -w $1)" ]; then
-			"$dir_commands/$1" "$@"
+		# if [ -d $dir_commands ] && [ "$1" = "$(find $dir_commands/ -name "$1*" -printf "%f\n" | sed "s|.sh||")" ]; then
+		# if [ -d $dir_commands ] && [ "$1" = "$(ls $dir_commands | grep "$1")" ]; then
+		if [ -d $dir_commands ] && [ "$1" = "$(ls $dir_commands | grep "$1" | sed "s|.sh||")" ]; then
+			"$dir_commands/$1.sh" "$@"
 		else
 			log_error "unknown command '$1'." && echo "$USAGE" && exit
 		fi
