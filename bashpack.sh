@@ -225,7 +225,7 @@ else
 		&&		echo "" \
 		&&		echo "Commands (<command> --help to display usages):" \
 		&&		echo "  verify" \
-		&&		echo "$(ls $dir_commands 2> /dev/null | sed "s/^/  /g")" \
+		&&		echo "$(ls $dir_commands 2> /dev/null | sed 's|\..*||')" \
 		&&		echo "\n$NAME $VERSION" \
 		&&		exit ;;
 	esac
