@@ -1499,16 +1499,16 @@ sourceslist_install_structure() {
 subcommand_list() {
 
 	local list_tmp="$dir_tmp/$NAME_LOWERCASE-commands-list"
-	local list_installed_tmp="$dir_tmp/$NAME_LOWERCASE-commands-installed"
+	# local list_installed_tmp="$dir_tmp/$NAME_LOWERCASE-commands-installed"
 
 	local installed="[installed]"
 	local updatable="[update available]"
 
 
-	# Detect installed subcommands
-	if [ -d "$dir_commands" ] && [ ! -z "$(ls $dir_commands)" ]; then
-		ls $dir_commands >> $list_installed_tmp
-	fi
+	# # Detect installed subcommands
+	# if [ -d "$dir_commands" ] && [ ! -z "$(ls $dir_commands)" ]; then
+	# 	ls $dir_commands > $list_installed_tmp
+	# fi
 
 
 	# If "local" is not precised in arguments, then it means that we want to list remotes command too
@@ -1585,7 +1585,6 @@ subcommand_list() {
 								| sed '/\/.*/d' \
 								| sed '/^\(?.=\).*/d' \
 								| grep -iw "\.$subcommands_allowed_extensions" \
-								| sed "s/\.[$subcommands_allowed_extensions]*//" \
 								| sed "s|$| $real_url $checksum|" \
 								| sort -u >> $file_registry
 						done < $list_tmp
@@ -1606,10 +1605,10 @@ subcommand_list() {
 			done
 
 
-			# Detect remotes subcommands
-			if [ -f "$file_registry" ]; then
-				cat $file_registry | sed 's/ .*//' >> $list_installed_tmp
-			fi
+			# # Detect remotes subcommands
+			# if [ -f "$file_registry" ]; then
+			# 	cat $file_registry | sed 's/ .*//' >> $list_installed_tmp
+			# fi
 
 		else
 			log_error "'$file_sourceslist_subcommands' is empty."
@@ -1625,39 +1624,81 @@ subcommand_list() {
 	# If "refresh-only" is precised in arguments, then it means that we only want to refresh the registry and not display the list
 	if [ "$1" != "refresh-only" ]; then
 
+
 		# Finally display all the subcommands and specify if already installed
-		if [ -f "$list_installed_tmp" ] && [ -s "$list_installed_tmp" ]; then
+		if [ -f "$file_registry" ] && [ -s "$file_registry" ]; then
 
 			log_info "reading registry."
 			
-			while read -r command; do
-				if [ "$command" != "" ]; then
+			while read -r line; do
+				if [ "$line" != "" ]; then
 
-					local command_formatted="$(echo $command | sed 's/\.\(.*\)/ [\1]/')"
+					# local command_formatted="$(echo $line | sed 's/\.\(.*\)/ [\1]/')"
+					local command_formatted="$(echo $line | sed 's|\.\(.*\) http.*| [\1]|')"
+					# local command_formatted="$(echo $line | sed 's| .*||' | sed 's|\(.*\)\.\(.*\)|[\2] \1|')"
+					# local command_formatted=$command
+
+					local command_file="$(echo $line | sed 's| .*||')"
 
 					# Checking if the subcommand is already installed
-					if [ -f "$dir_commands/$command" ]; then
+					if [ -f "$dir_commands/$command_file" ]; then
 
-						local command_checksum_known="$(file_checksum "$dir_commands/$command")"
-						local command_checksum_remote="$(file_checksum $(get_config_value $file_registry $command 2))"
+						local command_checksum_known="$(file_checksum "$dir_commands/$command_file")"
+						local command_checksum_remote="$(file_checksum $(get_config_value $file_registry $command_file 2))"
 
 						if [ "$command_checksum_known" = "$command_checksum_remote" ]; then
 							echo "$command_formatted $installed"
 						else
 							echo "$command_formatted $installed $updatable"
 						fi
+
 					else
 						echo "$command_formatted"
 					fi
 
 					
 				fi
-			done < $list_installed_tmp | sort -ud
+			done < $file_registry | sort -ud
 
 			# rm -f $list_installed_tmp
 		else
-			log_error "no command installed."
+			log_error "no command found."
 		fi
+
+
+		# # Finally display all the subcommands and specify if already installed
+		# if [ -f "$list_installed_tmp" ] && [ -s "$list_installed_tmp" ]; then
+
+		# 	log_info "reading registry."
+			
+		# 	while read -r command; do
+		# 		if [ "$command" != "" ]; then
+
+		# 			local command_formatted="$(echo $command | sed 's/\.\(.*\)/ [\1]/')"
+
+		# 			# Checking if the subcommand is already installed
+		# 			if [ -f "$dir_commands/$command" ]; then
+
+		# 				local command_checksum_known="$(file_checksum "$dir_commands/$command")"
+		# 				local command_checksum_remote="$(file_checksum $(get_config_value $file_registry $command 2))"
+
+		# 				if [ "$command_checksum_known" = "$command_checksum_remote" ]; then
+		# 					echo "$command_formatted $installed"
+		# 				else
+		# 					echo "$command_formatted $installed $updatable"
+		# 				fi
+		# 			else
+		# 				echo "$command_formatted"
+		# 			fi
+
+					
+		# 		fi
+		# 	done < $list_installed_tmp | sort -d
+
+		# 	# rm -f $list_installed_tmp
+		# else
+		# 	log_error "no command installed."
+		# fi
 	fi
 
 }
