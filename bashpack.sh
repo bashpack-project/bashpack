@@ -220,7 +220,7 @@ else
 		&&		echo " -v, --version        display version." \
 		&&		echo " -l, --list           list available subcommands (local and remote). " \
 		&&		echo " -g, --get <name>     install a subcommand." \
-		&&		echo " -n, --new <name>		get a template to create a subcommand." \
+		&&		echo " -n, --new <name>     get a template to create a subcommand." \
 		&&		echo " -d, --delete <name>  uninstall a subcommand." \
 		&&		echo "" \
 		&&		echo "Commands (<command> --help to display usages):" \
