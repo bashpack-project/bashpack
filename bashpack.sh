@@ -2288,21 +2288,11 @@ case "$1" in
 	--logs)							get_logs "$file_log_main" ;;
 	-l|--list)						loading_process "subcommand_list $2" ;;
 	-g|--get)						loading_process "subcommand_get $2" ;;
-	# -g|--get)						loading_process "subcommand_update $2" ;;
 	-d|--delete)					subcommand_delete $2 $3 ;;
 	-n|--new)						subcommand_new $2 $3 ;;
-	verify)
-		if [ -z "$2" ]; then
-									loading_process "verify_dependencies $3";  loading_process "verify_files"; loading_process "verify_repository_reachability $(match_url_repository $(get_config_value $file_config cli_url) github_raw)"
-		else
-			case "$2" in
-				-f|--files)			loading_process "verify_files $3" ;;
-				-d|--dependencies)	loading_process "verify_dependencies $3" ;;
-				# -r|--repository)	loading_process "verify_repository_reachability "$URL_RAW/main/$NAME_LOWERCASE.sh""; loading_process "verify_repository_reachability "$URL_API/tarball/$VERSION"" ;;
-				-r|--repository)	loading_process "verify_repository_reachability $(match_url_repository $(get_config_value $file_config cli_url) github_raw)" ;;
-				*)					log_error "unknown option [$1] '$2'." && echo "$USAGE" && exit ;;
-			esac
-		fi ;;
+	--verify-files)					loading_process "verify_files $3" ;;
+	--verify-dependencies)			loading_process "verify_dependencies $3" ;;
+	--verify-repository)			loading_process "verify_repository_reachability $(match_url_repository $(get_config_value $file_config cli_url) github_raw)" ;;
 	# 'self' is a word used in many operations for the CLI, it's preferable to not allow it in subcommand name
 	self)							log_error "reserved operation." && exit ;;
 	# Since "export -f" is not available in Shell, the helper command below permits to use commands from this file in sub scripts

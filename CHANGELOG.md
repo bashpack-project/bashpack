@@ -5,6 +5,9 @@ The released versions changelogs below are only about the main repository.
 ### *incoming version*
 *incoming release date*
 
+##### Modified
+- Builtin subcommand "verify" splitted in --verify-* options
+
 ##### Fixed
 - Automatic completion creation
 
