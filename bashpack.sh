@@ -802,7 +802,6 @@ create_completion() {
 		cat $1 | grep '\--.*)' | sed 's/\t*//' | sed 's/).*//' | sed 's/.*|//' | grep '^-' | sort -ud
 	}
 
-	echo $(get_options $CURRENT_CLI)
 
 
 	if [ "$(exists_command "pkg-config")" = "exists" ]; then
