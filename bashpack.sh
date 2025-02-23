@@ -799,8 +799,10 @@ create_completion() {
 	# List all options of any file that is a CLI
 	# Usage: get_options <file path>
 	get_options() {
-		cat $1 | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g'
+		cat $1 | grep '\--.*)' | sed 's/\t*//' | sed 's/).*//' | sed 's/.*|//' | grep '^-' | sort -ud
 	}
+
+	echo $(get_options $CURRENT_CLI)
 
 
 	if [ "$(exists_command "pkg-config")" = "exists" ]; then
