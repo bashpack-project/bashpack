@@ -10,6 +10,7 @@ The released versions changelogs below are only about the main repository.
 
 ##### Fixed
 - Automatic completion creation
+- Using -i option from an already installed CLI could cause an error saying both source and destination are same files
 
 ------------
 ### 3.0.0
