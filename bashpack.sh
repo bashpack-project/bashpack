@@ -850,7 +850,6 @@ create_completion() {
 				# Duplicate the line and make it unique with the "new" word to find and replace it with automatics values
 				sed -i 's|\(_commandtofill.*\)|\1\n\1new|' $file_completion
 				sed -i "s|_commandtofill\(.*new\).*|\t\t\t$command\1|" $file_completion
-				# sed -i "s|_optionstofill\(.*\)new|$(get_options $dir_commands/$file_command)\1|" $file_completion
 				sed -i "s|_optionstofill\(.*\)new|$(echo $(get_options $dir_commands/$file_command))\1|" $file_completion
 
 				# Add the subcommand itself to the completion
