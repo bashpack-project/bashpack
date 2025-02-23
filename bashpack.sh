@@ -179,52 +179,24 @@ if [ -z "$1" ]; then
 else
 	case "$1" in
 		-v|--version) echo $VERSION && exit ;;
-		# command)
-		# 	case "$2" in
-		# 		--help) echo "$USAGE" \
-		# 		&&		echo "" \
-		# 		&&		echo "Manage $NAME sub commands." \
-		# 		&&		echo "" \
-		# 		&&		echo "Options:" \
-		# 		&&		echo " -l, --list         list available commands." \
-		# 		&&		echo " -g, --get <name>   install a command." \
-		# 		&&		echo " -d, --delete       remove a command." \
-		# 		&&		echo "" \
-		# 		&&		echo "$NAME $VERSION" \
-		# 		&&		exit ;;
-		# 	esac
-		# ;;
-		verify)
-			case "$2" in
-				--help) echo "$USAGE" \
-				&&		echo "" \
-				&&		echo "Verify current $NAME installation health." \
-				&&		echo "" \
-				&&		echo "Options:" \
-				&&		echo " -f, --files                  check that all required files are available." \
-				&&		echo " -d, --dependencies <file>    check that required dependencies are available." \
-				&&		echo " -r, --repository             check that remote repository is reachable." \
-				&&		echo "" \
-				&&		echo "$NAME $VERSION" \
-				&&		exit ;;
-			esac
-		;;
 		-h|--help|help) echo "$USAGE" \
 		&&		echo "" \
 		&&		echo "Options:" \
-		&&		echo " -i, --self-install   install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
-		&&		echo " -u, --self-update    update $NAME to the latest available version (--force option available)." \
-		&&		echo "     --self-delete    delete $NAME from your system." \
-		&&		echo "     --logs           display logs." \
-		&&		echo " -h, --help           display this information." \
-		&&		echo " -v, --version        display version." \
-		&&		echo " -l, --list           list available subcommands (local and remote). " \
-		&&		echo " -g, --get <name>     install a subcommand." \
-		&&		echo " -n, --new <name>     get a template to create a subcommand." \
-		&&		echo " -d, --delete <name>  uninstall a subcommand." \
+		&&		echo " -i, --self-install                  install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
+		&&		echo " -u, --self-update                   update $NAME to the latest available version (--force option available)." \
+		&&		echo "     --self-delete                   delete $NAME from your system." \
+		&&		echo " -l, --list                          list available subcommands (local and remote). " \
+		&&		echo " -g, --get <name>                    install a subcommand." \
+		&&		echo " -n, --new <name>                    get a template to create a subcommand." \
+		&&		echo " -d, --delete <name>                 uninstall a subcommand." \
+		&&		echo "     --verify-files                  check that all required files are available." \
+		&&		echo "     --verify-dependencies <file>    check that required dependencies are available." \
+		&&		echo "     --verify-repository             check that remote repository is reachable." \
+		&&		echo "     --logs                          display logs." \
+		&&		echo " -h, --help                          display this information." \
+		&&		echo " -v, --version                       display version." \
 		&&		echo "" \
 		&&		echo "Commands (<command> --help to display usages):" \
-		&&		echo "  verify" \
 		&&		echo "$(ls $dir_commands 2> /dev/null | sed 's|\..*||' | sed 's|^|  |')" \
 		&&		echo "\n$NAME $VERSION" \
 		&&		exit ;;
