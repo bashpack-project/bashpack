@@ -185,7 +185,7 @@ else
 		&&		echo " -i, --self-install                  install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
 		&&		echo " -u, --self-update                   update $NAME to the latest available version (--force option available)." \
 		&&		echo "     --self-delete                   delete $NAME from your system." \
-		&&		echo " -l, --list                          list available subcommands (local and remote). " \
+		&&		echo " -l, --list <local>                  list available subcommands (local and remote). " \
 		&&		echo " -g, --get <name>                    install a subcommand." \
 		&&		echo " -n, --new <name>                    get a template to create a subcommand." \
 		&&		echo " -d, --delete <name>                 uninstall a subcommand." \
