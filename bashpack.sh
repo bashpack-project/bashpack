@@ -792,6 +792,8 @@ create_completion() {
 	# local file_command="$(echo $(basename $command.sh))"
 	local file_command="$command.sh"
 
+	local dir_commands="$dir_src_cli/commands"
+
 
 	# echo file_command $file_command
 	# echo command $command
@@ -851,6 +853,7 @@ create_completion() {
 				sed -i 's|\(_commandtofill.*\)|\1\n\1new|' $file_completion
 				sed -i "s|_commandtofill\(.*new\).*|\t\t\t$command\1|" $file_completion
 				sed -i "s|_optionstofill\(.*\)new|$(echo $(get_options $dir_commands/$file_command))\1|" $file_completion
+				# sed -i "s|_optionstofill\(.*\)new|$(echo $(get_options $dir_src_cli/commands/$file_command))\1|" $file_completion
 
 				# Add the subcommand itself to the completion
 				sed -i "s|\(1) COMPREPLY.*\)\"|\1 $command\"|" $file_completion
@@ -2176,12 +2179,10 @@ install_cli() {
 		fi
 
 		# Reinstall all automations and completion of the subcommands
+		local dir_commands="$dir_src_cli/commands"		# Force using the $dir_command of the installed CLI to avoid the local installed subcommands
 		if [ -d "$dir_commands" ]; then
 			if [ "$(ls $dir_commands)" ]; then
 				for command in $dir_commands/*; do
-
-					# echo $command
-					# echo $dir_commands/$command
 
 					local command_name="$(echo $command | sed 's|^.*/\(.*\)\..*|\1|')"
 
