@@ -815,10 +815,15 @@ fi
 # Usage: create_completion <file_command>
 create_completion() {
 
-	local file_command="$1"
-	local command="$(echo $(basename $file_command))"
+	local command="$1"
+	# local file_command="$(echo $(basename $command))"
+	# local file_command="$(echo $(basename $command.sh))"
+	local file_command="$command.sh"
 
 
+	# echo file_command $file_command
+	# echo command $command
+	
 	# List all options of any file that is a CLI
 	# Usage: get_options <file path>
 	get_options() {
@@ -831,7 +836,9 @@ create_completion() {
 		# Install completion only if the directory has been found.
 		if [ -d "$dir_completion" ]; then
 
-				if [ "$file_command" = "$CURRENT_CLI" ]; then
+			# if [ "$file_command" = "$CURRENT_CLI" ]; then
+			# if [ "$file_command" = "$NAME_LOWERCASE.sh" ]; then
+			if [ "$(echo $file_command | grep $NAME_LOWERCASE)" ]; then
 
 				if [ -f "$file_completion" ]; then
 					rm -f $file_completion
@@ -875,6 +882,7 @@ create_completion() {
 				# Add the subcommand itself to the completion
 				sed -i "s|\(1) COMPREPLY.*\)\"|\1 $command\"|" $file_completion
 			fi
+
 
 			if [ -f "$file_completion" ] && [ -f "$file_completion_alias_1" ] && [ -f "$file_completion_alias_2" ]; then
 				log_info "completion ready."
