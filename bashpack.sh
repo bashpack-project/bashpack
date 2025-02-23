@@ -857,9 +857,9 @@ create_completion() {
 
 
 			if [ -f "$file_completion" ] && [ -f "$file_completion_alias_1" ] && [ -f "$file_completion_alias_2" ]; then
-				log_info "completion ready."
+				log_info "completion for '$command' ready."
 			else
-				log_error "completion not ready."
+				log_error "completion for '$command' not ready."
 			fi
 
 		else
