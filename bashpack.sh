@@ -861,9 +861,9 @@ create_completion() {
 
 
 			if [ -f "$file_completion" ] && [ -f "$file_completion_alias_1" ] && [ -f "$file_completion_alias_2" ]; then
-				log_info "completion for '$command' ready."
+				log_info "completion of '$command' ready."
 			else
-				log_error "completion for '$command' not ready."
+				log_error "completion of '$command' not ready."
 			fi
 
 		else
@@ -2102,18 +2102,19 @@ install_cli() {
 
 		# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
 		# Remove them to allow installation of the CLI
-		if [ -f "$file_main_alias_1" ] || [ -f "$file_main_alias_2" ]; then
-			rm -f $file_main_alias_1
-			if [ ! -f "$file_main_alias_1" ]; then
-				log_info "file '$file_main_alias_1' removed."
-			fi
+		if [ "$(echo $CURRENT_CLI | grep $NAME_LOWERCASE.sh)" ]; then
+			if [ -f "$file_main_alias_1" ] || [ -f "$file_main_alias_2" ]; then
+				rm -f $file_main_alias_1
+				if [ ! -f "$file_main_alias_1" ]; then
+					log_info "file '$file_main_alias_1' removed."
+				fi
 
-			rm -f $file_main_alias_2
-			if [ ! -f "$file_main_alias_2" ]; then
-				log_info "file '$file_main_alias_2' removed."
+				rm -f $file_main_alias_2
+				if [ ! -f "$file_main_alias_2" ]; then
+					log_info "file '$file_main_alias_2' removed."
+				fi
 			fi
 		fi
-
 
 		# Sources files installation
 		if [ ! -d "$dir_src_cli" ]; then
@@ -2144,7 +2145,13 @@ install_cli() {
 
 		# Or do the basic offline installation
 		else
-			cp -f $CURRENT_CLI $file_main
+			# Avoid non copy file in case of installing from current installed CLI (because an error will be raised saying source and destination are same files)
+			if [ "$(cat $CURRENT_CLI)" != "$(cat $file_main)" ]; then
+				cp -f $CURRENT_CLI $file_main
+
+				# Autocompletion installation
+				create_completion $CURRENT_CLI
+			fi
 		fi
 
 		if [ -f "$file_main" ]; then
@@ -2166,10 +2173,6 @@ install_cli() {
 
 		# Creating License file
 		echo "$(cat $CURRENT_CLI | grep -A 21 "MIT License" | head -n 21)" > "$dir_src_cli/LICENSE.md"
-
-
-		# Autocompletion installation
-		create_completion $CURRENT_CLI
 
 
 		# Delete all automations because some of them might have changed
