@@ -2,6 +2,13 @@
 
 The released versions changelogs below are only about the main repository.
 
+### *incoming version*
+*incoming release date*
+
+##### Fixed
+- Automatic completion creation
+
+------------
 ### 3.0.0
 *2025/02/21*
 
