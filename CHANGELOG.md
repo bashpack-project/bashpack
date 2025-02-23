@@ -2,8 +2,8 @@
 
 The released versions changelogs below are only about the main repository.
 
-### *incoming version*
-*incoming release date*
+### *3.0.1*
+*2025/02/23*
 
 ##### Modified
 - Builtin subcommand "verify" splitted in "--verify-*" options
