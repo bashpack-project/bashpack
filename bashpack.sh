@@ -799,7 +799,7 @@ create_completion() {
 	# List all options of any file that is a CLI
 	# Usage: get_options <file path>
 	get_options() {
-		cat $1 | grep '\--.*)' | sed 's/\t*//' | sed 's/).*//' | sed 's/.*|//' | grep '^-' | sort -ud
+		cat $1 | grep '\--.*)' | sed 's|\t*||' | sed 's|).*||' | sed 's|.*\|||' | grep '^-' | sort -ud
 	}
 
 
