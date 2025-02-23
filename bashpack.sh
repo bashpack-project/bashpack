@@ -30,7 +30,7 @@
 
 
 
-export VERSION="3.0.0"
+export VERSION="3.0.1"
 
 export NAME="Bashpack"
 export NAME_LOWERCASE="$(echo "$NAME" | tr A-Z a-z)"
@@ -179,53 +179,25 @@ if [ -z "$1" ]; then
 else
 	case "$1" in
 		-v|--version) echo $VERSION && exit ;;
-		# command)
-		# 	case "$2" in
-		# 		--help) echo "$USAGE" \
-		# 		&&		echo "" \
-		# 		&&		echo "Manage $NAME sub commands." \
-		# 		&&		echo "" \
-		# 		&&		echo "Options:" \
-		# 		&&		echo " -l, --list         list available commands." \
-		# 		&&		echo " -g, --get <name>   install a command." \
-		# 		&&		echo " -d, --delete       remove a command." \
-		# 		&&		echo "" \
-		# 		&&		echo "$NAME $VERSION" \
-		# 		&&		exit ;;
-		# 	esac
-		# ;;
-		verify)
-			case "$2" in
-				--help) echo "$USAGE" \
-				&&		echo "" \
-				&&		echo "Verify current $NAME installation health." \
-				&&		echo "" \
-				&&		echo "Options:" \
-				&&		echo " -f, --files                  check that all required files are available." \
-				&&		echo " -d, --dependencies <file>    check that required dependencies are available." \
-				&&		echo " -r, --repository             check that remote repository is reachable." \
-				&&		echo "" \
-				&&		echo "$NAME $VERSION" \
-				&&		exit ;;
-			esac
-		;;
 		-h|--help|help) echo "$USAGE" \
 		&&		echo "" \
 		&&		echo "Options:" \
-		&&		echo " -i, --self-install   install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
-		&&		echo " -u, --self-update    update $NAME to the latest available version (--force option available)." \
-		&&		echo "     --self-delete    delete $NAME from your system." \
-		&&		echo "     --logs           display logs." \
-		&&		echo " -h, --help           display this information." \
-		&&		echo " -v, --version        display version." \
-		&&		echo " -l, --list           list available subcommands (local and remote). " \
-		&&		echo " -g, --get <name>     install a subcommand." \
-		&&		echo " -n, --new <name>		get a template to create a subcommand." \
-		&&		echo " -d, --delete <name>  uninstall a subcommand." \
+		&&		echo " -i, --self-install                  install (or reinstall) $NAME on your system as the command '$NAME_ALIAS'." \
+		&&		echo " -u, --self-update                   update $NAME to the latest available version (--force option available)." \
+		&&		echo "     --self-delete                   delete $NAME from your system." \
+		&&		echo " -l, --list <local>                  list available subcommands (local and remote). " \
+		&&		echo " -g, --get <name>                    install a subcommand." \
+		&&		echo " -n, --new <name>                    get a template to create a subcommand." \
+		&&		echo " -d, --delete <name>                 uninstall a subcommand." \
+		&&		echo "     --verify-files                  check that all required files are available." \
+		&&		echo "     --verify-dependencies <file>    check that required dependencies are available." \
+		&&		echo "     --verify-repository             check that remote repository is reachable." \
+		&&		echo "     --logs                          display logs." \
+		&&		echo " -h, --help                          display this information." \
+		&&		echo " -v, --version                       display version." \
 		&&		echo "" \
 		&&		echo "Commands (<command> --help to display usages):" \
-		&&		echo "  verify" \
-		&&		echo "$(ls $dir_commands 2> /dev/null | sed "s/^/  /g")" \
+		&&		echo "$(ls $dir_commands 2> /dev/null | sed 's|\..*||' | sed 's|^|  |')" \
 		&&		echo "\n$NAME $VERSION" \
 		&&		exit ;;
 	esac
@@ -815,15 +787,23 @@ fi
 # Usage: create_completion <file_command>
 create_completion() {
 
-	local file_command="$1"
-	local command="$(echo $(basename $file_command))"
+	local command="$1"
+	# local file_command="$(echo $(basename $command))"
+	# local file_command="$(echo $(basename $command.sh))"
+	local file_command="$command.sh"
+
+	local dir_commands="$dir_src_cli/commands"
 
 
+	# echo file_command $file_command
+	# echo command $command
+	
 	# List all options of any file that is a CLI
 	# Usage: get_options <file path>
 	get_options() {
-		cat $1 | sed 's/.*[ \t|]\(.*\)).*/\1/' | grep '^\-\-' | sort -ud | sed -Ez 's/([^\n])\n/\1 /g'
+		cat $1 | grep '\--.*)' | sed 's/\t*//' | sed 's/).*//' | sed 's/.*|//' | grep '^-' | sort -ud
 	}
+
 
 
 	if [ "$(exists_command "pkg-config")" = "exists" ]; then
@@ -831,7 +811,9 @@ create_completion() {
 		# Install completion only if the directory has been found.
 		if [ -d "$dir_completion" ]; then
 
-				if [ "$file_command" = "$CURRENT_CLI" ]; then
+			# if [ "$file_command" = "$CURRENT_CLI" ]; then
+			# if [ "$file_command" = "$NAME_LOWERCASE.sh" ]; then
+			if [ "$(echo $file_command | grep $NAME_LOWERCASE)" ]; then
 
 				if [ -f "$file_completion" ]; then
 					rm -f $file_completion
@@ -870,16 +852,18 @@ create_completion() {
 				# Duplicate the line and make it unique with the "new" word to find and replace it with automatics values
 				sed -i 's|\(_commandtofill.*\)|\1\n\1new|' $file_completion
 				sed -i "s|_commandtofill\(.*new\).*|\t\t\t$command\1|" $file_completion
-				sed -i "s|_optionstofill\(.*\)new|$(get_options $dir_commands/$file_command)\1|" $file_completion
+				sed -i "s|_optionstofill\(.*\)new|$(echo $(get_options $dir_commands/$file_command))\1|" $file_completion
+				# sed -i "s|_optionstofill\(.*\)new|$(echo $(get_options $dir_src_cli/commands/$file_command))\1|" $file_completion
 
 				# Add the subcommand itself to the completion
 				sed -i "s|\(1) COMPREPLY.*\)\"|\1 $command\"|" $file_completion
 			fi
 
+
 			if [ -f "$file_completion" ] && [ -f "$file_completion_alias_1" ] && [ -f "$file_completion_alias_2" ]; then
-				log_info "completion ready."
+				log_info "completion of '$command' ready."
 			else
-				log_error "completion not ready."
+				log_error "completion of '$command' not ready."
 			fi
 
 		else
@@ -1638,13 +1622,13 @@ subcommand_list() {
 					# local command_formatted="$(echo $line | sed 's| .*||' | sed 's|\(.*\)\.\(.*\)|[\2] \1|')"
 					# local command_formatted=$command
 
-					local command_file="$(echo $line | sed 's| .*||')"
+					local file_command="$(echo $line | sed 's| .*||')"
 
 					# Checking if the subcommand is already installed
-					if [ -f "$dir_commands/$command_file" ]; then
+					if [ -f "$dir_commands/$file_command" ]; then
 
-						local command_checksum_known="$(file_checksum "$dir_commands/$command_file")"
-						local command_checksum_remote="$(file_checksum $(get_config_value $file_registry $command_file 2))"
+						local command_checksum_known="$(file_checksum "$dir_commands/$file_command")"
+						local command_checksum_remote="$(file_checksum $(get_config_value $file_registry $file_command 2))"
 
 						if [ "$command_checksum_known" = "$command_checksum_remote" ]; then
 							echo "$command_formatted $installed"
@@ -1728,7 +1712,7 @@ subcommand_get() {
 		# Refresh list according to sources list (repositories might be commented or removed since last time)
 		subcommand_list refresh-only
 
-		local url="$(get_config_value $file_registry $command)"
+		local url="$(get_config_value $file_registry $command.sh)"
 		download_file $url $file_command
 
 		if [ -f "$file_command" ]; then
@@ -2118,18 +2102,19 @@ install_cli() {
 
 		# Depending on what version an update is performed, it can happen that cp can't overwrite a previous symlink
 		# Remove them to allow installation of the CLI
-		if [ -f "$file_main_alias_1" ] || [ -f "$file_main_alias_2" ]; then
-			rm -f $file_main_alias_1
-			if [ ! -f "$file_main_alias_1" ]; then
-				log_info "file '$file_main_alias_1' removed."
-			fi
+		if [ "$(echo $CURRENT_CLI | grep $NAME_LOWERCASE.sh)" ]; then
+			if [ -f "$file_main_alias_1" ] || [ -f "$file_main_alias_2" ]; then
+				rm -f $file_main_alias_1
+				if [ ! -f "$file_main_alias_1" ]; then
+					log_info "file '$file_main_alias_1' removed."
+				fi
 
-			rm -f $file_main_alias_2
-			if [ ! -f "$file_main_alias_2" ]; then
-				log_info "file '$file_main_alias_2' removed."
+				rm -f $file_main_alias_2
+				if [ ! -f "$file_main_alias_2" ]; then
+					log_info "file '$file_main_alias_2' removed."
+				fi
 			fi
 		fi
-
 
 		# Sources files installation
 		if [ ! -d "$dir_src_cli" ]; then
@@ -2160,7 +2145,13 @@ install_cli() {
 
 		# Or do the basic offline installation
 		else
-			cp -f $CURRENT_CLI $file_main
+			# Avoid non copy file in case of installing from current installed CLI (because an error will be raised saying source and destination are same files)
+			if [ "$(cat $CURRENT_CLI)" != "$(cat $file_main)" ]; then
+				cp -f $CURRENT_CLI $file_main
+
+				# Autocompletion installation
+				create_completion $CURRENT_CLI
+			fi
 		fi
 
 		if [ -f "$file_main" ]; then
@@ -2184,10 +2175,6 @@ install_cli() {
 		echo "$(cat $CURRENT_CLI | grep -A 21 "MIT License" | head -n 21)" > "$dir_src_cli/LICENSE.md"
 
 
-		# Autocompletion installation
-		create_completion $CURRENT_CLI
-
-
 		# Delete all automations because some of them might have changed
 		# if [ "$(ls $dir_systemd/$NAME_LOWERCASE*)" ]; then
 		if [ "$(ls $dir_systemd/$NAME_LOWERCASE*)" ]; then
@@ -2195,12 +2182,10 @@ install_cli() {
 		fi
 
 		# Reinstall all automations and completion of the subcommands
+		local dir_commands="$dir_src_cli/commands"		# Force using the $dir_command of the installed CLI to avoid the local installed subcommands
 		if [ -d "$dir_commands" ]; then
 			if [ "$(ls $dir_commands)" ]; then
 				for command in $dir_commands/*; do
-
-					# echo $command
-					# echo $dir_commands/$command
 
 					local command_name="$(echo $command | sed 's|^.*/\(.*\)\..*|\1|')"
 
@@ -2280,21 +2265,11 @@ case "$1" in
 	--logs)							get_logs "$file_log_main" ;;
 	-l|--list)						loading_process "subcommand_list $2" ;;
 	-g|--get)						loading_process "subcommand_get $2" ;;
-	# -g|--get)						loading_process "subcommand_update $2" ;;
 	-d|--delete)					subcommand_delete $2 $3 ;;
 	-n|--new)						subcommand_new $2 $3 ;;
-	verify)
-		if [ -z "$2" ]; then
-									loading_process "verify_dependencies $3";  loading_process "verify_files"; loading_process "verify_repository_reachability $(match_url_repository $(get_config_value $file_config cli_url) github_raw)"
-		else
-			case "$2" in
-				-f|--files)			loading_process "verify_files $3" ;;
-				-d|--dependencies)	loading_process "verify_dependencies $3" ;;
-				# -r|--repository)	loading_process "verify_repository_reachability "$URL_RAW/main/$NAME_LOWERCASE.sh""; loading_process "verify_repository_reachability "$URL_API/tarball/$VERSION"" ;;
-				-r|--repository)	loading_process "verify_repository_reachability $(match_url_repository $(get_config_value $file_config cli_url) github_raw)" ;;
-				*)					log_error "unknown option [$1] '$2'." && echo "$USAGE" && exit ;;
-			esac
-		fi ;;
+	--verify-files)					loading_process "verify_files $3" ;;
+	--verify-dependencies)			loading_process "verify_dependencies $3" ;;
+	--verify-repository)			loading_process "verify_repository_reachability $(match_url_repository $(get_config_value $file_config cli_url) github_raw)" ;;
 	# 'self' is a word used in many operations for the CLI, it's preferable to not allow it in subcommand name
 	self)							log_error "reserved operation." && exit ;;
 	# Since "export -f" is not available in Shell, the helper command below permits to use commands from this file in sub scripts

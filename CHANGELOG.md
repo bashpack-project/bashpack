@@ -2,6 +2,17 @@
 
 The released versions changelogs below are only about the main repository.
 
+### *3.0.1*
+*2025/02/23*
+
+##### Modified
+- Builtin subcommand "verify" splitted in "--verify-*" options
+
+##### Fixed
+- Automatic completion creation
+- Using -i option from an already installed CLI could cause an error saying both source and destination are same files
+
+------------
 ### 3.0.0
 *2025/02/21*
 
@@ -11,7 +22,7 @@ The released versions changelogs below are only about the main repository.
 - Anyone can now host a repository for its own CLI (edit cli_url option from the configuration file)
 - Repositories are compatibles with Github, but can also be simple directories listing web servers
 - Documentation website at https://bashpack-project.github.io
-- Subcommand template is available with the option "-n'
+- Subcommand template is available with the option "-n"
 
 ##### Modified
 - The CLI has been redesigned has a "script manager", to download/install/run/remove scripts as subcommands
